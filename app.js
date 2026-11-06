@@ -22,9 +22,22 @@
     if (!n) return C.name;
     return n + (/[sßxz]$/i.test(n) ? "'" : 's') + ' Lernkiste';
   }
-  function toast(msg) {
-    var t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
-    setTimeout(function () { t.remove(); }, 2600);
+  function toast(msg, actionLabel, action) {
+    $$('.toast').forEach(function (x) { x.remove(); });
+    var t = document.createElement('div'); t.className = 'toast'; t.appendChild(document.createTextNode(msg));
+    if (actionLabel) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'toastact'; b.textContent = actionLabel;
+      b.onclick = function () { t.remove(); action(); }; t.appendChild(b);
+    }
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, actionLabel ? 6000 : 2600);
+  }
+  function isHidden(sid) { return DB.hidden.indexOf(sid) >= 0; }
+  function setHidden(sid, on) {
+    var i = DB.hidden.indexOf(sid);
+    if (on && i < 0) DB.hidden.push(sid);
+    if (!on && i >= 0) DB.hidden.splice(i, 1);
+    save();
   }
 
   function highlight(root, terms) {
@@ -138,15 +151,63 @@
     return { txt: txt, pct: pct, placeholder: allPlaceholder };
   }
   function homeView() {
+    var vis = C.subjects.filter(function (s) { return !isHidden(s.id); }), hid = C.subjects.filter(function (s) { return isHidden(s.id); });
     var h = '<h1>' + esc(appName()) + '</h1><p class="sub">Fach auswählen</p>' +
       '<a class="fakesearch" href="#/suche"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Begriff oder Satz suchen …</a><div class="grid fach">';
-    C.subjects.forEach(function (s) {
+    vis.forEach(function (s) {
       var st = subjStats(s);
-      h += '<a class="tile s-' + s.id + '" href="#/f/' + s.id + '">' + (st.placeholder ? '<span class="badge">Gerüst</span>' : '') +
+      h += '<div class="tilewrap" data-sid="' + s.id + '"><div class="hidehint">Ausblenden</div><a class="tile s-' + s.id + '" href="#/f/' + s.id + '">' + (st.placeholder ? '<span class="badge">Gerüst</span>' : '') +
         '<div><h2 class="name">' + esc(s.name) + '</h2><p class="desc">' + esc(s.desc) + '</p></div>' +
-        '<div class="foot"><span>' + esc(st.txt) + '</span><div class="bar"><div style="width:' + st.pct + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
+        '<div class="foot"><span>' + esc(st.txt) + '</span><div class="bar"><div style="width:' + st.pct + '%"></div></div><span class="go">Öffnen ›</span></div></a>' +
+        '<button type="button" class="tilemenu" aria-label="Mehr zu ' + esc(s.name) + '">⋯</button></div>';
     });
-    view.innerHTML = h + '</div>';
+    h += '</div>';
+    if (!vis.length) h += '<p class="note" style="text-align:center;padding:26px 10px">Alle Themen sind ausgeblendet.</p>';
+    if (hid.length) {
+      h += '<button type="button" class="hiddenlink" id="hidLink">versteckte Themen (' + hid.length + ')</button><div class="hiddenlist" id="hidList" hidden>' +
+        hid.map(function (s) { return '<div class="hidrow"><i class="sw" style="background:var(--c-' + s.id + ')"></i><span>' + esc(s.name) + '</span><button type="button" data-show="' + s.id + '">Einblenden</button></div>'; }).join('') + '</div>';
+    }
+    view.innerHTML = h;
+    wireHome(!!hid.length);
+  }
+  function hideSubject(sid) {
+    setHidden(sid, true); homeView();
+    toast('„' + subj(sid).name + '“ ausgeblendet', 'Rückgängig', function () { setHidden(sid, false); if (!parseHash().parts.length) homeView(); });
+  }
+  function wireHome(hasHidden) {
+    var openMenu = null;
+    function closeMenu() { if (openMenu) { openMenu.remove(); openMenu = null; } }
+    $$('.tilewrap').forEach(function (w) {
+      var tile = $('.tile', w), sid = w.dataset.sid, x0 = 0, y0 = 0, dx = 0, mode = '', moved = false;
+      $('.tilemenu', w).onclick = function (ev) {
+        ev.preventDefault(); ev.stopPropagation(); var had = openMenu && openMenu.parentNode === w; closeMenu(); if (had) return;
+        var m = document.createElement('div'); m.className = 'tilepop';
+        m.innerHTML = '<button type="button">Ausblenden</button>'; w.appendChild(m); openMenu = m;
+        $('button', m).onclick = function () { closeMenu(); hideSubject(sid); };
+      };
+      tile.addEventListener('touchstart', function (e) { var t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; dx = 0; mode = ''; moved = false; tile.style.transition = 'none'; }, { passive: true });
+      tile.addEventListener('touchmove', function (e) {
+        var t = e.touches[0], mx = t.clientX - x0, my = t.clientY - y0;
+        if (!mode) { if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.4) mode = 'h'; else if (Math.abs(my) > 10) mode = 'v'; }
+        if (mode !== 'h') return;
+        moved = true; dx = Math.min(0, mx); tile.style.transform = 'translateX(' + dx + 'px)'; w.classList.toggle('armed', dx < -90);
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+      function end() {
+        tile.style.transition = ''; var go = mode === 'h' && dx < -90;
+        if (go) { tile.style.transform = 'translateX(-110%)'; setTimeout(function () { hideSubject(sid); }, 160); }
+        else { tile.style.transform = ''; w.classList.remove('armed'); }
+        if (moved) setTimeout(function () { moved = false; }, 50);
+      }
+      tile.addEventListener('touchend', end); tile.addEventListener('touchcancel', end);
+      tile.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
+    });
+    var onDoc = function (e) { if (openMenu && !e.target.closest('.tilepop, .tilemenu')) closeMenu(); };
+    document.addEventListener('click', onDoc, true); cleanups.push(function () { document.removeEventListener('click', onDoc, true); });
+    if (hasHidden) {
+      $('#hidLink').onclick = function () { var l = $('#hidList'); l.hidden = !l.hidden; };
+      $$('[data-show]').forEach(function (b) { b.onclick = function () { var sid = b.dataset.show; setHidden(sid, false); homeView(); toast('„' + subj(sid).name + '“ wieder eingeblendet'); }; });
+    }
   }
   function fachView(sid) {
     var s = subj(sid); if (!s) return homeView();
@@ -535,6 +596,7 @@
   function popular(per) {
     var out = [], seen = {};
     C.subjects.forEach(function (sj) {
+      if (isHidden(sj.id)) return;
       VOCAB.filter(function (v) { return v.s[sj.id]; }).sort(function (a, b) { return b.s[sj.id] - a.s[sj.id] || (a.k < b.k ? -1 : 1); }).slice(0, per)
         .forEach(function (v) { if (!seen[v.k]) { seen[v.k] = 1; out.push(v.w); } });
     });
@@ -577,6 +639,7 @@
       }
       var toks = nrm(q).split(/\s+/).filter(Boolean), list = [];
       SEARCH.forEach(function (e, n) {
+        if (isHidden(e.s)) return;
         var score = 0;
         for (var i = 0; i < toks.length; i++) { var inH = e._h.indexOf(toks[i]) >= 0, inT = e._t.indexOf(toks[i]) >= 0; if (!inH && !inT) return; score += (inH ? 3 : 0) + (inT ? 1 : 0); }
         list.push({ e: e, score: score, n: n });
@@ -591,7 +654,7 @@
         if (fz.length) { sug = '<p class="sugnote">Meintest du:</p>' + chips(fz.map(function (v) { return v.w; }), 'ai'); sug = sug.replace(/class="sugchip ai"/g, 'class="sugchip ai" data-fix="' + esc(bad[bad.length - 1]) + '"'); }
       }
       var counts = { all: list.length }; list.forEach(function (x) { counts[x.e.s] = (counts[x.e.s] || 0) + 1; });
-      var subs = C.subjects.filter(function (s) { return SEARCH.some(function (e) { return e.s === s.id; }); });
+      var subs = C.subjects.filter(function (s) { return !isHidden(s.id) && SEARCH.some(function (e) { return e.s === s.id; }); });
       var f = '<div class="filters"><button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + counts.all + ')</button>' + subs.map(function (s) {
         return '<button data-f="' + s.id + '" class="' + (filter === s.id ? 'on' : '') + '"><span class="sw" style="background:var(--c-' + s.id + ')"></span>' + esc(s.name) + ' (' + (counts[s.id] || 0) + ')</button>';
       }).join('') + '</div>';

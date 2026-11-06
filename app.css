@@ -235,3 +235,25 @@ input.txt:focus { outline:none; border-color:var(--c-diff1); }
 /* Platzhalter: kommt bald */
 .setrow.soon { opacity:.85; }
 .soonbadge { flex:none; font-size:.72rem; font-weight:600; letter-spacing:.03em; color:var(--muted); border:1px dashed var(--line); border-radius:999px; padding:4px 10px; white-space:nowrap; }
+
+/* ---------- Fächer verstecken ---------- */
+.tilewrap { position:relative; border-radius:18px; }
+.tilewrap .hidehint { position:absolute; inset:0; display:flex; align-items:center; justify-content:flex-end; padding-right:26px; border-radius:18px; background:var(--line); color:var(--muted); font-weight:600; font-size:.9rem; }
+.tilewrap.armed .hidehint { background:var(--ink); color:var(--bg); }
+.tilewrap .tile { touch-action:pan-y; transition:transform .18s ease; }
+.tilemenu { position:absolute; top:10px; right:10px; width:38px; height:34px; border:0; border-radius:10px; background:transparent; color:var(--muted); font-size:1.3rem; line-height:1; cursor:pointer; z-index:2; -webkit-tap-highlight-color:transparent; }
+.tilewrap:has(.badge) .tilemenu { top:44px; }
+.tilemenu:active { background:var(--line); }
+.tilepop { position:absolute; top:46px; right:10px; z-index:5; background:var(--paper); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:4px; }
+.tilepop button { all:unset; box-sizing:border-box; display:block; padding:10px 16px; font-size:.92rem; cursor:pointer; border-radius:8px; }
+.tilepop button:active { background:var(--line); }
+.hiddenlink { all:unset; display:block; margin:22px auto 0; padding:8px 12px; font-size:.82rem; color:var(--muted); text-decoration:underline; cursor:pointer; text-align:center; }
+.hiddenlist { margin-top:6px; background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:4px 14px; }
+.hiddenlist[hidden] { display:none; }
+.hidrow { display:flex; align-items:center; gap:10px; padding:10px 0; }
+.hidrow + .hidrow { border-top:1px solid var(--line); }
+.hidrow .sw, .hidrow i.sw { width:10px; height:10px; border-radius:50%; flex:none; display:inline-block; }
+.hidrow span { flex:1; }
+.hidrow button { all:unset; cursor:pointer; color:var(--accent); font-weight:600; font-size:.88rem; padding:6px 8px; }
+.toastact { all:unset; cursor:pointer; margin-left:14px; font-weight:700; text-decoration:underline; }
+.toast { display:flex; align-items:center; }
