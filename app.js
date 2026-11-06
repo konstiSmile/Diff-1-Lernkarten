@@ -702,6 +702,8 @@
       '<div id="impbox"></div><input type="file" id="file" accept=".json,application/json,text/plain" style="display:none">' +
       '<div class="setrow"><div class="l"><b>Verlauf löschen</b></div><button class="actbtn danger" id="bLog">Löschen</button></div>' +
       '<div class="setrow"><div class="l"><b>Lernstand zurücksetzen</b><small>Alle Fächer, Einstellungen bleiben</small></div><button class="actbtn danger" id="bProg">Zurücksetzen</button></div></div>' +
+      '<div class="group"><h3>Feedback</h3>' +
+      '<div class="setrow soon"><div class="l"><b>Feedback / Ideen senden</b><small>Schreib uns, was dir fehlt oder besser sein könnte.</small></div><span class="soonbadge">Kommt bald</span></div></div>' +
       '<div class="group"><h3>App</h3>' +
       '<div class="setrow"><div class="l"><b>Version</b><small>' + esc(C.version) + '</small></div><button class="actbtn" id="bUpd">Nach Update suchen</button></div>' +
       '<div class="setrow"><div class="l"><b>Offline</b><small>Nach dem ersten Öffnen mit Internet funktioniert die App ohne Netz.</small></div></div></div>' +
