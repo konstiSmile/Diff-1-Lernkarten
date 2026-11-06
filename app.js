@@ -310,7 +310,7 @@
     var cards = ch.cards, byId = {}; cards.forEach(function (c) { byId[c.id] = c; });
     var st = DB.settings, noRed = s.own || !cards.some(function (c) { return c.red; }), filter = (q.c || noRed) ? 'all' : st.cardFilter;
     var order = cards.map(function (c) { return c.id; }); if (st.cardOrder === 'shuffle' && !s.mix) order = shuffle(order);
-    var deck = [], pos = 0, flipped = false, confirmReset = false;
+    var deck = [], pos = 0, flipped = false, confirmReset = false, reading = q.read === '1', rpos = 0;
     var terms = (q.hl || '').split(/\s+/).filter(function (t) { return t.length > 1; });
 
     function build(keep) {
@@ -318,7 +318,32 @@
       deck = order.filter(function (id) { var c = byId[id]; return filter === 'red' ? c.red : filter === 'again' ? DB.progress[id] === 'again' : true; });
       pos = keep && deck.indexOf(cur) >= 0 ? deck.indexOf(cur) : 0; flipped = false;
     }
+    function readDraw() {
+      var list = order.map(function (id) { return byId[id]; }), total = list.length;
+      rpos = Math.max(0, Math.min(rpos, total - 1));
+      var h = '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a><button id="rEnd">Fertig</button></div>' +
+        '<h1 style="font-size:1.5rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">Lesen · ohne Wertung</p>';
+      if (!total) h += '<div class="empty">Keine Karten vorhanden.</div>';
+      else {
+        var c = list[rpos];
+        h += '<div class="status"><span>Karte ' + (rpos + 1) + ' / ' + total + '</span><span>nichts wird gewertet</span></div>' +
+          '<div class="pbar"><div style="width:' + ((rpos + 1) / total * 100) + '%"></div></div>' +
+          '<div class="card">' + (c.red ? '<span class="reddot"></span>' : '') + '<div class="meta"><span>' + esc(c.src) + '</span><span class="side">Frage</span></div>' +
+          '<div class="face">' + c.q + '</div></div>' +
+          '<div class="card" style="margin-top:10px"><div class="meta"><span></span><span class="side" style="color:var(--green)">Antwort</span></div><div class="face">' + c.a + '</div></div>' +
+          '<div class="row"><button class="ghost" id="rPrev"' + (rpos === 0 ? ' disabled' : '') + '>← Zurück</button><button class="ghost" id="rNext"' + (rpos === total - 1 ? ' disabled' : '') + '>Weiter →</button></div>';
+      }
+      h += '<div class="tools"><button id="rShuf">Mischen</button><button id="rOrd">Skript-Reihenfolge</button></div><p class="foot-note">Pfeiltasten zum Blättern</p>';
+      view.innerHTML = h;
+      $('#rEnd').onclick = function () { reading = false; draw(); window.scrollTo(0, 0); };
+      var rp = $('#rPrev'), rn = $('#rNext');
+      if (rp) rp.onclick = function () { rpos--; readDraw(); window.scrollTo(0, 0); };
+      if (rn) rn.onclick = function () { rpos++; readDraw(); window.scrollTo(0, 0); };
+      $('#rShuf').onclick = function () { order = shuffle(cards.map(function (c) { return c.id; })); rpos = 0; readDraw(); };
+      $('#rOrd').onclick = function () { order = cards.map(function (c) { return c.id; }); rpos = 0; readDraw(); };
+    }
     function draw() {
+      if (reading) return readDraw();
       var total = deck.length, nRed = cards.filter(function (c) { return c.red; }).length;
       var nAgain = cards.filter(function (c) { return DB.progress[c.id] === 'again'; }).length;
       var known = deck.filter(function (id) { return DB.progress[id] === 'known'; }).length;
@@ -327,6 +352,7 @@
         '<div class="seg" id="seg">' + (noRed ? '' : '<button data-f="red" class="' + (filter === 'red' ? 'on' : '') + '"><span class="dot"></span>Rot markiert (' + nRed + ')</button>') +
         '<button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + cards.length + ')</button>' +
         '<button data-f="again" class="' + (filter === 'again' ? 'on' : '') + '">Nochmal (' + nAgain + ')</button></div>' +
+        '<div class="row" style="margin:10px 0 0"><button class="ghost" id="bRead">📖 Karten lesen · ohne Wertung</button></div>' +
         '<div class="status"><span>' + (total ? 'Karte ' + (pos + 1) + ' / ' + total : '') + '</span><span>' + (total ? '✓ ' + known + ' von ' + total + ' gewusst' : '') + '</span></div>' +
         '<div class="pbar"><div style="width:' + (total ? known / total * 100 : 0) + '%"></div></div>';
       if (!total) {
@@ -345,6 +371,7 @@
       view.innerHTML = h;
       if (terms.length && total) highlight($('.face', view), terms);
       $$('#seg button').forEach(function (b) { b.onclick = function () { filter = b.dataset.f; build(false); draw(); }; });
+      $('#bRead').onclick = function () { rpos = 0; reading = true; draw(); window.scrollTo(0, 0); };
       var card = $('#card'); if (card) card.onclick = flip;
       var bf = $('#bFlip'); if (bf) bf.onclick = flip;
       var bp = $('#bPrev'); if (bp) bp.onclick = function () { go(-1); };
@@ -368,12 +395,14 @@
     }
     function onKey(e) {
       if (/INPUT|TEXTAREA/.test((e.target || {}).tagName || '')) return;
+      if (reading) { if (e.key === 'ArrowRight' && rpos < order.length - 1) { rpos++; readDraw(); } else if (e.key === 'ArrowLeft' && rpos > 0) { rpos--; readDraw(); } return; }
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); }
       else if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1);
     }
     document.addEventListener('keydown', onKey); onLeave(function () { document.removeEventListener('keydown', onKey); });
 
     build(false);
+    if (reading) { readDraw(); return; }
     if (q.c && byId[q.c]) {
       pos = Math.max(0, deck.indexOf(q.c)); flipped = true;
       if (terms.length) {
@@ -455,17 +484,33 @@
         return '<button class="mode" data-m="' + m.id + '"' + (c ? '' : ' disabled') + '><span class="ico">' + m.ico + '</span><span><span class="t">' + m.name + '</span><br><span class="d">' + m.desc + '</span></span>' +
           '<span class="r">' + c + ' Fragen' + (b !== undefined ? '<b>Bestwert ' + b + ' %</b>' : '') + '</span></button>';
       }).join('') + '</div>';
+      h += '<div class="row" style="margin-top:14px"><button class="ghost" id="readQ">📖 Fragen lesen · ohne Wertung</button></div>';
       var wr = T.wrong.filter(function (id) { return BYID[id]; });
       if (wr.length) h += '<div class="row" style="margin-top:14px"><button class="ghost" id="wrong">Falsche Fragen wiederholen (' + wr.length + ')</button></div>';
       h += '<div class="tools"><button id="reset">Fortschritt zurücksetzen</button></div>';
       view.innerHTML = h;
       $$('.chip').forEach(function (b) { b.onclick = function () { st.testN = parseInt(b.dataset.n, 10); save(); hub(); }; });
       $$('.mode').forEach(function (b) { b.onclick = function () { start(b.dataset.m); }; });
+      $('#readQ').onclick = function () { readItems(0); };
       var wb = $('#wrong'); if (wb) wb.onclick = function () { run(shuffle(wr).map(prep), 'wrong', 'Falsche Fragen'); };
       $('#reset').onclick = function () {
         var b = $('#reset');
         if (b.dataset.sure) { T.best = {}; T.wrong = []; save(); hub(); } else { b.textContent = 'Wirklich zurücksetzen?'; b.dataset.sure = 1; }
       };
+    }
+    function readItems(k) {
+      var list = ITEMS, total = list.length; k = Math.max(0, Math.min(k, total - 1));
+      var it = list[k], body;
+      if (it.type === 'mc') body = '<div class="qtext">' + it.q + '</div><div class="opts">' + it.options.map(function (o, i) { return '<div class="opt' + (i === it.correct ? ' ok' : '') + '"><span class="k">' + 'ABCD'.charAt(i) + '</span><span>' + o + '</span></div>'; }).join('') + '</div>';
+      else if (it.type === 'tf') body = '<div class="qtext">' + it.statement + '</div><div class="tip"><b>' + (it.answer ? 'Richtig' : 'Falsch') + '.</b></div>';
+      else body = '<div class="qtext">' + gapSolution(it) + '</div>';
+      var h = nav('<button id="rEnd">Fertig</button>') + '<h1 style="font-size:1.4rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">Lesen · ohne Wertung</p>' +
+        '<div class="meta" style="margin-top:8px"><span>' + TYPES[it.type] + ' · ' + (k + 1) + ' / ' + total + '</span><span>' + esc(it.src || '') + '</span></div>' +
+        '<div class="pbar"><div style="width:' + ((k + 1) / total * 100) + '%"></div></div><div class="card">' + body + (it.expl ? '<div class="tip' + (it.warn ? ' warn' : '') + '">' + it.expl + '</div>' : '') + '</div>' +
+        '<div class="row"><button class="ghost" id="rPrev"' + (k === 0 ? ' disabled' : '') + '>← Zurück</button><button class="ghost" id="rNext"' + (k === total - 1 ? ' disabled' : '') + '>Weiter →</button></div>';
+      view.innerHTML = h; window.scrollTo(0, 0);
+      $('#rEnd').onclick = hub;
+      $('#rPrev').onclick = function () { readItems(k - 1); }; $('#rNext').onclick = function () { readItems(k + 1); };
     }
     function start(mode) {
       if (mode === 'exam') return examSetup();

@@ -68,7 +68,8 @@ pers_tests['group'] = 'pers'
 
 CONTENT = dict(name=NAME, version=VERSION, subjects=[
     dict(id='diff1', name='Diff 1', desc='Differential- und Integralrechnung 1', chapters=[
-        dict(id='k1', title='Kapitel 1 · Folgen und Grenzwerte', sub='Karteikarten aus dem Skript', kind='cards', placeholder=False, cards=cards)]),
+        dict(id='k1', title='Kapitel 1 · Folgen und Grenzwerte', sub='Karteikarten aus dem Skript', kind='cards', placeholder=False, cards=cards),
+        tests_chapter('data_diff1', 'diff1', 'tk1', 'Tests · Kapitel 1', 'Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)]),
     dict(id='quer', name='Querschnitt', desc='Funktionen mehrerer Veränderlicher und mehr', chapters=[
         tests_chapter('data_querschnitt', 'quer', 'k10', 'Kapitel 10 · Funktionen mehrerer Veränderlicher', 'Tests zum Skript', False)]),
     dict(id='psy', name='Psycho 2', desc='Persönlichkeit, Entwicklung, Diagnostik', groups=[
@@ -154,7 +155,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'q
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v16';
+const CACHE = 'lernkiste-v17';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{
