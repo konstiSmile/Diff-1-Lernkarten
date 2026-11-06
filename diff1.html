@@ -53,7 +53,7 @@
     min-height: 100vh;
   }
   .wrap { max-width: 640px; margin: 0 auto; padding: 18px 16px 40px; padding-top: max(18px, env(safe-area-inset-top)); }
-  .back {
+  .homelink {
     display: inline-block; color: var(--accent); text-decoration: none;
     font-weight: 500; font-size: .88rem; padding: 4px 0 10px;
   }
@@ -154,6 +154,7 @@
     text-align: center; color: var(--muted); padding: 60px 20px;
     font-family: "Source Serif 4", Georgia, serif; font-size: 1.05rem;
   }
+  mark.hl { background: #e8c547; color: #1b1a18; border-radius: 3px; padding: 0 2px; }
   .loading .face { visibility: hidden; }
   footer { margin-top: 26px; color: var(--muted); font-size: .78rem; text-align: center; }
   #data { display: none; }
@@ -161,7 +162,7 @@
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="./">‹ Startseite</a>
+  <a class="homelink" href="./">‹ Startseite</a>
   <header>
     <h1>Kapitel 1 · Folgen und Grenzwerte</h1>
     <p>Karteikarten zum Kurzskript DiffInt 1 (Dr. Reichert)</p>
@@ -547,6 +548,40 @@
   });
 
   buildDeck(false);
+
+  // Deep-Link aus der Suche: diff1.html#k=<Kartennummer>&hl=<Suchbegriffe>
+  (function () {
+    const m = /[#&]k=(\d+)/.exec(location.hash);
+    if (!m) return;
+    const hl = decodeURIComponent((/[#&]hl=([^&]*)/.exec(location.hash) || [, ''])[1]);
+    const terms = hl.split(/\s+/).filter(t => t.length > 1);
+    if (terms.length) {
+      const fz = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[aou]/gi, c => ({a:'[aäÄA]',o:'[oöÖO]',u:'[uüÜU]'})[c.toLowerCase()]);
+      const re = new RegExp('(' + terms.map(fz).join('|') + ')', 'gi');
+      const test = new RegExp(re.source, 'i');
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      cards.forEach(c => [c.q, c.a].forEach(root => {
+        const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: n => (!n.nodeValue.trim() || n.parentElement.closest('math')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+        });
+        const list = []; while (w.nextNode()) list.push(w.currentNode);
+        list.forEach(n => {
+          if (!test.test(n.nodeValue)) return;
+          const span = document.createElement('span');
+          span.innerHTML = esc(n.nodeValue).replace(re, '<mark class="hl">$1</mark>');
+          n.replaceWith(...span.childNodes);
+        });
+      }));
+    }
+    const id = parseInt(m[1], 10);
+    if (!cards[id]) return;
+    filter = 'all';
+    $('seg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.f === 'all'));
+    buildDeck(false);
+    pos = Math.max(0, deck.indexOf(id));
+    flipped = !(cards[id].q.querySelector('mark.hl') && !cards[id].a.querySelector('mark.hl'));
+    render();
+  })();
 })();
 </script>
 <script>if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {})); }</script>

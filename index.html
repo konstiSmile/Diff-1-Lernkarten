@@ -15,119 +15,218 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>
   :root {
-    --bg: #1b1a18; --paper: #262421; --ink: #ece7df; --muted: #a59e93;
-    --line: #3a3732; --accent: #8fb6dc; --green: #6cc49f;
+    --bg:#1b1a18; --paper:#262421; --paper2:#2e2b27; --ink:#ece7df; --muted:#a59e93; --line:#3a3732; --accent:#8fb6dc; --amber:#e8c547;
+    --c-diff:#8fb6dc; --c-quer:#d9a86c; --c-psy:#c58fb8;
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    background: var(--bg); color: var(--ink);
-    font: 15px/1.5 -apple-system, system-ui, "Segoe UI", sans-serif;
-    -webkit-text-size-adjust: 100%;
-    min-height: 100vh; min-height: 100dvh;
-  }
-  .wrap {
-    max-width: 640px; margin: 0 auto;
-    padding: max(28px, env(safe-area-inset-top)) 18px max(32px, env(safe-area-inset-bottom));
-  }
-  h1 {
-    font-family: "New York", Georgia, "Source Serif 4", serif;
-    font-weight: 600; font-size: 1.9rem; letter-spacing: -.01em; margin: 8px 0 4px;
-  }
-  .sub { color: var(--muted); margin: 0 0 26px; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; }
+  body { background:var(--bg); color:var(--ink); font:15px/1.5 -apple-system, system-ui, "Segoe UI", sans-serif;
+    -webkit-text-size-adjust:100%; min-height:100vh; min-height:100dvh; }
+  .wrap { max-width:640px; margin:0 auto; padding:max(28px, env(safe-area-inset-top)) 18px max(32px, env(safe-area-inset-bottom)); }
+  h1 { font-family:"New York", Georgia, "Source Serif 4", serif; font-weight:600; font-size:1.9rem; letter-spacing:-.01em; margin:8px 0 14px; }
 
-  .grid { display: grid; gap: 14px; }
-  .tile {
-    position: relative; display: flex; flex-direction: column; justify-content: space-between;
-    min-height: 128px; padding: 18px 20px;
-    background: var(--paper); border: 1px solid var(--line); border-radius: 18px;
-    color: inherit; text-decoration: none;
-    box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
-    -webkit-tap-highlight-color: transparent;
-    transition: transform .15s ease, border-color .15s ease;
-  }
-  a.tile:active { transform: scale(.98); }
-  a.tile:hover { border-color: var(--accent); }
-  .tile .name {
-    font-family: "New York", Georgia, "Source Serif 4", serif;
-    font-size: 1.5rem; font-weight: 600; margin: 0;
-  }
-  .tile .desc { color: var(--muted); font-size: .88rem; margin: 2px 0 0; }
-  .tile .foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; font-size: .82rem; color: var(--muted); }
-  .bar { flex: 1; height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; }
-  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
-  .go { color: var(--accent); font-weight: 600; white-space: nowrap; }
+  .search { position:relative; margin-bottom:16px; }
+  .search input { width:100%; font:16px -apple-system, system-ui, sans-serif; color:var(--ink); background:var(--paper);
+    border:1px solid var(--line); border-radius:14px; padding:13px 40px 13px 42px; -webkit-appearance:none; appearance:none; }
+  .search input:focus { outline:none; border-color:var(--accent); }
+  .search input::-webkit-search-cancel-button { display:none; }
+  .search .lens { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; font-size:1.05rem; }
+  .search .clear { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:30px; height:30px; border:0; border-radius:50%;
+    background:var(--paper2); color:var(--muted); font-size:1rem; cursor:pointer; display:none; }
+  .search.has .clear { display:block; }
 
-  .tile.soon { opacity: .55; cursor: default; }
-  .badge {
-    position: absolute; top: 16px; right: 16px;
-    font-size: .72rem; letter-spacing: .06em; text-transform: uppercase;
-    color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px;
-  }
-  .stripe { position: absolute; left: 0; top: 18px; bottom: 18px; width: 4px; border-radius: 0 4px 4px 0; }
-  .t-diff .stripe { background: var(--accent); }
-  .t-quer .stripe { background: #d9a86c; }
-  .t-psy .stripe { background: #c58fb8; }
+  .grid { display:grid; gap:14px; }
+  .tile { position:relative; display:flex; flex-direction:column; justify-content:space-between; min-height:128px; padding:18px 20px;
+    background:var(--paper); border:1px solid var(--line); border-radius:18px; color:inherit; text-decoration:none;
+    box-shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); -webkit-tap-highlight-color:transparent; transition:transform .15s ease, border-color .15s ease; }
+  a.tile:active { transform:scale(.98); }
+  a.tile:hover { border-color:var(--muted); }
+  .tile .name { font-family:"New York", Georgia, "Source Serif 4", serif; font-size:1.5rem; font-weight:600; margin:0; }
+  .tile .desc { color:var(--muted); font-size:.88rem; margin:2px 0 0; }
+  .tile .foot { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; font-size:.82rem; color:var(--muted); }
+  .bar { flex:1; height:4px; background:var(--line); border-radius:4px; overflow:hidden; }
+  .bar > div { height:100%; width:0; transition:width .3s; background:var(--accent); }
+  .go { font-weight:600; white-space:nowrap; }
+  .stripe { position:absolute; left:0; top:18px; bottom:18px; width:4px; border-radius:0 4px 4px 0; }
+  .t-diff .stripe, .t-diff .go { background:var(--c-diff); } .t-diff .go { background:none; color:var(--c-diff); }
+  .t-quer .stripe { background:var(--c-quer); } .t-quer .go { color:var(--c-quer); } .t-quer .bar > div { background:var(--c-quer); }
+  .t-psy .stripe { background:var(--c-psy); } .t-psy .go { color:var(--c-psy); } .t-psy .bar > div { background:var(--c-psy); }
+  .badge { position:absolute; top:16px; right:16px; font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
+    border:1px solid var(--line); border-radius:999px; padding:2px 10px; }
 
-  @media (min-width: 800px) {
-    .wrap { max-width: 880px; padding-top: 64px; }
-    h1 { font-size: 2.3rem; }
-    .grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
-    .tile { min-height: 190px; }
+  /* Suche */
+  #results { display:none; }
+  .searching #results { display:block; }
+  .searching .grid { display:none; }
+  .filters { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .filters button { border:1px solid var(--line); background:var(--paper); color:var(--muted); border-radius:999px; padding:5px 13px;
+    font:500 .84rem -apple-system, system-ui, sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+  .filters button.on { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .filters .sw { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .count { color:var(--muted); font-size:.82rem; margin:0 2px 10px; }
+  .hit { position:relative; display:block; color:inherit; text-decoration:none; background:var(--paper); border:1px solid var(--line);
+    border-radius:14px; padding:12px 14px 12px 18px; margin-bottom:10px; -webkit-tap-highlight-color:transparent; overflow:hidden; }
+  .hit:active { transform:scale(.99); }
+  .hit::before { content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--hc); }
+  .hit .top { display:flex; align-items:center; gap:8px; font-size:.76rem; margin-bottom:4px; flex-wrap:wrap; }
+  .hit .subj { font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--hc); }
+  .hit .ttl { color:var(--ink); font-weight:600; }
+  .hit .typ { color:var(--muted); margin-left:auto; }
+  .hit .snip { color:var(--muted); font-size:.88rem; font-family:"New York", Georgia, serif; }
+  mark { background:var(--amber); color:#1b1a18; border-radius:3px; padding:0 2px; }
+  .none { text-align:center; color:var(--muted); padding:36px 10px; }
+
+  @media (min-width:800px) {
+    .wrap { max-width:880px; padding-top:64px; }
+    h1 { font-size:2.3rem; }
+    .grid { grid-template-columns:repeat(3, 1fr); gap:18px; }
+    .tile { min-height:190px; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="wrap">
   <h1>Karteikarten</h1>
-  <p class="sub">Fach auswählen</p>
+
+  <div class="search" id="searchbox">
+    <span class="lens">⌕</span>
+    <input id="q" type="search" placeholder="Begriff oder Satz suchen …" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Suche">
+    <button class="clear" id="clear" aria-label="Suche löschen">✕</button>
+  </div>
+
+  <div id="results">
+    <div class="filters" id="filters"></div>
+    <div class="count" id="count"></div>
+    <div id="hits"></div>
+  </div>
 
   <div class="grid">
     <a class="tile t-diff" href="diff1.html">
       <span class="stripe"></span>
-      <div>
-        <h2 class="name">Diff1</h2>
-        <p class="desc">Differential- und Integralrechnung 1</p>
-      </div>
-      <div class="foot">
-        <span id="diffProg">Kapitel 1</span>
-        <div class="bar"><div id="diffBar"></div></div>
-        <span class="go">Öffnen ›</span>
-      </div>
+      <div><h2 class="name">Diff1</h2><p class="desc">Differential- und Integralrechnung 1 · Karteikarten</p></div>
+      <div class="foot"><span id="diffProg">Kapitel 1</span><div class="bar"><div id="diffBar"></div></div><span class="go">Öffnen ›</span></div>
     </a>
-
-    <div class="tile soon t-quer" aria-disabled="true">
+    <a class="tile t-quer" href="querschnitt.html">
       <span class="stripe"></span>
-      <span class="badge">bald</span>
-      <div>
-        <h2 class="name">Querschnitt</h2>
-        <p class="desc">Noch keine Karten</p>
-      </div>
-    </div>
-
-    <div class="tile soon t-psy" aria-disabled="true">
+      <div><h2 class="name">Querschnitt</h2><p class="desc">Kapitel 10 · Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation</p></div>
+      <div class="foot"><span id="querProg">49 Fragen</span><div class="bar"><div id="querBar"></div></div><span class="go">Öffnen ›</span></div>
+    </a>
+    <a class="tile t-psy" href="psycho2.html">
       <span class="stripe"></span>
-      <span class="badge">bald</span>
-      <div>
-        <h2 class="name">Psycho2</h2>
-        <p class="desc">Noch keine Karten</p>
-      </div>
-    </div>
+      <span class="badge">Gerüst</span>
+      <div><h2 class="name">Psycho2</h2><p class="desc">Test-Funktionen mit Beispielfragen</p></div>
+      <div class="foot"><span>Inhalte folgen</span><span class="go">Öffnen ›</span></div>
+    </a>
   </div>
 </div>
 
 <script>
-// Lernfortschritt von Diff1 (Kapitel 1) auf der Kachel anzeigen
+window.INDEX = [{"s": "diff1", "title": "Bemerkung 1.0.1", "label": "Karteikarte · Kap. 1", "url": "diff1.html#k=0", "kw": "Körper angeordnet Archimedisch vollständig reelle Zahlen Eigenschaften", "text": "(ℝ,+,·, Nenne die vier Eigenschaften, die darin stecken. — (ℝ,+,·, vollständiger, archimedisch angeordneter Körper : (ℝ,+,·) ist ein Körper (Nullelement 0, Einselement 1) er ist angeordnet er erfüllt das Archimedische Axiom er ist vollständig Körper heißt: (ℝ,+) und (ℝ∖0,·) sind kommutative Gruppen, und es gelten die Distributivgesetze."}, {"s": "diff1", "title": "Bemerkung 1.0.1 (3)", "label": "Karteikarte · Kap. 1", "url": "diff1.html#k=1", "kw": "Archimedes archimedisch Axiom", "text": "Wie lautet das Archimedische Axiom? — ∀ x,y ℝ^+ ∃ n ℕ: n· x>y. Anschaulich: Egal wie klein x und wie groß y ist – oft genug x aufaddiert, überholt man y. Folgerung: Zu jedem ε>0 gibt es n mit 1n"}, {"s": "diff1", "title": "Bemerkung 1.0.1 (4)", "label": "Karteikarte · Kap. 1", "url": "diff1.html#k=2", "kw": "Supremum Infimum obere Schranke kleinste Schranke Vollständigkeit", "text": "Was bedeutet „ℝ ist vollständig“? — Jede nichtleere, nach oben beschränkte Teilmenge M⊆ℝ besitzt eine kleinste obere Schranke, das Supremum sup M ℝ. Jede nichtleere, nach unten beschränkte Teilmenge M⊆ℝ besitzt eine größte untere Schranke, das Infimum inf M ℝ. Gegenbeispiel: In ℚ hat q ℚ: q²"}, {"s": "diff1", "title": "Definition 1.0.1 · Bem. 1.0.2", "label": "Karteikarte · Kap. 1", "url": "diff1.html#k=3", "kw": "Folge Folgenglied Index Abbildung", "text": "Was ist eine Folge reeller Zahlen? Wie heißen an und n, und welche Schreibweisen gibt es? — Eine Abbildung f:ℕ ℝ. Für n ℕ heißt an=f(n) das n-te Folgeglied , n der Index . Schreibweisen: (a1,a2,a3, ), (an)n ℕ oder (an). Erweiterung: Als Indexmenge ist auch Im=n ℤ: n≥ m erlaubt, dann schreibt man (an)n≥ m."}, {"s": "diff1", "title": "Definition 1.0.2", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=4", "kw": "Monotonie monoton wachsend fallend streng", "text": "Monotonie von Folgen Wann heißt (an)n ℕ monoton wachsend, streng monoton wachsend, monoton fallend, streng monoton fallend? — monoton wachsend: an≤ an+1 ∀ n ℕ streng monoton wachsend: an monoton fallend: an≥ an+1 ∀ n ℕ streng monoton fallend: an> an+1 ∀ n ℕ Nachweis-Tipp: Untersuche an+1-an≥ 0 bzw. (bei positiven Gliedern) an+1an≥ 1. Jede streng monotone Folge ist auch monoton."}, {"s": "diff1", "title": "Definition 1.0.3 · Bem. 1.0.3", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=5", "kw": "beschränkt Schranke obere untere Beschränktheit", "text": "Beschränktheit von Folgen Wann heißt (an) nach oben beschränkt, nach unten beschränkt, beschränkt? Und welche äquivalente Formulierung mit Betrag gibt es? — nach oben beschränkt: ∃ M ℝ: an≤ M ∀ n (obere Schranke) nach unten beschränkt: ∃ L ℝ: an≥ L ∀ n (untere Schranke) beschränkt: nach oben und nach unten beschränkt Äquivalent: (an) beschränkt ⇔ ∃ N ℝ0^+: |an|≤ N ∀ n. Man kann N=max|M|,|L| wählen."}, {"s": "diff1", "title": "Bemerkung 1.0.4", "label": "Karteikarte · Kap. 1", "url": "diff1.html#k=6", "kw": "monotone Folge beschränkt", "text": "Was weißt du sofort über die Beschränktheit einer monotonen Folge? — Monoton wachsend ⇒ nach unten beschränkt, denn an≥ a1. Untere Schranke L=a1. Monoton fallend ⇒ nach oben beschränkt, denn an≤ a1. Obere Schranke M=a1. Für „beschränkt“ fehlt also jeweils nur noch die andere Seite – praktisch beim Hauptsatz über monotone Folgen."}, {"s": "diff1", "title": "Definition 1.0.4", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=7", "kw": "Grenzwert Limes Epsilon Umgebung Konvergenz Quantoren Definition", "text": "Definiere: a ℝ heißt Grenzwert (Limes) der Folge (an). Bitte mit Quantoren! — ∀ε>0 ∃ n0 ℕ ∀ n≥ n0: |an-a| Schreibweise: an→ a für n→∞, ;an n→∞a, ;lim n→∞an=a. Anschaulich (Bem. 1.0.5): In jeder ε-Umgebung ]a-ε,a+ε[ liegen fast alle Folgeglieder – alle bis auf endlich viele. n0 darf von ε abhängen! Achtung Tippfehler im Skript: dort steht „∃ n0∈ n“ und „lim an=n“ – gemeint ist n0 ℕ und lim an=a."}, {"s": "diff1", "title": "Satz 1.0.1", "label": "Karteikarte · Kap. 1", "url": "diff1.html#k=8", "kw": "Eindeutigkeit Grenzwert eindeutig", "text": "Kann eine Folge zwei verschiedene Grenzwerte haben? Wie geht die Beweisidee? — Nein – der Grenzwert ist eindeutig. Beweisidee: Angenommen an→ a und an→ b mit a≠ b. Wähle ε=(|a-b|)/(2). Dann müssten fast alle an in beiden (disjunkten!) ε-Umgebungen liegen. Widerspruch. Formal: |a-b|≤|a-an|+|an-b|"}, {"s": "diff1", "title": "Definition 1.0.5", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=9", "kw": "konvergent divergent Nullfolge Konvergenz", "text": "Wann heißt eine Folge konvergent, divergent, konvergent gegen a, Nullfolge? — konvergent: sie besitzt einen reellen Grenzwert divergent: sie besitzt keinen reellen Grenzwert konvergent gegen a: sie besitzt den Grenzwert a ℝ Nullfolge: sie konvergiert gegen 0 Auch an=n (bestimmt divergent gegen +∞) ist divergent – +∞ ist kein reeller Grenzwert."}, {"s": "diff1", "title": "Satz 1.0.2", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=10", "kw": "konvergent beschränkt Kontraposition", "text": "Konvergenz und Beschränktheit Welche zwei Aussagen macht Satz 1.0.2? Gilt die Umkehrung? — Ist (an) konvergent , so ist (an) beschränkt . Ist (an) nicht beschränkt , so ist (an) divergent . 2) ist genau die Kontraposition von 1). Umkehrung falsch: an=(-1)^n ist beschränkt (|an|≤ 1), aber divergent. Beweisidee zu 1): ε=1 ⇒ ab n0 gilt |an|≤|a|+1. Für die endlich vielen Glieder davor nimm das Maximum: N=max|a1|, ,|an0-1|,|a|+1."}, {"s": "diff1", "title": "Satz 1.0.3 (1) · Bem. 1.0.6", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=11", "kw": "Ungleichung Grenzübergang kleiner gleich", "text": "Seien an→ a, bn→ b und an≤ bn für alle n. Was folgt für a und b? Und was, wenn sogar an — Es folgt ;a≤ b. Auch aus an nur a≤ b, nicht a Gegenbeispiel (Bem. 1.0.6): an=0 Merke: Beim Grenzübergang werden strikte Ungleichungen „weich“."}, {"s": "diff1", "title": "Satz 1.0.3 (2)", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=12", "kw": "Schrankenlemma Sandwich Einschnürungssatz Einschließungssatz", "text": "Formuliere das Schrankenlemma. (auch „Sandwich-Lemma“ / Einschnürungssatz) — Seien (an), (bn) konvergent mit lim an=a, lim bn=b. Ist (cn) eine Folge mit an≤ cn≤ bn ∀ n ℕ und ist a=b, so konvergiert auch (cn) gegen a (bzw. b). Wichtig: Die Konvergenz von (cn) wird hier gefolgert , nicht vorausgesetzt! Typische Anwendung: 0≤|cn|≤ bn mit bn→ 0 ⇒ cn→ 0."}, {"s": "diff1", "title": "Bemerkung 1.0.7", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=13", "kw": "Nullfolge Schrankenlemma Potenz", "text": "Zeige: n→∞(1)/(n^k)=0 für jedes feste k ℕ. Welches Werkzeug benutzt du? — Schrankenlemma: Für alle n ℕ gilt 0≤(1)/(n^k)≤ 1n, und lim 0=0=lim 1n. Also lim(1)/(n^k)=0. 1n→ 0 selbst folgt aus dem Archimedischen Axiom: zu ε>0 wähle n0> 1ε."}, {"s": "diff1", "title": "Bemerkung 1.0.8 (1)", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=14", "kw": "Äquivalenz Grenzwert Nullfolge Betrag", "text": "Ergänze die Äquivalenzen: limn→∞an=a⇔ ? limn→∞an=0⇔ ? — limn→∞an=a⇔limn→∞(an-a)=0 limn→∞an=0⇔limn→∞|an|=0 Beide folgen direkt aus der Definition , weil dort ohnehin nur |an-a| vorkommt (und ||an|-0 |=|an-0|)."}, {"s": "diff1", "title": "Bemerkung 1.0.8 (2)", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=15", "kw": "Betrag umgekehrte Dreiecksungleichung", "text": "Gilt ;lim an=a ⇒ lim|an|=|a|;? Und gilt die Umkehrung? — Ja , mit dem Schrankenlemma, da für alle n gilt: 0≤ ||an|-|a| |≤|an-a|→ 0. Umkehrung: nein (außer für a=0). Gegenbeispiel: an=(-1)^n: lim|an|=1, aber (an) ist divergent. Die Ungleichung ||x|-|y| |≤|x-y| ist die umgekehrte Dreiecksungleichung ."}, {"s": "diff1", "title": "Satz 1.0.4", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=16", "kw": "Grenzwertsätze Summe Produkt Quotient Rechenregeln", "text": "Grenzwertsätze Seien an→ a und bn→ b. Was gilt für an+bn, an-bn, an· bn, (an)/(bn) ? — Alle sind konvergent, und: lim(an+bn)=a+b lim(an-bn)=a-b lim(an· bn)=a· b Ist b≠ 0, so gibt es n0 mit bn≠ 0 für n≥ n0, und lim(an)/(bn)= ab. Voraussetzung prüfen! Beide Folgen müssen konvergent sein. Bei (n²+1)/(2n²-3) erst durch n² kürzen, dann Grenzwertsätze anwenden → 12."}, {"s": "diff1", "title": "Definition 1.0.6", "label": "Karteikarte · Kap. 1", "url": "diff1.html#k=17", "kw": "bestimmt divergent uneigentlich konvergent unendlich", "text": "Wann heißt (an) bestimmt divergent gegen +∞ bzw. -∞? Mit Quantoren. — gegen +∞: ∀ M ℝ ∃ n0 ℕ ∀ n≥ n0: an>M gegen -∞: ∀ L ℝ ∃ n0 ℕ ∀ n≥ n0: an Auch: uneigentlich konvergent . Schreibweise lim an=±∞. Unterscheide: (-1)^n n ist unbeschränkt und divergent, aber nicht bestimmt divergent."}, {"s": "diff1", "title": "Bemerkung 1.0.9", "label": "Karteikarte · Kap. 1 · rot markiert", "url": "diff1.html#k=18", "kw": "Kehrwert Nullfolge unendlich", "text": "Nullfolgen und Kehrwerte Für an≠ 0, bn≠ 0: Ergänze lim an=0⇔ ?lim|bn|=+∞⇔ ? — limn→∞an=0⇔limn→∞(1)/(|an|)=+∞ limn→∞|bn|=+∞⇔limn→∞(1)/(bn)=0 Idee: Unterschreitet |an| jede noch so kleine Grenze, so überschreitet 1|an| jede noch so große. Warum der Betrag? an=((-1)^n)/(n)→ 0, aber 1an=(-1)^n n ist nicht bestimmt divergent – erst 1|an|=n→+∞."}, {"s": "quer", "title": "Def. 10.1 (4)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-01", "kw": "Niveaumenge Höhenlinie Niveaulinie Wertemenge Graph", "text": "Was ist die Niveaumenge Nf(c) einer Funktion f:D ℝ? x∈ D| f(x)=c / f(x)| x∈ D / (x,f(x))| x∈ D / x∈ D| f(x)≥ c Die Menge f(x)| x∈ D ist die Wertemenge Wf, die dritte ist der Graph . Für n=2 heißt Nf(c) Höhenlinie."}, {"s": "quer", "title": "Def. 10.1 (2)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-02", "kw": "Graph Fläche R^3", "text": "In welchem Raum liegt der Graph Gf einer Funktion f:D ℝ mit D⊆ℝ^n? ℝ^n / ℝ^n+1 / ℝ^n-1 / ℝ^2n Gf=(x,y)| x∈ D, y=f(x)⊆ℝ^n+1. Für n=2 ist das eine Fläche im ℝ³."}, {"s": "quer", "title": "Beispiel 10.2 (1)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-03", "kw": "Höhenlinie Kreis Paraboloid Niveau", "text": "Was ist die Höhenlinie von f(x1,x2)=x1²+x2² zum Niveau c=4? Kreis um (0,0) mit Radius 2 / Kreis um (0,0) mit Radius 4 / leere Menge / nur der Punkt (0,0) x1²+x2²=4 ist der Kreis mit Radius √4=2. Allgemein: c>0 Kreis mit Radius √ c, c=0 nur (0,0), c<0 leer."}, {"s": "quer", "title": "Beispiel 10.2 (1)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-04", "kw": "Wertemenge Wertebereich", "text": "Wie lautet die Wertemenge von f(x1,x2)=x1²+x2² auf ℝ²? ℝ0^+=[0,∞[ / ℝ / ]0,∞[ / [1,∞[ Die Wertemenge besteht aus allen c mit Nf(c)≠∅, also c 0. Der Wert 0 wird in (0,0) angenommen."}, {"s": "quer", "title": "Satz 10.13", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-05", "kw": "notwendige Bedingung Gradient Null kritischer Punkt Extremstelle", "text": "Was gilt für eine lokale Extremstelle a im Innern von D, wenn f in a partiell differenzierbar ist? grad f(a)=0 / Hess f(a) ist positiv definit / f(a)=0 / ∂1f(a)>0 Das ist die notwendige Bedingung 1. Ordnung (Satz 10.13). Sie ist nicht hinreichend: x1²-x2² hat in (0,0) einen Sattelpunkt."}, {"s": "quer", "title": "Beispiel 10.12 (2)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-06", "kw": "Gradient partielle Ableitung", "text": "Wie lautet der Gradient von f(x1,x2)=2x1x2? (2x2, 2x1) / (2x1, 2x2) / (x2, x1) / (2, 2) ∂1f=2x2 (nach x1 ableiten, x2 festhalten) und ∂2f=2x1."}, {"s": "quer", "title": "Beispiel 10.16 (1)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-07", "kw": "Hessematrix zweite Ableitungen", "text": "Wie lautet die Hessematrix von f(x1,x2)=x1²+x2²? 2&00&2 / 2x1&00&2x2 / 0&22&0 / 1&11&1 ∂1∂1f=2, ∂2∂2f=2, gemischte Ableitungen 0. Die Matrix ist positiv definit."}, {"s": "quer", "title": "Bem. 10.17 (2)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-08", "kw": "definit indefinit Determinante Spur Eigenwerte", "text": "Eine symmetrische 2 2-Matrix hat (A) indefinit . Bei >0 entscheidet die Spur: >0 positiv definit, <0 negativ definit."}, {"s": "quer", "title": "Satz 10.18, Beispiel 10.19 (4)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-09", "kw": "Hessematrix positiv definit Minimum Determinante Spur", "text": "Am kritischen Punkt a gilt Hess f(a)= 2&11&2. Was ist a? isolierte lokale Minimalstelle / isolierte lokale Maximalstelle / Sattelpunkt / keine Aussage möglich =3>0 und Spur =4>0, also positiv definit. Nach Satz 10.18 a) ist a eine isolierte lokale Minimalstelle."}, {"s": "quer", "title": "Beispiel 10.19 (5)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-10", "kw": "Hessematrix Determinante null semidefinit keine Aussage", "text": "An einem kritischen Punkt gilt (Hess f(a))=0. Was folgt aus Satz 10.18? keine Aussage, man muss die Funktionswerte in Umgebungen untersuchen / a ist ein Sattelpunkt / a ist eine lokale Minimalstelle / a ist eine lokale Maximalstelle Die Hessematrix ist dann semidefinit, Satz 10.18 greift nicht. Beispiel 10.19 (5): bei 2x²+2y²-4xy-x^4-y^4 liefern f(t,t) 0, also kein Extremum in (0,0)."}, {"s": "quer", "title": "Bem. 10.9 (2)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-11", "kw": "Weierstraß Satz kompakt stetig Maximum Minimum", "text": "Welche Voraussetzungen hat der Satz von Weierstraß für Funktionen mehrerer Veränderlicher? f stetig und D≠∅ kompakt / f differenzierbar und D offen / f stetig und D zusammenhängend / f beschränkt und D abgeschlossen Dann nimmt f Maximum und Minimum an, und Wf ist kompakt. Ist D zusätzlich zusammenhängend, gilt Wf=[f(p),f(q)]."}, {"s": "quer", "title": "Kap. 9 / Bem. 10.9", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-12", "kw": "kompakt beschränkt abgeschlossen Heine Borel", "text": "Was bedeutet „kompakt“ für Teilmengen des ℝ^n? beschränkt und abgeschlossen / offen und beschränkt / nur abgeschlossen / zusammenhängend Beispiele: abgeschlossene Kreisscheibe, Einheitskreislinie, abgeschlossenes Quadrat. Die offene Kreisscheibe ist nicht kompakt, dort kann das Minimum fehlen."}, {"s": "quer", "title": "Beispiel 10.8 (3), 10.12 (6)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-13", "kw": "unstetig partiell differenzierbar Winkelhalbierende Gegenbeispiel", "text": "Sei f(x1,x2)=(2x1x2)/(x1²+x2²) für (x1,x2)≠(0,0) und f(0,0)=0. Welche Aussage stimmt? f ist in (0,0) stetig / f ist in (0,0) unstetig, aber partiell differenzierbar / f ist in (0,0) nicht partiell differenzierbar / f ist stetig partiell differenzierbar Längs der Achsen ist f=0, also ∂1f(0,0)=∂2f(0,0)=0. Längs (t,t) ist f=1 0: unstetig. Partiell differenzierbar heißt also nicht stetig."}, {"s": "quer", "title": "Beispiel 10.8 (5)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-14", "kw": "Unstetigkeit Parabel Geraden Folgenkriterium", "text": "Für f(x1,x2)=(x1²x2)/(x1^4+x2²), f(0,0)=0: Längs welcher Kurve zeigt man die Unstetigkeit in 0? längs jeder Geraden durch den Ursprung / längs der Koordinatenachsen / längs der Parabel x2=x1² / längs der Kreislinie um den Ursprung Auf jeder Geraden f 0, aber f(t,t²)=(t^4)/(2t^4)= 12 0. Geraden reichen für Stetigkeit nicht, es muss jede Folge ak 0 klappen."}, {"s": "quer", "title": "Zusammenfassung 10.20, Bsp. 10.14 (2)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-15", "kw": "Kandidaten Extremstellen Rand kritische Punkte", "text": "Welche Kandidaten für Extremstellen von f:D ℝ muss man betrachten? Randpunkte, Stellen ohne partielle Differenzierbarkeit, kritische Stellen im Innern / nur die kritischen Stellen / nur die Randpunkte / nur die Eckpunkte von D Das ist die Zusammenfassung 10.20. Beispiele: √x1²+x2² hat sein Minimum in (0,0), wo f nicht partiell differenzierbar ist; x1²-x2² auf dem Quadrat hat Extrema am Rand."}, {"s": "quer", "title": "Bem. 10.17 (1)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-16", "kw": "Schwarz Symmetrie Hessematrix Differentiationsreihenfolge", "text": "Was sagt der Satz von Schwarz ? Bei zweimal stetig partiell differenzierbarem f gilt ∂i∂jf=∂j∂if / Jede partiell differenzierbare Funktion ist stetig / Der Gradient verschwindet an jeder Extremstelle / Die Hessematrix ist stets positiv definit Die Hessematrix ist dann symmetrisch: „Auf die Differentiationsreihenfolge kommt es nicht an.“ Ohne stetige zweite Ableitungen kann das scheitern."}, {"s": "quer", "title": "Bem. 10.17 (1b)", "label": "Multiple Choice", "url": "querschnitt.html#q=q-mc-17", "kw": "Taylor quadratische Approximation lineare Approximation Hessematrix", "text": "Sei g=grad f(a), H=Hess f(a) und h=x-a. Wie lautet die quadratische Approximation von f in a? f(a)+g· h+ 12,h^ H,h / f(a)+g· h+h^ H,h / f(a)+ 12,H· h / f(a)+g²· h² Wie das Taylorpolynom 2. Grades in einer Veränderlichen: der Faktor 12 gehört vor den Hesse-Term. Am kritischen Punkt (g=0) fällt der lineare Term weg."}, {"s": "quer", "title": "Bem. 10.9 (2)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-01", "kw": "Weierstraß kompakt Maximum Minimum", "text": "Jede stetige Funktion auf einer nichtleeren kompakten Menge D⊆ℝ^n nimmt Maximum und Minimum an. Richtig. Das ist der Satz von Weierstraß (Bem. 10.9)."}, {"s": "quer", "title": "Beispiel 10.12 (6)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-02", "kw": "partiell differenzierbar stetig Gegenbeispiel", "text": "Ist f in a partiell differenzierbar, dann ist f in a auch stetig. Falsch. Gegenbeispiel: f=(2x1x2)/(x1²+x2²), f(0,0)=0. Überall partiell differenzierbar, in (0,0) unstetig. Erst stetig partiell differenzierbar liefert Stetigkeit."}, {"s": "quer", "title": "Def. 10.15 (1b)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-03", "kw": "stetig partiell differenzierbar", "text": "Ist f stetig partiell differenzierbar, so ist f stetig. Richtig. Satz 10.15 1b). Stetige partielle Ableitungen sind also stärker als bloße Existenz der partiellen Ableitungen."}, {"s": "quer", "title": "Beispiel 10.14 (1b)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-04", "kw": "Sattelpunkt kritischer Punkt hinreichend notwendig", "text": "Aus grad f(a)=0 folgt, dass a eine lokale Extremstelle ist. Falsch. Die Bedingung ist nur notwendig. Für f=x1²-x2² ist grad f(0,0)=0, aber (0,0) ist ein Sattelpunkt."}, {"s": "quer", "title": "Beispiel 10.12 (5)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-05", "kw": "Betragsfunktion Kegel nicht differenzierbar", "text": "Die Funktion f(x1,x2)=√x1²+x2² ist in (0,0) partiell differenzierbar. Falsch. Auf den Achsen ist f=|x1| bzw. |x2|, und der Betrag ist in 0 nicht differenzierbar. Trotzdem ist (0,0) eine Minimalstelle."}, {"s": "quer", "title": "Beispiel 10.4 (2)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-06", "kw": "Sattelpunkt hyperbolisches Paraboloid", "text": "Der Punkt (0,0) ist eine lokale Extremstelle von f(x1,x2)=x1²-x2² auf ℝ². Falsch. In jeder Umgebung gibt es Werte >0 (auf der x1-Achse) und <0 (auf der x2-Achse). Sattelpunkt."}, {"s": "quer", "title": "Beispiel 10.2 (1)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-07", "kw": "Niveaumenge leer Höhenlinie", "text": "Die Niveaumenge von f=x1²+x2² zum Niveau c<0 ist leer. Richtig. Eine Summe von Quadraten ist nie negativ."}, {"s": "quer", "title": "Beispiel 10.8 (5)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-08", "kw": "Stetigkeit Geraden Parabel Gegenbeispiel", "text": "Strebt f(x)→ f(0) längs jeder Geraden durch 0, so ist f in 0 stetig. Falsch. Beispiel 10.8 (5): (x1²x2)/(x1^4+x2²) strebt längs jeder Geraden gegen 0, aber längs der Parabel x2=x1² gegen 12."}, {"s": "quer", "title": "Bem. 10.17 (1a)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-09", "kw": "Schwarz symmetrisch Hessematrix", "text": "Für zweimal stetig partiell differenzierbares f ist die Hessematrix symmetrisch. Richtig. Satz von Schwarz: ∂i∂jf=∂j∂if."}, {"s": "quer", "title": "Satz 10.18 c)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-10", "kw": "indefinit Sattelpunkt Hessematrix", "text": "Ist a kritischer Punkt und Hess f(a) indefinit, so ist a keine lokale Extremstelle. Richtig. Satz 10.18 c). Für n=2 ist a ein Sattelpunkt."}, {"s": "quer", "title": "Beispiel 10.19 (5)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-11", "kw": "Determinante null keine Aussage", "text": "Gilt (Hess f(a))=0 an einem kritischen Punkt, so ist a ein Sattelpunkt. Falsch. Dann macht Satz 10.18 keine Aussage. Es kann Minimum, Maximum oder Sattelpunkt sein (z. B. x^4 oder -x^4 mit =0)."}, {"s": "quer", "title": "Def. 10.11 (2)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-12", "kw": "Gradient Vektor Nabla", "text": "Der Gradient grad f(a) einer Funktion f:D ℝ ist eine reelle Zahl. Falsch. Der Gradient ist ein Vektor im ℝ^n: (∂1f(a), ,∂nf(a))."}, {"s": "quer", "title": "Bem. 10.17 (2)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-13", "kw": "negativ definit Determinante Spur", "text": "Eine symmetrische 2 2-Matrix mit >0 und Spur 0) und die Summe ist negativ, also sind beide negativ."}, {"s": "quer", "title": "Beispiel 10.2 (3)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-14", "kw": "Wertemenge Parabel Höhenlinie", "text": "Die Wertemenge von f(x1,x2)=x2²-x1 ist ganz ℝ. Richtig. Zu jedem c ist Nf(c) eine Parabel x1=x2²-c, also nichtleer."}, {"s": "quer", "title": "Def. 10.3", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-15", "kw": "lokal global Maximalstelle", "text": "Jede lokale Maximalstelle ist auch eine globale Maximalstelle. Falsch. Lokal heißt nur: größter Wert in einer Umgebung. Global verlangt f(x)≤ f(a) für alle x∈ D, also f(a)=max Wf."}, {"s": "quer", "title": "Satz 10.13, Beispiel 10.14 (2)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-16", "kw": "Rand innere Punkte Extremstelle", "text": "Satz 10.13 (grad f(a)=0) gilt auch für Extremstellen a auf dem Rand von D. Falsch. Der Satz gilt nur für innere Punkte. Am Rand kann ein Extremum mit grad f≠0 auftreten, z. B. die Ecken von [-1,1]² bei x1²+x2²."}, {"s": "quer", "title": "Satz 10.7 (1)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-17", "kw": "Stetigkeit Quotient Rechenregeln", "text": "Der Quotient fg zweier in b stetiger Funktionen ist stets in b stetig. Falsch. Man braucht g(b)≠0. Summe, Differenz und Produkt sind immer stetig."}, {"s": "quer", "title": "Def. 10.1 (2)", "label": "Richtig/Falsch", "url": "querschnitt.html#q=q-tf-18", "kw": "Graph Fläche Paraboloid", "text": "Für n=2 ist der Graph einer Funktion f:D ℝ eine Fläche im ℝ³. Richtig. Gf⊆ℝ^n+1=ℝ³. Beispiel: x1²+x2² liefert ein Rotationsparaboloid."}, {"s": "quer", "title": "Def. 10.1 (1)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-01", "kw": "Funktion mehrerer Veränderlicher Koordinatenfunktionen Komponenten", "text": "Eine Abbildung f:D ℝ^m mit D⊆ℝ^n heißt Funktion in n Veränderlichen/Variablen/Veränderlichen; die f1, ,fm heißen Koordinatenfunktionen/Komponenten/Komponentenfunktionen. Jedes f(x) ℝ^m hat m Komponenten."}, {"s": "quer", "title": "Def. 10.1 (4b)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-02", "kw": "Niveaumenge Höhenlinie", "text": "Die Menge Nf(c)=x∈ D| f(x)=c heißt Niveaumenge; für n=2 nennt man sie auch Höhenlinie/Niveaulinie/Höhenlinien. Sie entspricht dem Schnitt des Graphen mit der Ebene in Höhe c."}, {"s": "quer", "title": "Def. 10.1 (4a)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-03", "kw": "Wertemenge Wertebereich Bild", "text": "Die Menge Wf=f(x)| x∈ D heißt Wertemenge/Wertebereich/Bild von f. Es gilt c∈ Wf⇔ Nf(c)≠∅."}, {"s": "quer", "title": "Def. 10.11 (2)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-04", "kw": "Gradient Nabla", "text": "Der Vektor (∂1f(a), ,∂nf(a)) heißt der Gradient von f in a; man schreibt auch Nabla f. Schreibweisen: grad f(a) oder ∇ f(a)."}, {"s": "quer", "title": "Satz 10.13", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-05", "kw": "Gradient Null Extremstelle notwendige Bedingung", "text": "Ist a ein innerer Punkt und lokale Extremstelle von f und ist f in a partiell differenzierbar, so gilt grad f(a)=0/Nullvektor/00. Beweisidee: Auf jeder Koordinatengeraden ist ai eine Extremstelle einer Funktion einer Veränderlichen."}, {"s": "quer", "title": "Beispiel 10.14 (1)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-06", "kw": "kritische Punkte stationäre Punkte", "text": "Die Nullstellen des Gradienten heißen kritische Punkte/kritische Stellen/stationäre Punkte/kritischer Punkt. Sie sind nur Kandidaten für lokale Extremstellen im Innern von D."}, {"s": "quer", "title": "Def. 10.15 (2b)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-07", "kw": "Hessematrix Hesse", "text": "Die Matrix (∂i∂jf(a))i,j heißt Hessematrix/Hesse-Matrix/Hesse von f in a. Benannt nach Otto Hesse. Sie ist nach dem Satz von Schwarz symmetrisch, wenn f zweimal stetig partiell differenzierbar ist."}, {"s": "quer", "title": "Bem. 10.17 (1a)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-08", "kw": "Schwarz Reihenfolge Hessematrix symmetrisch", "text": "Bei zweimal stetig partiell differenzierbaren Funktionen kommt es nach dem Satz von Schwarz nicht auf die Differentiationsreihenfolge/Reihenfolge an. Folge: ∂i∂jf=∂j∂if."}, {"s": "quer", "title": "Bem. 10.9 (2)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-09", "kw": "Weierstraß kompakt", "text": "Nach dem Satz von Weierstraß/Weierstrass nimmt eine stetige Funktion auf einer nichtleeren kompakten/kompakt Menge Maximum und Minimum an. Kompakt = beschränkt und abgeschlossen."}, {"s": "quer", "title": "Bem. 10.17 (2)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-10", "kw": "definit indefinit Determinante Spur", "text": "Eine symmetrische 2 2-Matrix mit 0 und Spur >0 ist sie positiv definit. Mit >0 und Spur <0 ist sie negativ definit."}, {"s": "quer", "title": "Satz 10.18", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-11", "kw": "Hessematrix positiv definit negativ definit Minimalstelle Maximalstelle", "text": "Ist Hess f(a) am kritischen Punkt positiv definit, so ist a eine isolierte lokale Minimalstelle/Minimum; ist sie negativ definit, eine isolierte lokale Maximalstelle/Maximum. Satz 10.18 a) und b)."}, {"s": "quer", "title": "Satz 10.18 c)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-12", "kw": "Sattelpunkt indefinit", "text": "Ist Hess f(a) indefinit und n=2, so liegt ein Sattelpunkt vor, insbesondere keine lokale Extremstelle/Extremum. Satz 10.18 c). Beispiel: x1²-x2² in (0,0)."}, {"s": "quer", "title": "Zusammenfassung 10.20", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-13", "kw": "Kandidaten Extremstellen Rand kritische", "text": "Kandidaten für Extremstellen sind die Randpunkte von D, die Stellen ohne partielle Differenzierbarkeit und die kritischen Stellen/kritischen Punkte im Innern. Danach vergleicht man die Funktionswerte in einer Wertetabelle."}, {"s": "quer", "title": "Def. 10.1 (2), Beispiel 10.2 (1)", "label": "Lückentext", "url": "querschnitt.html#q=q-gap-14", "kw": "Graph Fläche Paraboloid", "text": "Für n=2 ist der Graph von f eine Fläche im ℝ³; x1²+x2² liefert ein Rotationsparaboloid. Gf⊆ℝ^n+1."}];
 (function () {
-  var TOTAL = 19;
-  try {
-    var s = JSON.parse(localStorage.getItem('dif1-k1-status') || '{}');
-    var known = Object.keys(s).filter(function (k) { return s[k] === 'known'; }).length;
-    if (known > 0) {
-      document.getElementById('diffProg').textContent = known + ' von ' + TOTAL + ' gewusst';
-      document.getElementById('diffBar').style.width = (known / TOTAL * 100) + '%';
+  'use strict';
+  var SUBJ = { diff1: { name: 'Diff1', c: '#8fb6dc' }, quer: { name: 'Querschnitt', c: '#d9a86c' }, psy: { name: 'Psycho2', c: '#c58fb8' } };
+  var IDX = window.INDEX;
+
+  // Fortschritt auf den Kacheln
+  function rd(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+  var s = rd('dif1-k1-status') || {}, known = Object.keys(s).filter(function (k) { return s[k] === 'known'; }).length;
+  if (known > 0) { document.getElementById('diffProg').textContent = known + ' von 19 gewusst'; document.getElementById('diffBar').style.width = (known / 19 * 100) + '%'; }
+  var qs = rd('quer-k10');
+  if (qs && qs.best && qs.best.exam !== undefined) { document.getElementById('querProg').textContent = 'Klausur-Bestwert ' + qs.best.exam + ' %'; document.getElementById('querBar').style.width = qs.best.exam + '%'; }
+
+  // ----- Suche -----
+  function nrm(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss'); }
+  // normalisierter Text samt Zuordnung zurück zu den Originalpositionen
+  function mapNorm(s) {
+    var out = '', map = [];
+    for (var i = 0; i < s.length; i++) {
+      var c = nrm(s[i]);
+      for (var j = 0; j < c.length; j++) { out += c[j]; map.push(i); }
     }
-  } catch (e) {}
+    return { t: out, m: map };
+  }
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  IDX.forEach(function (e) { e._h = nrm(e.title + ' ' + e.kw); e._t = nrm(e.text); });
+
+  var input = document.getElementById('q'), box = document.getElementById('searchbox'), wrap = document.getElementById('wrap');
+  var filter = 'all';
+
+  function search(q) {
+    var toks = nrm(q).split(/\s+/).filter(function (t) { return t.length > 0; });
+    if (!toks.length) return [];
+    var res = [];
+    IDX.forEach(function (e, n) {
+      var score = 0;
+      for (var i = 0; i < toks.length; i++) {
+        var t = toks[i], inH = e._h.indexOf(t) >= 0, inT = e._t.indexOf(t) >= 0;
+        if (!inH && !inT) return;
+        score += (inH ? 3 : 0) + (inT ? 1 : 0);
+      }
+      res.push({ e: e, score: score, n: n });
+    });
+    res.sort(function (a, b) { return b.score - a.score || a.n - b.n; });
+    return { list: res, toks: toks };
+  }
+
+  function snippet(text, toks) {
+    var mn = mapNorm(text), pos = -1;
+    for (var i = 0; i < toks.length; i++) { var p = mn.t.indexOf(toks[i]); if (p >= 0 && (pos < 0 || p < pos)) pos = p; }
+    var start = 0, end = Math.min(text.length, 170);
+    if (pos >= 0) {
+      var o = mn.m[pos];
+      start = Math.max(0, o - 55); end = Math.min(text.length, o + 115);
+      var sp = text.lastIndexOf(' ', start + 12); if (start > 0 && sp > 0 && sp < o) start = sp + 1;
+    }
+    // Treffer-Bereiche im Ausschnitt markieren
+    var ranges = [];
+    toks.forEach(function (t) {
+      var from = 0, p;
+      while ((p = mn.t.indexOf(t, from)) >= 0) {
+        var a = mn.m[p], b = mn.m[p + t.length - 1] + 1;
+        if (a >= start && b <= end) ranges.push([a, b]);
+        from = p + t.length;
+      }
+    });
+    ranges.sort(function (x, y) { return x[0] - y[0]; });
+    var html = '', cur = start;
+    ranges.forEach(function (r) {
+      if (r[0] < cur) return;
+      html += esc(text.slice(cur, r[0])) + '<mark>' + esc(text.slice(r[0], r[1])) + '</mark>'; cur = r[1];
+    });
+    html += esc(text.slice(cur, end));
+    return (start > 0 ? '… ' : '') + html + (end < text.length ? ' …' : '');
+  }
+
+  function render() {
+    var q = input.value.trim();
+    var on = q.length > 0;
+    wrap.classList.toggle('searching', on); box.classList.toggle('has', input.value.length > 0);
+    if (!on) return;
+    var r = search(q);
+    var list = r.list || [], toks = r.toks || [];
+    var counts = { all: list.length, diff1: 0, quer: 0, psy: 0 };
+    list.forEach(function (x) { counts[x.e.s]++; });
+    var fl = document.getElementById('filters');
+    fl.innerHTML = [['all', 'Alle', null], ['diff1', 'Diff1', SUBJ.diff1.c], ['quer', 'Querschnitt', SUBJ.quer.c]].map(function (f) {
+      return '<button data-f="' + f[0] + '" class="' + (filter === f[0] ? 'on' : '') + '">' + (f[2] ? '<span class="sw" style="background:' + f[2] + '"></span>' : '') + f[1] + ' (' + counts[f[0]] + ')</button>';
+    }).join('');
+    Array.prototype.forEach.call(fl.querySelectorAll('button'), function (b) { b.onclick = function () { filter = b.dataset.f; render(); }; });
+    var shown = list.filter(function (x) { return filter === 'all' || x.e.s === filter; });
+    document.getElementById('count').textContent = shown.length ? shown.length + (shown.length === 1 ? ' Treffer' : ' Treffer') : '';
+    var hl = encodeURIComponent(q);
+    document.getElementById('hits').innerHTML = shown.length ? shown.slice(0, 40).map(function (x) {
+      var e = x.e, sj = SUBJ[e.s];
+      var sep = e.url.indexOf('#') >= 0 ? '&' : '#';
+      return '<a class="hit" style="--hc:' + sj.c + '" href="' + e.url + sep + 'hl=' + hl + '">' +
+        '<div class="top"><span class="subj">' + sj.name + '</span><span class="ttl">' + esc(e.title) + '</span><span class="typ">' + esc(e.label) + '</span></div>' +
+        '<div class="snip">' + snippet(e.text, toks) + '</div></a>';
+    }).join('') : '<div class="none">Keine Treffer für „' + esc(q) + '“.</div>';
+  }
+
+  input.addEventListener('input', render);
+  document.getElementById('clear').onclick = function () { input.value = ''; render(); input.focus(); };
+  render();
 })();
 if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); }); }
 </script>
