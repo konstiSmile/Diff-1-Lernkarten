@@ -267,3 +267,10 @@ input.txt:focus { outline:none; border-color:var(--c-diff1); }
 .daydet .dhead span { color:var(--muted); font-size:.82rem; }
 .daydet .drow { display:flex; align-items:center; gap:10px; padding:7px 0; border-top:1px solid var(--line); font-size:.9rem; }
 .daydet .drow .sw { flex:none; } .daydet .drow .nm { flex:1; } .daydet .drow .ct { color:var(--muted); font-size:.82rem; }
+
+/* ---------- Einstellungen: ausklappbar ---------- */
+.group > .ghead { all:unset; box-sizing:border-box; width:100%; display:flex; align-items:center; justify-content:space-between; padding:15px 0; cursor:pointer; font-size:.74rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; -webkit-tap-highlight-color:transparent; }
+.ghead svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition:transform .2s; }
+.group.open > .ghead svg { transform:rotate(180deg); }
+.group > .gbody { display:none; }
+.group.open > .gbody { display:block; padding-bottom:4px; }

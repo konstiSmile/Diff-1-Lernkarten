@@ -785,6 +785,7 @@
     (b.hidden || []).forEach(function (id) { if (a.hidden.indexOf(id) < 0) a.hidden.push(id); });
     if (b.settings) a.settings = Object.assign(a.settings, b.settings);
   }
+  var openSec = {};
   function settingsView() {
     var st = DB.settings;
     var h = '<h1>Einstellungen</h1><p class="sub" style="margin-bottom:12px">' + esc(appName()) + '</p>' +
@@ -815,6 +816,15 @@
       '<div class="setrow"><div class="l"><b>Offline</b><small>Nach dem ersten Öffnen mit Internet funktioniert die App ohne Netz.</small></div></div></div>' +
       '<p class="note" style="text-align:center">Dein Lernstand liegt nur auf diesem Gerät. Mit dem Backup sicherst du ihn.</p>';
     view.innerHTML = h;
+    $$('#view .group').forEach(function (g) {
+      var t = $('h3', g); if (!t) return;
+      var name = t.textContent, body = document.createElement('div'), btn = document.createElement('button');
+      body.className = 'gbody'; while (t.nextSibling) body.appendChild(t.nextSibling); g.appendChild(body);
+      btn.type = 'button'; btn.className = 'ghead'; btn.innerHTML = '<span>' + esc(name) + '</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+      function set(on) { g.classList.toggle('open', on); btn.setAttribute('aria-expanded', on ? 'true' : 'false'); openSec[name] = on; }
+      btn.onclick = function () { set(!g.classList.contains('open')); };
+      t.replaceWith(btn); set(!!openSec[name]);
+    });
     $$('.seg[data-k] button').forEach(function (b) {
       b.onclick = function () {
         var k = b.parentNode.dataset.k, v = b.dataset.v; DB.settings[k] = isNaN(v) ? v : +v; save(); applyPrefs();
