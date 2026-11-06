@@ -55,13 +55,29 @@ def tests_chapter(modname, sid, cid, title, sub, placeholder):
             search.append(dict(s=sid, title=it['src'], label=TYPES[it['type']], route=f"/f/{sid}/{cid}?q={it['id']}", kw=it.get('kw', ''), text=test_text(it)))
     return dict(id=cid, title=title, sub=sub, kind='tests', placeholder=placeholder, items=[conv_item(i) for i in m.ITEMS])
 
+import data_pers
+def pers_cards(key, title, sub, num):
+    out = []
+    for c in data_pers.CARDS[key]:
+        cid = f"psy-pers-{key}-{c['key']}"
+        out.append(dict(id=cid, red=False, src=c['src'], q=tex.convert(c['q']), a=tex.convert(c['a'])))
+        search.append(dict(s='psy', title=c['src'], label=f'Karteikarte · Kap. {num}', route=f'/f/psy/{key}?c={cid}', kw=c['kw'], text=tex.plain(c['q']) + ' — ' + tex.plain(c['a'])))
+    return dict(id=key, group='pers', title=title, sub=sub, kind='cards', placeholder=False, cards=out)
+pers_tests = tests_chapter('data_pers', 'psy', 'tp', 'Tests · Kapitel 1 und 2', 'Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
+pers_tests['group'] = 'pers'
+
 CONTENT = dict(name=NAME, version=VERSION, subjects=[
     dict(id='diff1', name='Diff 1', desc='Differential- und Integralrechnung 1', chapters=[
         dict(id='k1', title='Kapitel 1 · Folgen und Grenzwerte', sub='Karteikarten aus dem Skript', kind='cards', placeholder=False, cards=cards)]),
     dict(id='quer', name='Querschnitt', desc='Funktionen mehrerer Veränderlicher und mehr', chapters=[
         tests_chapter('data_querschnitt', 'quer', 'k10', 'Kapitel 10 · Funktionen mehrerer Veränderlicher', 'Tests zum Skript', False)]),
-    dict(id='psy', name='Psycho 2', desc='Psychologie, zweites Semester', chapters=[
-        tests_chapter('data_psycho2', 'psy', 'g', 'Grundlagen (Gerüst)', 'Beispielfragen, echte Inhalte folgen', True)]),
+    dict(id='psy', name='Psycho 2', desc='Persönlichkeit, Entwicklung, Diagnostik', groups=[
+        dict(id='pers', name='Persönlichkeitspsychologie', desc='Eigenschaften, Methoden, Theorien'),
+        dict(id='entw', name='Entwicklungspsychologie', desc='Kommt später'),
+        dict(id='diag', name='Diagnostische Psychologie', desc='Kommt später')], chapters=[
+        pers_cards('k1', 'Kapitel 1 · Einführung und Eigenschaften', 'Karteikarten: Definition, Traits, Konstrukte', 1),
+        pers_cards('k2', 'Kapitel 2 · Methoden', 'Karteikarten: Forschungsansätze, Korrelation, Faktorenanalyse', 2),
+        pers_tests]),
 ], search=search)
 js = 'window.CONTENT = ' + json.dumps(CONTENT, ensure_ascii=False).replace('</', '<\\/') + ';\n'
 assert 'http' not in re.sub(r'xmlns=\\"http://www.w3.org/1998/Math/MathML\\"', '', js), 'externe Verweise'
@@ -111,7 +127,7 @@ location.replace('index.html#'+r+(q.length?'?'+q.join('&'):''));
 ''')
 stub('diff1.html', '/f/diff1/k1', "if(p.k!==undefined&&ids[+p.k]){q.push('c='+ids[+p.k]);if(p.hl)q.push('hl='+p.hl)}")
 stub('querschnitt.html', '/f/quer/k10', "if(p.q){q.push('q='+p.q);if(p.hl)q.push('hl='+p.hl)}")
-stub('psycho2.html', '/f/psy/g', "if(p.q){q.push('q='+p.q);if(p.hl)q.push('hl='+p.hl)}")
+stub('psycho2.html', '/f/psy', "if(p.q){q.push('q='+p.q);if(p.hl)q.push('hl='+p.hl)}")
 
 # ---------------------------------------------------------------- Manifest, Icons, Service Worker
 open(f'{OUT}/manifest.webmanifest', 'w', encoding='utf-8').write(json.dumps(dict(
@@ -138,7 +154,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'q
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v14';
+const CACHE = 'lernkiste-v15';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{

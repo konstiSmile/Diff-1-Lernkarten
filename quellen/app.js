@@ -130,6 +130,7 @@
     else if (p[0] === 'neu') { tab = 'neu'; neuView(p[1], p[2]); }
     else if (p[0] === 'einstellungen') { tab = 'set'; settingsView(); }
     else if (p[0] === 'mix') mixView(p[1]);
+    else if (p[0] === 'f' && p[1] && p[2] === 'u' && p[3]) fachView(p[1], p[3]);
     else if (p[0] === 'f' && p[1] && !p[2]) fachView(p[1]);
     else if (p[0] === 'f' && p[1] && p[2]) chapterView(p[1], p[2], r.q);
     else homeView();
@@ -267,29 +268,47 @@
     $('#mxC').onclick = function () { location.hash = '#/mix/karten'; };
     $('#mxT').onclick = function () { location.hash = '#/mix/tests'; };
   }
-  function fachView(sid) {
+  function chapTile(s, ch) {
+    var txt, pct = 0;
+    if (ch.kind === 'cards') { var k = ch.cards.filter(function (c) { return DB.progress[c.id] === 'known'; }).length; txt = k ? k + ' von ' + ch.cards.length + ' gewusst' : ch.cards.length + ' Karten'; pct = k / ch.cards.length * 100; }
+    else { var b = tests(s.id, ch.id).best.exam; txt = ch.items.length + ' Fragen' + (b !== undefined ? ' · Klausur ' + b + ' %' : ''); pct = b || 0; }
+    return '<a class="tile s-' + s.id + '" href="#/f/' + s.id + '/' + ch.id + '">' + (ch.placeholder ? '<span class="badge">Gerüst</span>' : '') +
+      '<div><h2 class="name">' + esc(ch.title) + '</h2><p class="desc">' + esc(ch.kind === 'cards' ? 'Karteikarten' : 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation') + '</p></div>' +
+      '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + pct + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
+  }
+  function fachView(sid, gid) {
     var s = subj(sid); if (!s) return homeView();
-    var h = '<div class="nav"><a href="#/">‹ Start</a></div><h1>' + esc(s.name) + '</h1><p class="sub">' + esc(s.desc) + '</p><div class="grid">';
-    s.chapters.forEach(function (ch) {
-      var txt, pct = 0;
-      if (ch.kind === 'cards') { var k = ch.cards.filter(function (c) { return DB.progress[c.id] === 'known'; }).length; txt = k ? k + ' von ' + ch.cards.length + ' gewusst' : ch.cards.length + ' Karten'; pct = k / ch.cards.length * 100; }
-      else { var b = tests(sid, ch.id).best.exam; txt = ch.items.length + ' Fragen' + (b !== undefined ? ' · Klausur ' + b + ' %' : ''); pct = b || 0; }
-      h += '<a class="tile s-' + sid + '" href="#/f/' + sid + '/' + ch.id + '">' + (ch.placeholder ? '<span class="badge">Gerüst</span>' : '') +
-        '<div><h2 class="name">' + esc(ch.title) + '</h2><p class="desc">' + esc(ch.kind === 'cards' ? 'Karteikarten' : 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation') + '</p></div>' +
-        '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + pct + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
-    });
+    var grp = gid ? (s.groups || []).filter(function (g) { return g.id === gid; })[0] : null;
+    if (gid && !grp) { location.hash = '#/f/' + sid; return; }
+    var h = '<div class="nav"><a href="#/' + (grp ? 'f/' + sid : '') + '">‹ ' + esc(grp ? s.name : 'Start') + '</a></div><h1>' + esc(grp ? grp.name : s.name) + '</h1><p class="sub">' + esc(grp ? s.name : s.desc) + '</p><div class="grid">';
+    if (s.groups && !grp) {
+      s.groups.forEach(function (g) {
+        var chs = s.chapters.filter(function (c) { return c.group === g.id; }), cards = 0, items = 0, known = 0;
+        chs.forEach(function (c) { if (c.kind === 'cards') { cards += c.cards.length; c.cards.forEach(function (x) { if (DB.progress[x.id] === 'known') known++; }); } else items += c.items.length; });
+        var txt = !chs.length ? 'Inhalte folgen' : [chs.length + (chs.length === 1 ? ' Kapitel' : ' Kapitel'), cards ? cards + ' Karten' : '', items ? items + ' Fragen' : ''].filter(Boolean).join(' · ');
+        h += '<a class="tile s-' + sid + '" href="#/f/' + sid + '/u/' + g.id + '">' + (chs.length ? '' : '<span class="badge">Folgt</span>') +
+          '<div><h2 class="name">' + esc(g.name) + '</h2><p class="desc">' + esc(g.desc) + '</p></div>' +
+          '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + (cards ? known / cards * 100 : 0) + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
+      });
+    } else {
+      var list = grp ? s.chapters.filter(function (c) { return c.group === gid; }) : s.chapters;
+      list.forEach(function (ch) { h += chapTile(s, ch); });
+      if (!list.length) h += '<div class="note" style="text-align:center;padding:18px 6px">Inhalte folgen.</div>';
+    }
     view.innerHTML = h + '</div>';
   }
   function chapterView(sid, cid, q) {
     var s = subj(sid), ch = chap(sid, cid); if (!s || !ch) return homeView();
     view.className = 's-' + sid;
+    var grp = ch.group && (s.groups || []).filter(function (g) { return g.id === ch.group; })[0];
+    if (grp) s = Object.assign({}, s, { href: '#/f/' + sid + '/u/' + grp.id, name: grp.name });
     if (ch.kind === 'cards') cardsView(s, ch, q); else testsView(s, ch, q);
   }
 
   // ====================================================================== Karteikarten
   function cardsView(s, ch, q) {
     var cards = ch.cards, byId = {}; cards.forEach(function (c) { byId[c.id] = c; });
-    var st = DB.settings, filter = (q.c || s.own) ? 'all' : st.cardFilter;
+    var st = DB.settings, noRed = s.own || !cards.some(function (c) { return c.red; }), filter = (q.c || noRed) ? 'all' : st.cardFilter;
     var order = cards.map(function (c) { return c.id; }); if (st.cardOrder === 'shuffle' && !s.mix) order = shuffle(order);
     var deck = [], pos = 0, flipped = false, confirmReset = false;
     var terms = (q.hl || '').split(/\s+/).filter(function (t) { return t.length > 1; });
@@ -305,7 +324,7 @@
       var known = deck.filter(function (id) { return DB.progress[id] === 'known'; }).length;
       var h = '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a></div>' +
         '<h1 style="font-size:1.5rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">' + esc(ch.sub || '') + '</p>' +
-        '<div class="seg" id="seg">' + (s.own ? '' : '<button data-f="red" class="' + (filter === 'red' ? 'on' : '') + '"><span class="dot"></span>Rot markiert (' + nRed + ')</button>') +
+        '<div class="seg" id="seg">' + (noRed ? '' : '<button data-f="red" class="' + (filter === 'red' ? 'on' : '') + '"><span class="dot"></span>Rot markiert (' + nRed + ')</button>') +
         '<button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + cards.length + ')</button>' +
         '<button data-f="again" class="' + (filter === 'again' ? 'on' : '') + '">Nochmal (' + nAgain + ')</button></div>' +
         '<div class="status"><span>' + (total ? 'Karte ' + (pos + 1) + ' / ' + total : '') + '</span><span>' + (total ? '✓ ' + known + ' von ' + total + ' gewusst' : '') + '</span></div>' +

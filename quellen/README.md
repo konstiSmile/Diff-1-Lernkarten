@@ -6,7 +6,7 @@ Aufruf im Ordner `quellen`: `python3 build.py` (braucht pandoc, bs4 und PIL). Au
 
 - `app.js`, `app.css`: die App (Router, Datenspeicher, Karten, Tests, Suche, Verlauf, Einstellungen)
 - `quelle.html`: Diff1-Karteikarten (TeX), feste Karten-IDs stehen in `build.py` (`CARD_IDS`)
-- `data_*.py`: Testfragen, `tex.py`: TeX nach MathML
+- `data_*.py`: Testfragen und Karten (`data_pers.py` = Psycho 2 Persönlichkeit), `tex.py`: TeX nach MathML
 - Nach Änderungen die Cache-Version in `sw.js` (in `build.py`, `lernkiste-v4`) erhöhen, sonst holen sich Geräte nichts Neues.
 
 ## Weitere Ordner
