@@ -80,7 +80,7 @@
   // ====================================================================== Gerüst, Navigation
   var view = $('#view'), cleanups = [];
   function onLeave(fn) { cleanups.push(fn); }
-  function setImm(b) { document.body.classList.toggle('immersive', !!b); }
+  function setImm(b) { document.body.classList.toggle('immersive', !!b); updUI(); }
   function parseHash() {
     var h = location.hash.replace(/^#/, '') || '/', qi = h.indexOf('?'), q = {};
     var path = qi >= 0 ? h.slice(0, qi) : h;
@@ -667,5 +667,28 @@
   netState();
   window.addEventListener('hashchange', route);
   route();
-  if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  // ---- Automatische Update-Prüfung (höchstens alle 20 Stunden) und Hinweis, nie mitten im Test
+  var updReady = false, updDismissed = false, bar = document.createElement('div');
+  bar.className = 'updbar'; bar.setAttribute('role', 'status');
+  bar.innerHTML = '<span>Update bereit</span><button id="updGo">Neu laden</button><button class="x" id="updX" aria-label="Später">✕</button>';
+  document.body.appendChild(bar);
+  $('#updGo').onclick = function () { location.reload(); };
+  $('#updX').onclick = function () { updDismissed = true; updUI(); };
+  function updUI() { if (!bar) return; bar.classList.toggle('on', updReady && !updDismissed && !document.body.classList.contains('immersive')); }
+  function checkUpdate() {
+    if (!('serviceWorker' in navigator) || navigator.onLine === false) return;
+    var last = 0; try { last = +localStorage.getItem('lernkiste-upd') || 0; } catch (e) {}
+    if (Date.now() - last < 20 * 3600 * 1000) return;
+    navigator.serviceWorker.getRegistration().then(function (r) {
+      if (!r) return;
+      try { localStorage.setItem('lernkiste-upd', String(Date.now())); } catch (e) {}
+      return r.update();
+    }).catch(function () {});
+  }
+  if ('serviceWorker' in navigator) {
+    var hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', function () { if (hadController) { updReady = true; updDismissed = false; updUI(); } });
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').then(checkUpdate).catch(function () {}); });
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkUpdate(); });
+  }
 })();

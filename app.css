@@ -210,3 +210,11 @@ textarea.imp { width:100%; min-height:90px; background:var(--bg); color:var(--in
   font:600 .72rem -apple-system, system-ui, sans-serif; pointer-events:none; opacity:.92; }
 .offline.on { display:flex; }
 .offline svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* Update-Hinweis */
+.updbar { position:fixed; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:55; display:none; align-items:center; gap:12px;
+  background:var(--ink); color:var(--bg); border-radius:999px; padding:7px 8px 7px 16px; font:500 .86rem -apple-system, system-ui, sans-serif; box-shadow:var(--shadow); max-width:92vw; white-space:nowrap; }
+.updbar.on { display:flex; }
+body.immersive .updbar { display:none; }
+.updbar button { all:unset; cursor:pointer; background:var(--bg); color:var(--ink); border-radius:999px; padding:6px 13px; font-weight:600; -webkit-tap-highlight-color:transparent; }
+.updbar .x { background:transparent; color:inherit; opacity:.65; padding:6px 8px; }
