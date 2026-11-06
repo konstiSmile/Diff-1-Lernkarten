@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Karteikarten – How-To</title>
+<style>
+  @page { size: A4; margin: 0; }
+  :root {
+    --bg:#1b1a18; --paper:#262421; --paper2:#2e2b27; --ink:#ece7df; --muted:#a59e93; --line:#3a3732;
+    --blue:#8fb6dc; --orange:#d9a86c; --pink:#c58fb8; --green:#6cc49f; --green-soft:#213a30; --red:#ee7466; --red-soft:#4a2622; --amber:#e8c547;
+  }
+  * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  html, body { margin:0; background:var(--bg); }
+  body { color:var(--ink); font:10pt/1.45 "Inter", system-ui, sans-serif; }
+  .serif { font-family:"New York", Georgia, "FreeSerif", serif; }
+  .page { width:210mm; height:297mm; padding:15mm 15mm 12mm; background:var(--bg); page-break-after:always; break-after:page; position:relative; overflow:hidden; }
+  .page:last-child { page-break-after:auto; break-after:auto; }
+  .foot { position:absolute; left:15mm; right:15mm; bottom:8mm; display:flex; justify-content:space-between; font-size:7.5pt; color:var(--muted); }
+  a { color:inherit; text-decoration:none; }
+
+  .eyebrow { font-size:8pt; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+  h1 { font-family:"New York", Georgia, "FreeSerif", serif; font-weight:700; font-size:30pt; line-height:1.1; margin:2mm 0 1.5mm; letter-spacing:-.01em; }
+  h2 { font-family:"New York", Georgia, "FreeSerif", serif; font-weight:700; font-size:17pt; margin:0 0 1mm; }
+  .sub { color:var(--muted); font-size:10.5pt; margin:0; }
+  .section-title { display:flex; align-items:baseline; gap:3mm; margin:7mm 0 3mm; }
+  .section-title h2 { margin:0; }
+  .section-title span { color:var(--muted); font-size:9pt; }
+
+  .linkbox { margin:6mm 0 5mm; background:var(--paper); border:1px solid var(--line); border-radius:4mm; padding:4mm 5mm; display:flex; align-items:center; justify-content:space-between; gap:6mm; position:relative; }
+  .linkbox::before { content:""; position:absolute; left:0; top:4mm; bottom:4mm; width:1.2mm; background:var(--amber); border-radius:0 1mm 1mm 0; }
+  .linkbox .lbl { font-size:7.5pt; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .linkbox .url { font-family:"New York", Georgia, "FreeSerif", serif; font-weight:700; font-size:14.5pt; color:var(--amber); word-break:break-all; }
+  .linkbox .hint { font-size:8.5pt; color:var(--muted); text-align:right; max-width:42mm; }
+
+  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:5mm; }
+  .tile { position:relative; background:var(--paper); border:1px solid var(--line); border-radius:4.5mm; padding:5mm 5mm 4.5mm 6.5mm; }
+  .tile::before { content:""; position:absolute; left:0; top:5mm; bottom:5mm; width:1.2mm; border-radius:0 1mm 1mm 0; background:var(--c); }
+  .tile .head { display:flex; align-items:center; justify-content:space-between; margin-bottom:3mm; }
+  .tile .head h2 { color:var(--ink); }
+  .tile .chip { font-size:7.5pt; letter-spacing:.08em; text-transform:uppercase; color:var(--c); border:1px solid var(--c); border-radius:99px; padding:.6mm 2.6mm; }
+  .steps { list-style:none; margin:0; padding:0; counter-reset:s; }
+  .steps li { counter-increment:s; position:relative; padding-left:8mm; margin-bottom:3mm; font-size:9.3pt; }
+  .steps li::before { content:counter(s); position:absolute; left:0; top:.2mm; width:5.4mm; height:5.4mm; border-radius:50%; background:var(--paper2); border:1px solid var(--c); color:var(--c); font-weight:700; font-size:7.5pt; display:grid; place-items:center; line-height:1; text-align:center; padding-top:1.35mm; }
+  .steps b { color:var(--ink); }
+  .ico { display:inline-block; vertical-align:-1.2mm; width:5mm; height:5mm; border:1px solid var(--line); border-radius:1.4mm; background:var(--paper2); text-align:center; line-height:4.6mm; font-size:8pt; color:var(--ink); }
+  .tip { background:var(--green-soft); border-radius:2.5mm; padding:2.4mm 3mm; font-size:8.6pt; margin-top:1mm; }
+  .tip.warn { background:var(--red-soft); }
+  .tip b { color:var(--ink); }
+
+  .band { display:grid; grid-template-columns:repeat(3,1fr); gap:4mm; margin-top:5mm; }
+  .band .it { background:var(--paper); border:1px solid var(--line); border-radius:3.5mm; padding:3.2mm 4mm; font-size:8.8pt; color:var(--muted); }
+  .band .it b { display:block; color:var(--ink); font-size:9.6pt; margin-bottom:.6mm; }
+
+  /* How-To-Blöcke */
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:5mm; }
+  .box { background:var(--paper); border:1px solid var(--line); border-radius:4mm; padding:4.5mm 5mm; position:relative; }
+  .box::before { content:""; position:absolute; left:0; top:4.5mm; bottom:4.5mm; width:1.1mm; border-radius:0 1mm 1mm 0; background:var(--c, var(--blue)); }
+  .box h3 { margin:0 0 .8mm; font-size:11pt; }
+  .box p { margin:0 0 2mm; color:var(--muted); font-size:9pt; }
+  .box ul { margin:0; padding-left:4.2mm; font-size:8.9pt; }
+  .box li { margin-bottom:1.2mm; }
+  .box li b { color:var(--ink); }
+  .kind { font-size:7.4pt; letter-spacing:.12em; text-transform:uppercase; color:var(--c, var(--blue)); font-weight:700; margin-bottom:1mm; }
+
+  /* Mini-Mockups */
+  .mock { background:var(--bg); border:1px solid var(--line); border-radius:3mm; padding:2.6mm; margin:2mm 0 2.4mm; }
+  .m-search { background:var(--paper); border:1px solid var(--blue); border-radius:2.4mm; padding:1.8mm 3mm; font-size:8.6pt; color:var(--ink); }
+  .m-hit { position:relative; background:var(--paper); border:1px solid var(--line); border-radius:2.4mm; padding:1.8mm 3mm 1.8mm 4mm; margin-top:1.8mm; font-size:7.8pt; color:var(--muted); overflow:hidden; }
+  .m-hit::before { content:""; position:absolute; left:0; top:0; bottom:0; width:1.2mm; background:var(--hc); }
+  .m-hit .t { font-size:7pt; margin-bottom:.4mm; } .m-hit .t b { color:var(--hc); letter-spacing:.05em; text-transform:uppercase; } .m-hit .t i { font-style:normal; color:var(--ink); font-weight:600; margin-left:1.5mm; }
+  mark { background:var(--amber); color:#1b1a18; border-radius:.8mm; padding:0 .8mm; }
+  .m-seg { display:flex; gap:1mm; background:var(--paper); border:1px solid var(--line); border-radius:2.4mm; padding:1mm; font-size:7.4pt; margin-bottom:2mm; }
+  .m-seg span { flex:1; text-align:center; padding:1.2mm 0; border-radius:1.8mm; color:var(--muted); }
+  .m-seg span.on { background:var(--ink); color:var(--bg); }
+  .rd { display:inline-block; width:1.9mm; height:1.9mm; border-radius:50%; background:var(--red); margin-right:1mm; vertical-align:.1mm; }
+  .m-card { background:var(--paper); border:1px solid var(--line); border-radius:3mm; padding:3mm 3.4mm; }
+  .m-card .meta { display:flex; justify-content:space-between; font-size:6.4pt; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:1.6mm; }
+  .m-card .meta .a { color:var(--green); font-weight:700; }
+  .m-card .q { font-family:"New York", Georgia, "FreeSerif", serif; font-size:9.4pt; line-height:1.3; }
+  .m-card .q b { font-weight:700; }
+  .m-card .tipm { background:var(--green-soft); border-radius:1.8mm; padding:1.4mm 2.2mm; font-size:7.2pt; margin-top:1.6mm; font-family:"Inter",sans-serif; }
+  .m-btns { display:flex; gap:1.6mm; margin-top:2mm; }
+  .m-btns span { flex:1; text-align:center; border:1px solid var(--line); background:var(--paper); border-radius:2mm; padding:1.4mm 0; font-size:7.4pt; }
+  .m-btns .ag { border-color:var(--red); color:var(--red); } .m-btns .kn { border-color:var(--green); color:var(--green); }
+  .opt { display:flex; gap:2mm; align-items:center; background:var(--paper2); border:1px solid var(--line); border-radius:2.2mm; padding:1.5mm 2.4mm; margin-top:1.4mm; font-family:"New York", Georgia, "FreeSerif", serif; font-size:8.4pt; }
+  .opt .k { flex:none; width:4mm; height:4mm; border-radius:50%; border:1px solid var(--line); text-align:center; font:700 6pt "Inter",sans-serif; color:var(--muted); line-height:3.6mm; }
+  .opt.ok { border-color:var(--green); background:var(--green-soft); } .opt.bad { border-color:var(--red); background:var(--red-soft); }
+  .tfrow { display:grid; grid-template-columns:1fr 1fr; gap:2mm; margin-top:2mm; }
+  .tfrow span { text-align:center; padding:2.4mm 0; border:1px solid var(--line); background:var(--paper2); border-radius:2.2mm; font-weight:700; font-size:8.4pt; }
+  .tfrow .ok { border-color:var(--green); background:var(--green-soft); }
+  .gap { display:inline-block; min-width:17mm; border:1px solid var(--green); border-bottom:.5mm solid var(--green); background:var(--green-soft); border-radius:1.6mm; padding:0 2mm; font-family:"Inter",sans-serif; font-size:8pt; text-align:center; margin:0 .8mm; }
+  .gap.bad { border-color:var(--red); background:var(--red-soft); }
+  .sol { color:var(--green); font:700 7pt "Inter",sans-serif; }
+  .clock { display:flex; justify-content:space-between; font-family:ui-monospace, "DejaVu Sans Mono", monospace; font-weight:700; font-size:9pt; margin-bottom:1.6mm; }
+  .clock span:last-child { font-family:"Inter",sans-serif; color:var(--orange); font-size:7.6pt; }
+  .dots { display:flex; gap:1.2mm; margin-bottom:2mm; }
+  .dots span { width:4.6mm; height:4.6mm; border-radius:1.4mm; border:1px solid var(--line); background:var(--paper); font-size:6.2pt; text-align:center; line-height:4.2mm; color:var(--muted); }
+  .dots .d { background:var(--paper2); color:var(--ink); border-color:var(--muted); } .dots .c { border-color:var(--orange); color:var(--orange); }
+  .score { text-align:center; padding:1mm 0 0; }
+  .score .big { font:700 17pt "New York", Georgia, "FreeSerif", serif; }
+  .score .n { font-size:7.4pt; color:var(--muted); }
+
+  .quad { display:grid; grid-template-columns:1fr 1fr; gap:5mm; }
+  .good { font-size:8.4pt; color:var(--muted); margin-top:1.5mm; }
+  .good b { color:var(--ink); }
+  .funcs { display:grid; grid-template-columns:repeat(4,1fr); gap:3.5mm; margin-top:4mm; }
+  .funcs .it { background:var(--paper); border:1px solid var(--line); border-radius:3.2mm; padding:3mm 3.4mm; font-size:8.4pt; color:var(--muted); }
+  .funcs .it b { display:block; color:var(--ink); font-size:9.2pt; margin-bottom:.6mm; }
+</style>
+</head>
+<body>
+
+<!-- ======================= SEITE 1 ======================= -->
+<section class="page">
+  <div class="eyebrow">Karteikarten · How-To</div>
+  <h1>App aufs Handy holen</h1>
+  <p class="sub">In einer Minute installiert, danach auch ohne Internet nutzbar.</p>
+
+  <div class="linkbox">
+    <div>
+      <div class="lbl">Link zur App</div>
+      <a class="url" href="https://konstismile.github.io/Diff-1-Lernkarten/">https://konstismile.github.io/Diff-1-Lernkarten/</a>
+    </div>
+    <div class="hint">Link antippen oder weiterschicken. Kein Konto, keine Anmeldung.</div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile" style="--c:var(--blue)">
+      <div class="head"><h2>Install iPhone</h2><span class="chip">Safari</span></div>
+      <ol class="steps">
+        <li>Link in <b>Safari</b> öffnen (nicht im Browser von WhatsApp, Instagram oder Mail).</li>
+        <li>Unten auf das <b>Teilen-Symbol</b> tippen <span class="ico">⇪</span> (Quadrat mit Pfeil nach oben).</li>
+        <li>Nach unten scrollen und <b>„Zum Home-Bildschirm“</b> wählen, ggf. unter „Mehr“.</li>
+        <li>Oben rechts auf <b>„Hinzufügen“</b> tippen. Das Icon liegt jetzt auf dem Home-Bildschirm.</li>
+        <li>Icon antippen: die App öffnet im Vollbild, ohne Browserleiste.</li>
+      </ol>
+      <div class="tip"><b>Wichtig:</b> Öffne die App <b>einmal mit Internet</b> vom Home-Bildschirm. Danach läuft sie auch im Flugmodus.</div>
+    </div>
+
+    <div class="tile" style="--c:var(--green)">
+      <div class="head"><h2>Install Android</h2><span class="chip">Chrome</span></div>
+      <ol class="steps">
+        <li>Link in <b>Chrome</b> öffnen.</li>
+        <li>Oben rechts auf das <b>Menü</b> tippen <span class="ico">⋮</span> (drei Punkte).</li>
+        <li><b>„App installieren“</b> oder <b>„Zum Startbildschirm hinzufügen“</b> wählen.</li>
+        <li>Mit <b>„Installieren“</b> bzw. <b>„Hinzufügen“</b> bestätigen. Das Icon erscheint auf dem Startbildschirm und in der App-Liste.</li>
+        <li>Icon antippen: die App öffnet im Vollbild.</li>
+      </ol>
+      <div class="tip"><b>Wichtig:</b> Einmal <b>mit Internet</b> öffnen, dann geht es auch offline. Bei Samsung Internet: Menü, „Seite hinzufügen zu“, „Startbildschirm“.</div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="it"><b>Offline nutzbar</b>Nach dem ersten Öffnen mit Internet brauchst du kein Netz mehr.</div>
+    <div class="it"><b>Updates</b>Neue Karten kommen automatisch: App zweimal mit Internet öffnen.</div>
+    <div class="it"><b>Lernstand lokal</b>Dein Fortschritt liegt nur auf deinem Gerät, andere sehen ihn nicht.</div>
+  </div>
+
+  <div class="section-title"><h2>Was dich in der App erwartet</h2><span>Kurzüberblick</span></div>
+  <div class="row2">
+    <div class="box" style="--c:var(--blue)">
+      <div class="kind">Startseite</div>
+      <p>Drei Kacheln, ein Fach pro Kachel. Oben die Suche über alle Fächer.</p>
+      <ul>
+        <li><b>Diff1:</b> Karteikarten zum Umdrehen</li>
+        <li><b>Querschnitt:</b> Tests (Kapitel 10)</li>
+        <li><b>Psycho2:</b> Test-Gerüst, Inhalte folgen</li>
+      </ul>
+    </div>
+    <div class="box" style="--c:var(--orange)">
+      <div class="kind">Lernen in zwei Formen</div>
+      <p>Je nach Fach lernst du mit Karten oder mit Tests.</p>
+      <ul>
+        <li><b>Karteikarten:</b> Frage, umdrehen, Antwort</li>
+        <li><b>Tests:</b> vier Abfragearten, sofort Feedback</li>
+        <li><b>Zeit-Simulation:</b> Mini-Klausur mit Note</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot"><span>Karteikarten · How-To</span><span>1 / 3</span></div>
+</section>
+
+<!-- ======================= SEITE 2 ======================= -->
+<section class="page">
+  <div class="eyebrow">Funktionen</div>
+  <h1>So funktioniert die App</h1>
+  <p class="sub">Suche und Karteikarten im Überblick.</p>
+
+  <div class="section-title"><h2>Suche</h2><span>auf der Startseite, über alle Fächer</span></div>
+  <div class="row2">
+    <div class="box" style="--c:var(--blue)">
+      <div class="mock">
+        <div class="m-search">⌕ &nbsp;Sattelpunkt</div>
+        <div class="m-hit" style="--hc:var(--orange)"><div class="t"><b>Querschnitt</b><i>Satz 10.18 c)</i></div>… Für n=2 ist a ein <mark>Sattelpunkt</mark>.</div>
+        <div class="m-hit" style="--hc:var(--blue)"><div class="t"><b>Diff1</b><i>Satz 1.0.3 (2)</i></div>… so konvergiert auch (c<sub>n</sub>) gegen a.</div>
+      </div>
+      <ul>
+        <li>Tippe einen <b>Begriff</b>, eine <b>Satznummer</b> oder ein <b>Schlagwort</b> ein.</li>
+        <li>Die <b>Farbe</b> am Rand zeigt das Fach: blau Diff1, orange Querschnitt, rosa Psycho2.</li>
+        <li>Ein Treffer öffnet <b>genau die Karte oder Frage</b>, dein Suchbegriff ist <mark>gelb</mark> markiert.</li>
+        <li>Umlaute musst du nicht tippen.</li>
+      </ul>
+    </div>
+
+    <div class="box" style="--c:var(--orange)">
+      <div class="kind">Karteikarten · Diff1</div>
+      <div class="mock">
+        <div class="m-seg"><span class="on"><i class="rd"></i>Rot markiert</span><span>Alle</span><span>Nochmal</span></div>
+        <div class="m-card">
+          <div class="meta"><span>Definition 1.0.4</span><span class="a">Antwort</span></div>
+          <div class="q"><b>Grenzwert</b> mit Quantoren: für alle ε &gt; 0 gibt es n₀, sodass |aₙ − a| &lt; ε.</div>
+          <div class="tipm">Fast alle Folgeglieder liegen in der ε-Umgebung.</div>
+        </div>
+        <div class="m-btns"><span class="ag">✗ Nochmal</span><span class="kn">✓ Gewusst</span></div>
+      </div>
+      <ul>
+        <li><b>Karte antippen</b> dreht sie um: erst selbst antworten, dann prüfen.</li>
+        <li><b>✓ Gewusst / ✗ Nochmal</b> merkt sich dein Ergebnis.</li>
+        <li><b>Rot markiert</b> = Stellen, die im Skript rot markiert sind. <b>Alle</b> zeigt jede Karte, <b>Nochmal</b> nur die Unsicheren.</li>
+        <li>Unten: <b>Mischen</b>, <b>Skript-Reihenfolge</b>, <b>Fortschritt zurücksetzen</b>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="funcs">
+    <div class="it"><b>Fortschrittsbalken</b>Zeigt, wie viele Karten du schon gewusst hast.</div>
+    <div class="it"><b>Zurück / Weiter</b>Blättere durch den Stapel, auch mit den Pfeiltasten am Mac.</div>
+    <div class="it"><b>Roter Punkt</b>Die Karte stammt aus einer rot markierten Skriptstelle.</div>
+    <div class="it"><b>Startseite</b>Oben links „‹ Startseite“ bringt dich zurück zu den Kacheln.</div>
+  </div>
+
+  <div class="section-title"><h2>Tests: Einstellungen</h2><span>bei Querschnitt und Psycho2</span></div>
+  <div class="row2">
+    <div class="box" style="--c:var(--green)">
+      <p style="margin:0">Im Test-Menü wählst du oben die <b style="color:var(--ink)">Fragen pro Runde</b> (5, 10 oder alle) und tippst dann eine Testart an. Jede Kachel zeigt deinen <b style="color:var(--ink)">Bestwert</b>.</p>
+    </div>
+    <div class="box" style="--c:var(--pink)">
+      <p style="margin:0">Falsch beantwortete Fragen werden gemerkt. <b style="color:var(--ink)">„Falsche Fragen wiederholen“</b> übt genau diese, bis du sie richtig hast.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>Karteikarten · How-To</span><span>2 / 3</span></div>
+</section>
+
+<!-- ======================= SEITE 3 ======================= -->
+<section class="page">
+  <div class="eyebrow">Tests</div>
+  <h1>Die vier Abfragearten</h1>
+  <p class="sub">Alle Tests geben dir eine Erklärung zur richtigen Lösung.</p>
+
+  <div class="quad" style="margin-top:4mm; gap:4mm">
+    <div class="box" style="--c:var(--blue)">
+      <div class="kind">1 · Multiple Choice</div>
+      <h3 class="serif">Vier Antworten, eine stimmt</h3>
+      <div class="mock">
+        <div class="m-card" style="padding:2.4mm 3mm"><div class="q">Welche Bedingung gilt an einer inneren Extremstelle?</div></div>
+        <div class="opt"><span class="k">A</span>grad f(a) = 0</div>
+        <div class="opt bad"><span class="k">B</span>f(a) = 0</div>
+        <div class="opt"><span class="k">C</span>Hess f(a) positiv definit</div>
+        <div class="opt"><span class="k">D</span>∂₁f(a) &gt; 0</div>
+      </div>
+      <ul>
+        <li>Antwort antippen: <b style="color:var(--green)">grün</b> = richtig, <b style="color:var(--red)">rot</b> = falsch, die richtige wird gezeigt.</li>
+        <li>Darunter steht die Erklärung, dann <b>Weiter</b>.</li>
+      </ul>
+      <div class="good"><b>Gut für:</b> Begriffe und Sätze erkennen.</div>
+    </div>
+
+    <div class="box" style="--c:var(--orange)">
+      <div class="kind">2 · Richtig / Falsch</div>
+      <h3 class="serif">Eine Aussage, zwei Knöpfe</h3>
+      <div class="mock">
+        <div class="m-card" style="padding:2.4mm 3mm"><div class="q">Aus partieller Differenzierbarkeit folgt Stetigkeit.</div></div>
+        <div class="tfrow"><span>Richtig</span><span class="ok">Falsch</span></div>
+        <div class="m-card" style="margin-top:2mm; padding:2mm 3mm"><div class="tipm" style="margin:0">Gegenbeispiel: 2x₁x₂/(x₁²+x₂²) in (0,0).</div></div>
+      </div>
+      <ul>
+        <li>Schnell, ideal für zwischendurch.</li>
+        <li>Die Erklärung nennt oft ein <b>Gegenbeispiel</b> oder die typische Falle.</li>
+      </ul>
+      <div class="good"><b>Gut für:</b> Fallen und Voraussetzungen von Sätzen.</div>
+    </div>
+
+    <div class="box" style="--c:var(--green)">
+      <div class="kind">3 · Lückentext</div>
+      <h3 class="serif">Begriffe selbst eintippen</h3>
+      <div class="mock">
+        <div class="m-card" style="padding:2.6mm 3mm; line-height:2">
+          <div class="q">Der Vektor aller partiellen Ableitungen heißt <span class="gap">Gradient</span>, die Matrix der zweiten Ableitungen heißt <span class="gap bad">Hesse</span> <span class="sol">→ Hessematrix</span>.</div>
+        </div>
+        <div class="m-btns"><span>Lösung zeigen</span><span style="background:var(--orange); color:#14130f; border-color:var(--orange); font-weight:700">Prüfen</span></div>
+      </div>
+      <ul>
+        <li>Groß-/Kleinschreibung, Leerzeichen und Umlaute sind egal.</li>
+        <li><b>Prüfen</b> färbt die Lücken, bei Fehlern erscheint die Lösung. <b>Lösung zeigen</b> zählt als falsch.</li>
+      </ul>
+      <div class="good"><b>Gut für:</b> Definitionen auswendig können.</div>
+    </div>
+
+    <div class="box" style="--c:var(--pink)">
+      <div class="kind">4 · Zeit-Simulation</div>
+      <h3 class="serif">Mini-Klausur mit Timer</h3>
+      <div class="mock">
+        <div class="clock"><span>⏱ 18:42</span><span>Abgeben</span></div>
+        <div class="dots"><span class="d">1</span><span class="d">2</span><span class="c">3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
+        <div class="score" style="border-top:1px dashed var(--line); padding-top:2mm"><div class="big">10,5 / 12</div><div class="n">88 % · Note 1,7 (Richtwert)</div></div>
+      </div>
+      <ul>
+        <li>Wähle <b>Zeit</b> (10, 20, 30 Min) und <b>Fragenzahl</b> (8, 12, 16). Die Fragen sind gemischt aus allen Arten.</li>
+        <li>Kein Feedback während der Klausur. Mit den Nummern springst du zwischen Fragen.</li>
+        <li>Am Ende: <b>Punkte, Note</b> und jede Frage mit Lösung.</li>
+      </ul>
+      <div class="good"><b>Gut für:</b> Prüfungsgefühl kurz vor der Klausur.</div>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin:4.5mm 0 2.5mm"><h2>Kurz gemerkt</h2><span>damit alles reibungslos läuft</span></div>
+  <div class="band" style="margin-top:0">
+    <div class="it"><b>Einmal online öffnen</b>Danach funktioniert alles auch im Flugmodus.</div>
+    <div class="it"><b>Neue Inhalte?</b>App zweimal mit Internet öffnen, dann ist alles aktuell.</div>
+    <div class="it"><b>Fortschritt weg?</b>Er hängt am Browser des Geräts. Daten dort nicht löschen.</div>
+  </div>
+
+  <div class="foot"><span>Link: konstismile.github.io/Diff-1-Lernkarten</span><span>3 / 3</span></div>
+</section>
+
+</body>
+</html>
