@@ -2,7 +2,7 @@
   'use strict';
   var C = window.CONTENT;
   var KEY = 'lernkiste-v1';
-  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', cardOrder: 'script', testN: 10, examMin: 20, examN: 12 };
+  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12 };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -17,6 +17,11 @@
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function dayKey(ts) { var d = new Date(ts); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function fmt(x) { return (Math.round(x * 10) / 10).toString().replace('.', ','); }
+  function appName() {
+    var n = (DB.settings.name || '').trim().replace(/\s+/g, ' ');
+    if (!n) return C.name;
+    return n + (/[sßxz]$/i.test(n) ? "'" : 's') + ' Lernkiste';
+  }
   function toast(msg) {
     var t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
     setTimeout(function () { t.remove(); }, 2600);
@@ -43,7 +48,7 @@
   function rd(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function normalizeDB(d) {
     d = d || {};
-    d.v = 1; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || [];
+    d.v = 1; d.recent = d.recent || []; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || [];
     d.settings = Object.assign({}, DEFAULTS, d.settings || {});
     return d;
   }
@@ -73,6 +78,7 @@
     var t = DB.settings.theme; if (t === 'auto') t = (mq && mq.matches) ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', t);
     document.documentElement.style.fontSize = (15 * DB.settings.font) + 'px';
+    document.title = appName();
     var m = $('meta[name="theme-color"]'); if (m) m.setAttribute('content', t === 'dark' ? '#1b1a18' : '#f6f3ee');
   }
   if (mq && mq.addEventListener) mq.addEventListener('change', applyPrefs);
@@ -132,7 +138,7 @@
     return { txt: txt, pct: pct, placeholder: allPlaceholder };
   }
   function homeView() {
-    var h = '<h1>' + esc(C.name) + '</h1><p class="sub">Fach auswählen</p>' +
+    var h = '<h1>' + esc(appName()) + '</h1><p class="sub">Fach auswählen</p>' +
       '<a class="fakesearch" href="#/suche"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Begriff oder Satz suchen …</a><div class="grid fach">';
     C.subjects.forEach(function (s) {
       var st = subjStats(s);
@@ -501,16 +507,74 @@
     ranges.forEach(function (r) { if (r[0] < cur) return; html += esc(text.slice(cur, r[0])) + '<mark>' + esc(text.slice(r[0], r[1])) + '</mark>'; cur = r[1]; });
     return (start > 0 ? '… ' : '') + html + esc(text.slice(cur, end)) + (end < text.length ? ' …' : '');
   }
+  // Wortschatz für Vorschläge: Schlagwörter aus dem Suchindex (Anzeigeform + Häufigkeit)
+  var VOCAB = (function () {
+    var m = {};
+    SEARCH.forEach(function (e) {
+      var seen = {};
+      (e.kw || '').split(/\s+/).forEach(function (w) {
+        w = w.replace(/^[^\wäöüÄÖÜß]+|[^\wäöüÄÖÜß]+$/g, ''); var k = nrm(w);
+        if (k.length < 4 || /^[\d.^]+$/.test(k) || seen[k]) return; seen[k] = 1;
+        if (!m[k]) m[k] = { k: k, w: w, n: 0, s: {} }; m[k].n++; m[k].s[e.s] = (m[k].s[e.s] || 0) + 1;
+        if (/^[A-ZÄÖÜ]/.test(w) && !/^[A-ZÄÖÜ]/.test(m[k].w)) m[k].w = w;
+      });
+    });
+    return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.n - a.n || (a.k < b.k ? -1 : 1); });
+  })();
+  function lev(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 9;
+    var prev = [], cur, i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      cur = [i];
+      for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+  function popular(per) {
+    var out = [], seen = {};
+    C.subjects.forEach(function (sj) {
+      VOCAB.filter(function (v) { return v.s[sj.id]; }).sort(function (a, b) { return b.s[sj.id] - a.s[sj.id] || (a.k < b.k ? -1 : 1); }).slice(0, per)
+        .forEach(function (v) { if (!seen[v.k]) { seen[v.k] = 1; out.push(v.w); } });
+    });
+    return out;
+  }
+  function prefixSug(tok) { return VOCAB.filter(function (v) { return v.k !== tok && v.k.indexOf(tok) === 0; }).slice(0, 6); }
+  function fuzzySug(tok) {
+    if (tok.length < 4) return [];
+    var maxd = tok.length >= 8 ? 2 : 1;
+    return VOCAB.map(function (v) { return { v: v, d: Math.min(lev(tok, v.k), lev(tok, v.k.slice(0, tok.length))) }; })
+      .filter(function (x) { return x.d <= maxd && x.v.k !== tok; })
+      .sort(function (a, b) { return a.d - b.d || b.v.n - a.v.n; }).slice(0, 4).map(function (x) { return x.v; });
+  }
+  function remember(q) {
+    q = (q || '').trim(); if (nrm(q).length < 3) return;
+    DB.recent = DB.recent.filter(function (r) { return nrm(r) !== nrm(q); }); DB.recent.unshift(q); DB.recent = DB.recent.slice(0, 8); save();
+  }
+  function chips(list, cls) { return '<div class="sugrow">' + list.map(function (w) { return '<button class="sugchip' + (cls ? ' ' + cls : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</button>'; }).join('') + '</div>'; }
+
   function searchView(q0) {
     var filter = 'all';
     view.innerHTML = '<h1>Suche</h1><div class="searchbox" id="sbox"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>' +
       '<input id="q" type="search" placeholder="Begriff oder Satz suchen …" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Suche">' +
       '<button class="clear" id="clear" aria-label="Suche löschen">✕</button></div><div id="res"></div>';
     var input = $('#q'), box = $('#sbox'); input.value = q0;
+    function setLast(word, replaceAll) {
+      var parts = input.value.replace(/\s+$/, '').split(/\s+/); if (replaceAll) parts = [word]; else parts[parts.length - 1] = word;
+      input.value = parts.join(' ') + (replaceAll ? '' : ' '); render(); input.focus();
+    }
     function render() {
       var q = input.value.trim(); box.classList.toggle('has', input.value.length > 0);
       try { history.replaceState(null, '', q ? '#/suche?q=' + encodeURIComponent(q) : '#/suche'); } catch (e) {}
-      if (!q) { $('#res').innerHTML = '<p class="note" style="text-align:center;padding:30px 10px">Suche in allen Fächern: Definitionen, Sätze, Schlagwörter.</p>'; return; }
+      var res = $('#res');
+      if (!q) {
+        var h = '';
+        if (DB.recent.length) h += '<div class="sughead"><span>Zuletzt gesucht</span><button id="clrRecent">Löschen</button></div>' + chips(DB.recent);
+        h += '<div class="sughead"><span>Häufige Begriffe</span></div>' + chips(popular(5));
+        res.innerHTML = h + '<p class="note" style="text-align:center;padding:22px 10px 0">Suche in allen Fächern: Definitionen, Sätze, Schlagwörter.</p>';
+        wire(); return;
+      }
       var toks = nrm(q).split(/\s+/).filter(Boolean), list = [];
       SEARCH.forEach(function (e, n) {
         var score = 0;
@@ -518,6 +582,14 @@
         list.push({ e: e, score: score, n: n });
       });
       list.sort(function (a, b) { return b.score - a.score || a.n - b.n; });
+      // Vorschläge: Wortende ergänzen, sonst Tippfehler korrigieren
+      var sug = '', last = toks[toks.length - 1], typing = !/\s$/.test(input.value);
+      var ps = typing && last.length >= 2 ? prefixSug(last) : [];
+      if (ps.length) sug = chips(ps.map(function (v) { return v.w; }), '');
+      else if (!list.length) {
+        var bad = toks.filter(function (t) { return !SEARCH.some(function (e) { return e._h.indexOf(t) >= 0 || e._t.indexOf(t) >= 0; }); }), fz = bad.length ? fuzzySug(bad[bad.length - 1]) : [];
+        if (fz.length) { sug = '<p class="sugnote">Meintest du:</p>' + chips(fz.map(function (v) { return v.w; }), 'ai'); sug = sug.replace(/class="sugchip ai"/g, 'class="sugchip ai" data-fix="' + esc(bad[bad.length - 1]) + '"'); }
+      }
       var counts = { all: list.length }; list.forEach(function (x) { counts[x.e.s] = (counts[x.e.s] || 0) + 1; });
       var subs = C.subjects.filter(function (s) { return SEARCH.some(function (e) { return e.s === s.id; }); });
       var f = '<div class="filters"><button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + counts.all + ')</button>' + subs.map(function (s) {
@@ -525,13 +597,26 @@
       }).join('') + '</div>';
       var shown = list.filter(function (x) { return filter === 'all' || x.e.s === filter; });
       var hl = encodeURIComponent(q);
-      $('#res').innerHTML = f + (shown.length ? '<div class="count">' + shown.length + ' Treffer</div>' + shown.slice(0, 40).map(function (x) {
+      res.innerHTML = sug + f + (shown.length ? '<div class="count">' + shown.length + ' Treffer</div>' + shown.slice(0, 40).map(function (x) {
         var e = x.e, sj = subj(e.s), sep = e.route.indexOf('?') >= 0 ? '&' : '?';
         return '<a class="hit" style="--hc:var(--c-' + e.s + ')" href="#' + e.route + sep + 'hl=' + hl + '"><div class="top"><span class="subj">' + esc(sj.name) + '</span><span class="ttl">' + esc(e.title) + '</span><span class="typ">' + esc(e.label) + '</span></div><div class="snip">' + snippet(e.text, toks) + '</div></a>';
       }).join('') : '<div class="none">Keine Treffer für „' + esc(q) + '“.</div>');
-      $$('.filters button', $('#res')).forEach(function (b) { b.onclick = function () { filter = b.dataset.f; render(); }; });
+      $$('.filters button', res).forEach(function (b) { b.onclick = function () { filter = b.dataset.f; render(); }; });
+      $$('.hit', res).forEach(function (a) { a.addEventListener('click', function () { remember(q); }); });
+      wire();
+    }
+    function wire() {
+      $$('.sugchip', $('#res')).forEach(function (b) {
+        b.onclick = function () {
+          var w = b.dataset.w;
+          if (b.dataset.fix) { var re = new RegExp(b.dataset.fix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); var cur = input.value; var nv = cur.replace(new RegExp('\\S*$'), w); input.value = nv; render(); input.focus(); return; }
+          var inRecent = DB.recent.indexOf(w) >= 0 && !input.value.trim(); setLast(w, !input.value.trim() || inRecent);
+        };
+      });
+      var cr = $('#clrRecent'); if (cr) cr.onclick = function () { DB.recent = []; save(); render(); };
     }
     input.addEventListener('input', render);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); remember(input.value); input.blur(); } });
     $('#clear').onclick = function () { input.value = ''; render(); input.focus(); };
     render();
     if (!q0) setTimeout(function () { try { input.focus(); } catch (e) {} }, 50);
@@ -590,12 +675,16 @@
     var seen = {}; a.log.forEach(function (e) { seen[e[0] + '|' + e[2]] = 1; });
     (b.log || []).forEach(function (e) { if (!seen[e[0] + '|' + e[2]]) a.log.push(e); });
     a.log.sort(function (p, q) { return p[0] - q[0]; });
+    (b.recent || []).forEach(function (r) { if (a.recent.indexOf(r) < 0) a.recent.push(r); }); a.recent = a.recent.slice(0, 8);
     (b.hidden || []).forEach(function (id) { if (a.hidden.indexOf(id) < 0) a.hidden.push(id); });
     if (b.settings) a.settings = Object.assign(a.settings, b.settings);
   }
   function settingsView() {
     var st = DB.settings;
-    var h = '<h1>Einstellungen</h1><p class="sub" style="margin-bottom:12px">' + esc(C.name) + '</p>' +
+    var h = '<h1>Einstellungen</h1><p class="sub" style="margin-bottom:12px">' + esc(appName()) + '</p>' +
+      '<div class="group"><h3>Persönlich</h3>' +
+      '<div class="setrow"><div class="l"><b>Dein Name</b><small>Aus „Konstis Lernkiste“ wird z. B. „Annas Lernkiste“. Leer lassen für den Standardnamen.</small></div>' +
+      '<input class="txt" id="uname" type="text" maxlength="20" value="' + esc(st.name || '') + '" placeholder="Name" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Dein Name"></div></div>' +
       '<div class="group"><h3>Darstellung</h3>' +
       '<div class="setrow"><div class="l"><b>Design</b></div>' + segHTML('theme', [['dark', 'Dunkel'], ['light', 'Hell'], ['auto', 'System']], st.theme) + '</div>' +
       '<div class="setrow"><div class="l"><b>Schriftgröße</b></div>' + segHTML('font', [[0.9, 'Klein'], [1, 'Mittel'], [1.15, 'Groß']], st.font) + '</div></div>' +
@@ -623,6 +712,9 @@
         var k = b.parentNode.dataset.k, v = b.dataset.v; DB.settings[k] = isNaN(v) ? v : +v; save(); applyPrefs();
         var y = window.scrollY; settingsView(); window.scrollTo(0, y);
       };
+    });
+    $('#uname').addEventListener('input', function () {
+      DB.settings.name = this.value.slice(0, 20); save(); document.title = appName(); $('#view .sub').textContent = appName();
     });
     $('#bShare').onclick = shareFile; $('#bCopy').onclick = copyText;
     function importFrom(text) {
