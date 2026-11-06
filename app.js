@@ -61,7 +61,7 @@
   function rd(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function normalizeDB(d) {
     d = d || {};
-    d.v = 1; d.recent = d.recent || []; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || [];
+    d.v = 1; d.recent = d.recent || []; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || []; d.custom = d.custom || {}; d.custom.folders = d.custom.folders || [];
     d.settings = Object.assign({}, DEFAULTS, d.settings || {});
     return d;
   }
@@ -127,7 +127,7 @@
     if (!p.length) homeView();
     else if (p[0] === 'suche') { tab = 'suche'; searchView(r.q.q || ''); }
     else if (p[0] === 'verlauf') { tab = 'verlauf'; verlaufView(); }
-    else if (p[0] === 'neu') { tab = 'neu'; neuView(); }
+    else if (p[0] === 'neu') { tab = 'neu'; neuView(p[1], p[2]); }
     else if (p[0] === 'einstellungen') { tab = 'set'; settingsView(); }
     else if (p[0] === 'mix') mixView(p[1]);
     else if (p[0] === 'f' && p[1] && !p[2]) fachView(p[1]);
@@ -289,7 +289,7 @@
   // ====================================================================== Karteikarten
   function cardsView(s, ch, q) {
     var cards = ch.cards, byId = {}; cards.forEach(function (c) { byId[c.id] = c; });
-    var st = DB.settings, filter = q.c ? 'all' : st.cardFilter;
+    var st = DB.settings, filter = (q.c || s.own) ? 'all' : st.cardFilter;
     var order = cards.map(function (c) { return c.id; }); if (st.cardOrder === 'shuffle' && !s.mix) order = shuffle(order);
     var deck = [], pos = 0, flipped = false, confirmReset = false;
     var terms = (q.hl || '').split(/\s+/).filter(function (t) { return t.length > 1; });
@@ -305,7 +305,7 @@
       var known = deck.filter(function (id) { return DB.progress[id] === 'known'; }).length;
       var h = '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a></div>' +
         '<h1 style="font-size:1.5rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">' + esc(ch.sub || '') + '</p>' +
-        '<div class="seg" id="seg"><button data-f="red" class="' + (filter === 'red' ? 'on' : '') + '"><span class="dot"></span>Rot markiert (' + nRed + ')</button>' +
+        '<div class="seg" id="seg">' + (s.own ? '' : '<button data-f="red" class="' + (filter === 'red' ? 'on' : '') + '"><span class="dot"></span>Rot markiert (' + nRed + ')</button>') +
         '<button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + cards.length + ')</button>' +
         '<button data-f="again" class="' + (filter === 'again' ? 'on' : '') + '">Nochmal (' + nAgain + ')</button></div>' +
         '<div class="status"><span>' + (total ? 'Karte ' + (pos + 1) + ' / ' + total : '') + '</span><span>' + (total ? '✓ ' + known + ' von ' + total + ' gewusst' : '') + '</span></div>' +
@@ -746,6 +746,7 @@
 
   // ====================================================================== Verlauf
   var vRange = 'w', vSel = null;
+  function allSubj() { return C.subjects.concat(DB.log.some(function (e) { return e[1] === 'own'; }) ? [{ id: 'own', name: 'Eigene Karten' }] : []); }
   function verlaufView() {
     var now = new Date(), i, MON = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
     var WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], WDL = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
@@ -790,13 +791,13 @@
       if (!DB.log.length) h += '<div class="note" style="text-align:center;padding:10px 6px 20px">Hier erscheint dein Verlauf, sobald du Karten oder Fragen beantwortest.</div>';
       h += '<div class="group" style="padding:12px 14px"><div class="chart' + (vRange === 'm' ? ' dense' : '') + '">' + bs.map(function (x) {
         var t = total(x.c), hh = Math.round(t / max * 108);
-        var stack = C.subjects.map(function (s) { var n = x.c[s.id] ? x.c[s.id].n : 0; return n ? '<i style="height:' + Math.max(3, Math.round(n / t * hh)) + 'px;background:var(--c-' + s.id + ')"></i>' : ''; }).join('');
+        var stack = allSubj().map(function (s) { var n = x.c[s.id] ? x.c[s.id].n : 0; return n ? '<i style="height:' + Math.max(3, Math.round(n / t * hh)) + 'px;background:var(--c-' + s.id + ')"></i>' : ''; }).join('');
         return '<button type="button" class="day' + (x.key === vSel ? ' sel' : '') + '" data-k="' + x.key + '" aria-label="' + esc(x.title) + ': ' + t + '"><div class="n">' + (vRange === 'm' ? '' : (t || '')) + '</div><div class="stack">' + stack + '</div><div class="lab">' + x.lab + '</div></button>';
-      }).join('') + '</div><div class="legend">' + C.subjects.map(function (s) { return '<span><i class="sw" style="background:var(--c-' + s.id + ')"></i>' + esc(s.name) + '</span>'; }).join('') + '</div></div>';
+      }).join('') + '</div><div class="legend">' + allSubj().map(function (s) { return '<span><i class="sw" style="background:var(--c-' + s.id + ')"></i>' + esc(s.name) + '</span>'; }).join('') + '</div></div>';
       if (sel) {
         var t2 = total(sel.c);
         h += '<div class="group daydet"><div class="dhead"><b>' + esc(sel.title) + '</b><span>' + (t2 ? t2 + (t2 === 1 ? ' Antwort' : ' Antworten') : 'nichts gelernt') + '</span></div>' +
-          C.subjects.filter(function (s) { return sel.c[s.id]; }).map(function (s) {
+          allSubj().filter(function (s) { return sel.c[s.id]; }).map(function (s) {
             var f = sel.c[s.id], pct = Math.round(f.s / f.n * 100);
             return '<div class="drow"><i class="sw" style="background:var(--c-' + s.id + ')"></i><span class="nm">' + esc(s.name) + '</span><span class="ct">' + f.n + ' · ' + pct + ' % gewusst/richtig</span></div>';
           }).join('') + '</div>';
@@ -809,9 +810,162 @@
     vSel = null; render();
   }
 
-  function neuView() {
-    view.innerHTML = '<h1>Neu</h1><p class="sub">Eigene Karten und Ordner</p><div class="group" style="padding:16px"><b>Kommt als Nächstes.</b>' +
-      '<p class="note" style="margin:6px 0 0">Hier legst du bald eigene Karten und Ordner an, mit Symbol-Kacheln für Formeln. Bis dahin kannst du in den Einstellungen dein Backup sichern.</p></div>';
+  // ====================================================================== Neu: eigene Ordner und Karten
+  var GREEK = { alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε', varepsilon: 'ε', theta: 'θ', lambda: 'λ', mu: 'μ', pi: 'π', rho: 'ρ', sigma: 'σ', tau: 'τ', phi: 'φ', chi: 'χ', psi: 'ψ', omega: 'ω', eta: 'η', Delta: 'Δ', Sigma: 'Σ', Omega: 'Ω', Pi: 'Π', Phi: 'Φ', Gamma: 'Γ',
+    infty: '∞', cdot: '·', times: '×', pm: '±', leq: '≤', le: '≤', geq: '≥', ge: '≥', neq: '≠', ne: '≠', approx: '≈', to: '→', rightarrow: '→', Rightarrow: '⇒', Leftrightarrow: '⇔', in: '∈', notin: '∉', subset: '⊂', subseteq: '⊆', cup: '∪', cap: '∩', emptyset: '∅',
+    forall: '∀', exists: '∃', neg: '¬', land: '∧', lor: '∨', partial: '∂', sum: '∑', prod: '∏', int: '∫', mathbb: '' };
+  var BIGOPS = { sum: 1, prod: 1, int: 1 };
+  // Kleiner TeX-Teil (Hoch, Tief, Bruch, Wurzel, griechische Buchstaben) -> MathML
+  function texToMathML(src) {
+    var p = 0, n = src.length;
+    function ws() { while (p < n && /\s/.test(src[p])) p++; }
+    function group() { ws(); if (src[p] === '{') { p++; var r = seq('}'); if (src[p] === '}') p++; return '<mrow>' + r + '</mrow>'; } return atom(); }
+    function atom() {
+      ws(); if (p >= n) return '<mrow></mrow>'; var c = src[p];
+      if (c === '{') return group();
+      if (c === '\\') {
+        p++; var m = /^[A-Za-z]+/.exec(src.slice(p)); if (!m) { var ch = src[p++] || ''; return '<mo>' + esc(ch) + '</mo>'; }
+        var cmd = m[0]; p += cmd.length;
+        if (cmd === 'frac') { var a = group(), b = group(); return '<mfrac>' + a + b + '</mfrac>'; }
+        if (cmd === 'sqrt') { return '<msqrt>' + group() + '</msqrt>'; }
+        if (cmd === 'mathbb') { ws(); var L = src[p] === '{' ? (function () { p++; var t = src.slice(p, src.indexOf('}', p)); p = src.indexOf('}', p) + 1; return t; })() : (src[p++] || ''); var M = { N: 'ℕ', Z: 'ℤ', Q: 'ℚ', R: 'ℝ', C: 'ℂ' }; return '<mi>' + (M[L] || esc(L)) + '</mi>'; }
+        if (cmd === 'lim') return '<mi>lim</mi>';
+        if (GREEK[cmd] !== undefined) { return BIGOPS[cmd] ? '<mo largeop="true">' + GREEK[cmd] + '</mo>' : (/[a-zΑ-ω]/.test(GREEK[cmd]) && !/[∞]/.test(GREEK[cmd]) ? '<mi>' + GREEK[cmd] + '</mi>' : '<mo>' + GREEK[cmd] + '</mo>'); }
+        return '<mtext>\\' + esc(cmd) + '</mtext>';
+      }
+      if (/[0-9.]/.test(c)) { var d = /^[0-9]*\.?[0-9]+|^[0-9]+/.exec(src.slice(p)); var t = d ? d[0] : c; p += t.length; return '<mn>' + t + '</mn>'; }
+      if (/[A-Za-zÄÖÜäöüß]/.test(c)) { p++; return '<mi>' + esc(c) + '</mi>'; }
+      p++; return '<mo>' + esc(c) + '</mo>';
+    }
+    function seq(stop) {
+      var out = '';
+      while (p < n && src[p] !== stop) {
+        ws(); if (p >= n || src[p] === stop) break;
+        var base = atom(), sub = null, sup = null;
+        for (;;) { ws(); if (src[p] === '^' && sup === null) { p++; sup = group(); } else if (src[p] === '_' && sub === null) { p++; sub = group(); } else break; }
+        out += sub !== null && sup !== null ? '<msubsup>' + base + sub + sup + '</msubsup>' : sup !== null ? '<msup>' + base + sup + '</msup>' : sub !== null ? '<msub>' + base + sub + '</msub>' : base;
+      }
+      return out;
+    }
+    return '<math>' + seq(null) + '</math>';
+  }
+  // Text mit $…$ -> HTML (Zeilenumbrüche bleiben erhalten)
+  function rich(text) {
+    return String(text || '').split(/(\$[^$]+\$)/).map(function (part) {
+      if (part.length > 2 && part[0] === '$' && part[part.length - 1] === '$') return texToMathML(part.slice(1, -1));
+      return esc(part).replace(/\n/g, '<br>');
+    }).join('');
+  }
+  var TILES = [
+    { id: 'gr', name: 'Griechisch', t: ['α', 'β', 'γ', 'δ', 'ε', 'θ', 'λ', 'μ', 'π', 'ρ', 'σ', 'τ', 'φ', 'χ', 'ω', 'Δ', 'Σ', 'Ω'] },
+    { id: 'lo', name: 'Logik', t: ['∀', '∃', '¬', '∧', '∨', '⇒', '⇔', '→', '∴', '≡'] },
+    { id: 'me', name: 'Mengen', t: ['∈', '∉', '⊂', '⊆', '∪', '∩', '∅', '∖', 'ℕ', 'ℤ', 'ℚ', 'ℝ', 'ℂ'] },
+    { id: 'an', name: 'Analysis', t: ['∞', '∑', '∏', '∫', '∂', '≤', '≥', '≠', '≈', '±', '√', '·', '×', '|x|', 'lim'] },
+    { id: 'hb', name: 'Hoch/Tief/Bruch', t: [{ l: 'x²', v: '$x^{|}$' }, { l: 'xₙ', v: '$x_{|}$' }, { l: 'a⁄b', v: '$\\frac{|}{}$' }, { l: '√x', v: '$\\sqrt{|}$' }, { l: 'xₙ²', v: '$x_{|}^{}$' }, { l: '$…$', v: '$|$' }] },
+    { id: 'ps', name: 'Psycho 2', t: ['χ²', 'η²', 'ρ', 'r', 'σ', 'μ', 'M', 'SD', 'α', 'β', 'p', 'n', '≤', '≥', '≠', '±', '≈', 'Σ'] }
+  ];
+  function ownFolder(id) { return DB.custom.folders.filter(function (f) { return f.id === id; })[0]; }
+  function newId(pre) { return pre + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+  function ownCards(f) { return f.cards.map(function (c) { return { id: c.id, q: rich(c.q), a: rich(c.a), red: false, src: f.name, _s: 'own' }; }); }
+  function neuView(fid, sub) {
+    if (fid) {
+      var f = ownFolder(fid); if (!f) { location.hash = '#/neu'; return; }
+      if (sub === 'ueben') {
+        if (!f.cards.length) { location.hash = '#/neu/' + fid; return; }
+        view.className = 's-own';
+        return cardsView({ id: 'own', own: true, name: f.name, href: '#/neu/' + fid, desc: '', chapters: [] }, { id: fid, kind: 'cards', title: f.name, sub: 'Eigene Karten', cards: ownCards(f) }, {});
+      }
+      return folderView(f);
+    }
+    var h = '<h1>Neu</h1><p class="sub">Eigene Karten und Ordner</p>';
+    if (DB.custom.folders.length) {
+      h += '<div class="grid">' + DB.custom.folders.map(function (f) {
+        var k = f.cards.filter(function (c) { return DB.progress[c.id] === 'known'; }).length;
+        return '<a class="tile s-own" href="#/neu/' + f.id + '"><div><h2 class="name">' + esc(f.name) + '</h2><p class="desc">Eigene Karten</p></div><div class="foot"><span>' + (f.cards.length ? (k ? k + ' von ' + f.cards.length + ' gewusst' : f.cards.length + ' Karten') : 'Noch leer') +
+          '</span><div class="bar"><div style="width:' + (f.cards.length ? k / f.cards.length * 100 : 0) + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
+      }).join('') + '</div>';
+    } else h += '<div class="note" style="text-align:center;padding:8px 6px 18px">Noch keine eigenen Ordner. Lege einen an und schreib deine Karten selbst, mit Symbolen und Formeln.</div>';
+    h += '<div class="group" style="padding:14px 16px;margin-top:16px"><b>Neuer Ordner</b><div class="newrow"><input class="txt wide" id="fname" type="text" maxlength="40" placeholder="Name, z. B. Analysis Formeln" autocomplete="off"><button class="actbtn" id="fadd">Anlegen</button></div></div>';
+    view.innerHTML = h;
+    function add() {
+      var name = $('#fname').value.trim().replace(/\s+/g, ' '); if (!name) { toast('Bitte einen Namen eingeben'); return; }
+      var f = { id: newId('o'), name: name, cards: [] }; DB.custom.folders.push(f); save(); location.hash = '#/neu/' + f.id;
+    }
+    $('#fadd').onclick = add; $('#fname').addEventListener('keydown', function (e) { if (e.key === 'Enter') add(); });
+  }
+  function folderView(f) {
+    var editId = null, cat = 'gr', last = 'q', importOpen = false;
+    function draw() {
+      var ed = editId ? f.cards.filter(function (c) { return c.id === editId; })[0] : null;
+      var tiles = TILES.filter(function (t) { return t.id === cat; })[0];
+      var h = '<div class="nav"><a href="#/neu">‹ Neu</a></div><h1 style="font-size:1.55rem">' + esc(f.name) + '</h1><p class="sub">' + f.cards.length + (f.cards.length === 1 ? ' Karte' : ' Karten') + '</p>';
+      if (f.cards.length) h += '<div class="row"><button class="primary" id="learn">Üben (' + f.cards.length + ')</button></div>';
+      h += '<div class="group ed" style="padding:14px 16px;margin-top:14px"><b>' + (ed ? 'Karte bearbeiten' : 'Neue Karte') + '</b>' +
+        '<label class="edl">Frage</label><textarea class="edt" id="qIn" rows="3" placeholder="Frage …">' + esc(ed ? ed.q : '') + '</textarea>' +
+        '<label class="edl">Antwort</label><textarea class="edt" id="aIn" rows="3" placeholder="Antwort …">' + esc(ed ? ed.a : '') + '</textarea>' +
+        '<div class="chips tilecats">' + TILES.map(function (t) { return '<button type="button" class="chip' + (t.id === cat ? ' on' : '') + '" data-cat="' + t.id + '">' + t.name + '</button>'; }).join('') + '</div>' +
+        '<div class="tilegrid">' + tiles.t.map(function (x, i) { var l = typeof x === 'string' ? x : x.l; return '<button type="button" class="symtile" data-i="' + i + '">' + esc(l) + '</button>'; }).join('') + '</div>' +
+        '<div class="prev"><span class="edl">Vorschau</span><div class="pv" id="pvQ"></div><div class="pv a" id="pvA"></div></div>' +
+        '<p class="note" style="margin:8px 0 0">Formeln zwischen $ … $ schreiben, z. B. <code>$x^{2}$</code>, <code>$a_{n}$</code>, <code>$\\frac{a}{b}$</code>, <code>$\\sqrt{x}$</code>.</p>' +
+        '<div class="row" style="margin-top:12px">' + (ed ? '<button class="ghost" id="ecancel">Abbrechen</button>' : '') + '<button class="primary" id="esave">' + (ed ? 'Speichern' : 'Karte hinzufügen') + '</button></div></div>';
+      if (f.cards.length) {
+        h += '<div class="group" style="padding:2px 16px;margin-top:14px">' + f.cards.map(function (c, i) {
+          return '<div class="ownrow"><div class="ot"><span class="oq">' + rich(c.q) + '</span></div><span class="oa">' + (DB.progress[c.id] === 'known' ? '✓' : '') + '</span>' +
+            '<button class="actbtn" data-edit="' + c.id + '">Bearbeiten</button><button class="actbtn danger" data-del="' + c.id + '">Löschen</button></div>';
+        }).join('') + '</div>';
+      }
+      h += '<div class="tools"><button id="imp">' + (importOpen ? 'Einfügen schließen' : 'Mehrere Karten einfügen') + '</button><button id="fren">Ordner umbenennen</button><button id="fdel">Ordner löschen</button></div>';
+      if (importOpen) h += '<div class="group" style="padding:12px 16px"><b>Mehrere Karten einfügen</b><p class="note" style="margin:4px 0 0">Eine Karte pro Zeile: <code>Frage ; Antwort</code></p><textarea class="imp" id="impTx" placeholder="Was ist 2+2 ; 4"></textarea><div id="impInfo" class="note"></div><div class="row"><button class="primary" id="impGo">Importieren</button></div></div>';
+      var scr = window.scrollY, hadFocus = document.activeElement && document.activeElement.id;
+      view.innerHTML = h; window.scrollTo(0, scr);
+      var q = $('#qIn'), a = $('#aIn');
+      function prev() { $('#pvQ').innerHTML = q.value.trim() ? '<b>F:</b> ' + rich(q.value) : ''; $('#pvA').innerHTML = a.value.trim() ? '<b>A:</b> ' + rich(a.value) : ''; }
+      q.addEventListener('focus', function () { last = 'q'; }); a.addEventListener('focus', function () { last = 'a'; });
+      q.addEventListener('input', prev); a.addEventListener('input', prev); prev();
+      $$('[data-cat]').forEach(function (b) { b.onclick = function () { var sq = q.value, sa = a.value; cat = b.dataset.cat; draft = { q: sq, a: sa }; draw(); }; });
+      $$('.symtile').forEach(function (b) {
+        b.onmousedown = function (e) { e.preventDefault(); };
+        b.onclick = function () {
+          var x = tiles.t[+b.dataset.i], v = typeof x === 'string' ? x : x.v, el = last === 'a' ? a : q, caret = v.indexOf('|');
+          if (caret >= 0) v = v.replace('|', ''); else caret = v.length;
+          var s0 = el.selectionStart === undefined ? el.value.length : el.selectionStart, s1 = el.selectionEnd === undefined ? s0 : el.selectionEnd;
+          el.value = el.value.slice(0, s0) + v + el.value.slice(s1); el.focus(); var pos = s0 + caret; el.setSelectionRange(pos, pos); prev();
+        };
+      });
+      if (draft && !ed) { q.value = draft.q; a.value = draft.a; prev(); } else if (draft && ed) { q.value = draft.q; a.value = draft.a; prev(); }
+      draft = null;
+      var ls = $('#learn'); if (ls) ls.onclick = function () { location.hash = '#/neu/' + f.id + '/ueben'; };
+      $('#esave').onclick = function () {
+        var qv = q.value.trim(), av = a.value.trim(); if (!qv || !av) { toast('Frage und Antwort ausfüllen'); return; }
+        if (ed) { ed.q = qv; ed.a = av; toast('Gespeichert'); } else f.cards.push({ id: newId('oc'), q: qv, a: av, ts: Date.now() });
+        editId = null; save(); draw(); if (!ed) { window.scrollTo(0, scr); $('#qIn').focus({ preventScroll: true }); }
+      };
+      var ec = $('#ecancel'); if (ec) ec.onclick = function () { editId = null; draw(); };
+      $$('[data-edit]').forEach(function (b) { b.onclick = function () { editId = b.dataset.edit; draw(); window.scrollTo(0, 0); }; });
+      $$('[data-del]').forEach(function (b) {
+        b.onclick = function () {
+          if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'Wirklich?'; setTimeout(function () { if (b.isConnected) { b.textContent = 'Löschen'; delete b.dataset.sure; } }, 3000); return; }
+          var id = b.dataset.del; f.cards = f.cards.filter(function (c) { return c.id !== id; }); delete DB.progress[id]; save(); draw();
+        };
+      });
+      $('#imp').onclick = function () { importOpen = !importOpen; draw(); };
+      $('#fren').onclick = function () { var n = prompt('Neuer Name für den Ordner', f.name); if (n && n.trim()) { f.name = n.trim().slice(0, 40); save(); draw(); } };
+      $('#fdel').onclick = function () {
+        var b = $('#fdel'); if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'Wirklich löschen?'; return; }
+        DB.custom.folders = DB.custom.folders.filter(function (x) { return x.id !== f.id; }); f.cards.forEach(function (c) { delete DB.progress[c.id]; }); save(); location.hash = '#/neu'; toast('Ordner gelöscht');
+      };
+      if (importOpen) {
+        var tx = $('#impTx');
+        function parse() { return tx.value.split('\n').map(function (l) { var i = l.indexOf(';'); return i < 0 ? null : { q: l.slice(0, i).trim(), a: l.slice(i + 1).trim() }; }).filter(function (c) { return c && c.q && c.a; }); }
+        tx.addEventListener('input', function () { var n = parse().length; $('#impInfo').textContent = n ? n + ' Karten erkannt' : ''; });
+        $('#impGo').onclick = function () {
+          var list = parse(); if (!list.length) { toast('Keine Karten erkannt. Format: Frage ; Antwort'); return; }
+          list.forEach(function (c) { f.cards.push({ id: newId('oc'), q: c.q, a: c.a, ts: Date.now() }); }); save(); importOpen = false; draw(); toast(list.length + ' Karten hinzugefügt');
+        };
+      }
+    }
+    var draft = null;
+    draw();
   }
 
   // ====================================================================== Einstellungen
@@ -842,6 +996,11 @@
     a.log.sort(function (p, q) { return p[0] - q[0]; });
     (b.recent || []).forEach(function (r) { if (a.recent.indexOf(r) < 0) a.recent.push(r); }); a.recent = a.recent.slice(0, 8);
     (b.hidden || []).forEach(function (id) { if (a.hidden.indexOf(id) < 0) a.hidden.push(id); });
+    (b.custom && b.custom.folders || []).forEach(function (bf) {
+      var af = a.custom.folders.filter(function (x) { return x.id === bf.id; })[0];
+      if (!af) { a.custom.folders.push(bf); return; }
+      bf.cards.forEach(function (c) { if (!af.cards.some(function (x) { return x.id === c.id; })) af.cards.push(c); });
+    });
     if (b.settings) a.settings = Object.assign(a.settings, b.settings);
   }
   var openSec = {};
