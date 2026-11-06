@@ -2,7 +2,7 @@
   'use strict';
   var C = window.CONTENT;
   var KEY = 'lernkiste-v1';
-  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12 };
+  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -129,6 +129,7 @@
     else if (p[0] === 'verlauf') { tab = 'verlauf'; verlaufView(); }
     else if (p[0] === 'neu') { tab = 'neu'; neuView(); }
     else if (p[0] === 'einstellungen') { tab = 'set'; settingsView(); }
+    else if (p[0] === 'mix') mixView(p[1]);
     else if (p[0] === 'f' && p[1] && !p[2]) fachView(p[1]);
     else if (p[0] === 'f' && p[1] && p[2]) chapterView(p[1], p[2], r.q);
     else homeView();
@@ -162,6 +163,7 @@
         '<button type="button" class="tilemenu" aria-label="Mehr zu ' + esc(s.name) + '">⋯</button></div>';
     });
     h += '</div>';
+    if (eligible().length >= 2) h += '<a class="mixtile" href="#/mix"><span><b>Gemischt üben</b><small>Fächer kombinieren, Karten und Tests gemischt</small></span><span class="go">Öffnen ›</span></a>';
     if (!vis.length) h += '<p class="note" style="text-align:center;padding:26px 10px">Alle Themen sind ausgeblendet.</p>';
     if (hid.length) {
       h += '<button type="button" class="hiddenlink" id="hidLink">versteckte Themen (' + hid.length + ')</button><div class="hiddenlist" id="hidList" hidden>' +
@@ -209,6 +211,62 @@
       $$('[data-show]').forEach(function (b) { b.onclick = function () { var sid = b.dataset.show; setHidden(sid, false); homeView(); toast('„' + subj(sid).name + '“ wieder eingeblendet'); }; });
     }
   }
+  // ====================================================================== Gemischt
+  function mixShuffle(list, even) {
+    if (!even) return shuffle(list);
+    var g = {}, keys = [], out = [], more = true;
+    list.forEach(function (x) { var k = x._s || ''; if (!g[k]) { g[k] = []; keys.push(k); } g[k].push(x); });
+    keys = shuffle(keys); keys.forEach(function (k) { g[k] = shuffle(g[k]); });
+    while (more) { more = false; keys.forEach(function (k) { if (g[k].length) { out.push(g[k].shift()); more = true; } }); }
+    return out;
+  }
+  function subjContent(sx) {
+    var cards = 0, items = 0;
+    sx.chapters.forEach(function (ch) { if (ch.placeholder) return; if (ch.kind === 'cards') cards += ch.cards.length; else items += ch.items.length; });
+    return { cards: cards, items: items };
+  }
+  function eligible() { return C.subjects.filter(function (x) { var c = subjContent(x); return !isHidden(x.id) && (c.cards || c.items); }); }
+  function mixSelected() { var el = eligible(), sel = DB.settings.mixSubs; return el.filter(function (x) { return !sel || sel.indexOf(x.id) >= 0; }); }
+  function mixView(part) {
+    var sel = mixSelected(), even = DB.settings.mixMode === 'even', cards = [], items = [];
+    sel.forEach(function (sx) {
+      sx.chapters.forEach(function (ch) {
+        if (ch.placeholder) return;
+        if (ch.kind === 'cards') ch.cards.forEach(function (c) { cards.push(Object.assign({}, c, { _s: sx.id })); });
+        else ch.items.forEach(function (it) { items.push(Object.assign({}, it, { _s: sx.id })); });
+      });
+    });
+    if (part === 'karten' || part === 'tests') {
+      if ((part === 'karten' && !cards.length) || (part === 'tests' && !items.length)) { location.hash = '#/mix'; return; }
+      var S = { id: 'mix', mix: true, name: 'Gemischt', href: '#/mix', desc: '', chapters: [] };
+      view.className = 's-mix';
+      var sub = sel.map(function (x) { return x.name; }).join(' · ');
+      if (part === 'karten') cardsView(S, { id: 'mix', kind: 'cards', title: 'Gemischt: Karteikarten', sub: sub, cards: mixShuffle(cards, even) }, {});
+      else testsView(S, { id: 'mix', kind: 'tests', title: 'Gemischt: Tests', sub: sub, items: items }, {});
+      return;
+    }
+    var el = eligible();
+    var h = '<div class="nav"><a href="#/">‹ Start</a></div><h1>Gemischt üben</h1><p class="sub">Wähle die Fächer, die gemischt werden sollen.</p><div class="group" style="padding:4px 16px">' +
+      el.map(function (sx) {
+        var c = subjContent(sx), on = sel.indexOf(sx) >= 0;
+        return '<label class="mixrow"><input type="checkbox" data-s="' + sx.id + '"' + (on ? ' checked' : '') + '><i class="sw" style="background:var(--c-' + sx.id + ')"></i><span class="nm">' + esc(sx.name) + '</span><span class="ct">' +
+          [c.cards ? c.cards + ' Karten' : '', c.items ? c.items + ' Fragen' : ''].filter(Boolean).join(' · ') + '</span></label>';
+      }).join('') + '</div>' +
+      '<div class="chips"><span class="lbl">Mischung</span><button class="chip' + (even ? ' on' : '') + '" data-mm="even">Gleichmäßig</button><button class="chip' + (!even ? ' on' : '') + '" data-mm="rand">Nach Menge</button></div>' +
+      '<p class="note" style="margin:0 0 14px">' + (even ? 'Jedes Fach kommt abwechselnd dran, auch wenn eines viel mehr Material hat.' : 'Alles wird zufällig gemischt, große Fächer kommen öfter dran.') + '</p>' +
+      '<div class="row"><button class="primary" id="mxC"' + (cards.length ? '' : ' disabled') + '>Karteikarten (' + cards.length + ')</button><button class="primary" id="mxT"' + (items.length ? '' : ' disabled') + '>Tests (' + items.length + ')</button></div>' +
+      (sel.length ? '' : '<p class="note" style="text-align:center;margin-top:12px">Wähle mindestens ein Fach.</p>');
+    view.innerHTML = h;
+    $$('.mixrow input').forEach(function (b) {
+      b.onchange = function () {
+        var ids = $$('.mixrow input').filter(function (x) { return x.checked; }).map(function (x) { return x.dataset.s; });
+        DB.settings.mixSubs = ids.length === el.length ? null : ids; save(); mixView();
+      };
+    });
+    $$('[data-mm]').forEach(function (b) { b.onclick = function () { DB.settings.mixMode = b.dataset.mm === 'even' ? 'even' : 'rand'; save(); mixView(); }; });
+    $('#mxC').onclick = function () { location.hash = '#/mix/karten'; };
+    $('#mxT').onclick = function () { location.hash = '#/mix/tests'; };
+  }
   function fachView(sid) {
     var s = subj(sid); if (!s) return homeView();
     var h = '<div class="nav"><a href="#/">‹ Start</a></div><h1>' + esc(s.name) + '</h1><p class="sub">' + esc(s.desc) + '</p><div class="grid">';
@@ -232,7 +290,7 @@
   function cardsView(s, ch, q) {
     var cards = ch.cards, byId = {}; cards.forEach(function (c) { byId[c.id] = c; });
     var st = DB.settings, filter = q.c ? 'all' : st.cardFilter;
-    var order = cards.map(function (c) { return c.id; }); if (st.cardOrder === 'shuffle') order = shuffle(order);
+    var order = cards.map(function (c) { return c.id; }); if (st.cardOrder === 'shuffle' && !s.mix) order = shuffle(order);
     var deck = [], pos = 0, flipped = false, confirmReset = false;
     var terms = (q.hl || '').split(/\s+/).filter(function (t) { return t.length > 1; });
 
@@ -245,7 +303,7 @@
       var total = deck.length, nRed = cards.filter(function (c) { return c.red; }).length;
       var nAgain = cards.filter(function (c) { return DB.progress[c.id] === 'again'; }).length;
       var known = deck.filter(function (id) { return DB.progress[id] === 'known'; }).length;
-      var h = '<div class="nav"><a href="#/f/' + s.id + '">‹ ' + esc(s.name) + '</a></div>' +
+      var h = '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a></div>' +
         '<h1 style="font-size:1.5rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">' + esc(ch.sub || '') + '</p>' +
         '<div class="seg" id="seg"><button data-f="red" class="' + (filter === 'red' ? 'on' : '') + '"><span class="dot"></span>Rot markiert (' + nRed + ')</button>' +
         '<button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + cards.length + ')</button>' +
@@ -284,7 +342,7 @@
     function flip() { if (!deck.length) return; flipped = !flipped; draw(); }
     function go(d) { var np = pos + d; if (np < 0 || np >= deck.length) return; pos = np; flipped = false; draw(); window.scrollTo(0, 0); }
     function rate(val) {
-      var id = deck[pos]; DB.progress[id] = val; logAns(s.id, id, val === 'known' ? 1 : 0); save();
+      var id = deck[pos]; DB.progress[id] = val; logAns(byId[id]._s || s.id, id, val === 'known' ? 1 : 0); save();
       if (filter === 'again' && val === 'known') { deck.splice(pos, 1); if (pos >= deck.length) pos = Math.max(0, deck.length - 1); flipped = false; draw(); return; }
       if (pos < deck.length - 1) pos++;
       flipped = false; draw(); window.scrollTo(0, 0);
@@ -356,11 +414,12 @@
   function testsView(s, ch, q) {
     var ITEMS = ch.items, BYID = {}; ITEMS.forEach(function (i) { BYID[i.id] = i; });
     var T = tests(s.id, ch.id), st = DB.settings;
+    var sh = s.mix ? function (l) { return mixShuffle(l, st.mixMode === 'even'); } : shuffle;
     function pool(type) { return ITEMS.filter(function (i) { return i.type === type; }); }
-    function nav(extra) { return '<div class="nav"><a href="#/f/' + s.id + '">‹ ' + esc(s.name) + '</a>' + (extra || '') + '</div>'; }
+    function nav(extra) { return '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a>' + (extra || '') + '</div>'; }
     function prep(id) { var it = BYID[id]; return { it: it, order: it.type === 'mc' ? shuffle(it.options.map(function (_, i) { return i; })) : null }; }
     function finishLog(r) {
-      logAns(s.id, r.it.id, r.s);
+      logAns(r.it._s || s.id, r.it.id, r.s);
       var ix = T.wrong.indexOf(r.it.id);
       if (r.s === 1 && ix >= 0) T.wrong.splice(ix, 1);
       if (r.s < 1 && ix < 0) T.wrong.push(r.it.id);
@@ -391,7 +450,7 @@
     }
     function start(mode) {
       if (mode === 'exam') return examSetup();
-      var ids = shuffle(pool(mode)).map(function (i) { return i.id; }); if (st.testN) ids = ids.slice(0, st.testN);
+      var ids = sh(pool(mode)).map(function (i) { return i.id; }); if (st.testN) ids = ids.slice(0, st.testN);
       run(ids.map(prep), mode, TYPES[mode]);
     }
     function questionBody(p, values) {
@@ -488,7 +547,7 @@
       $('#go').onclick = function () { save(); exam(st.examMin, st.examN); };
     }
     function exam(minutes, n) {
-      var qs = { mc: shuffle(pool('mc')), tf: shuffle(pool('tf')), gap: shuffle(pool('gap')) }, order = ['mc', 'tf', 'gap'], queue = [], k = 0, guard = 0;
+      var qs = { mc: sh(pool('mc')), tf: sh(pool('tf')), gap: sh(pool('gap')) }, order = ['mc', 'tf', 'gap'], queue = [], k = 0, guard = 0;
       while (queue.length < n && guard++ < 500) { var t = order[k++ % 3]; if (qs[t].length) queue.push(qs[t].shift()); }
       queue = queue.map(function (it) { return prep(it.id); });
       var ans = queue.map(function () { return null; }), cur = 0, end = Date.now() + minutes * 60000, timer = null, finished = false;

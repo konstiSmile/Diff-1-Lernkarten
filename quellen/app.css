@@ -274,3 +274,14 @@ input.txt:focus { outline:none; border-color:var(--c-diff1); }
 .group.open > .ghead svg { transform:rotate(180deg); }
 .group > .gbody { display:none; }
 .group.open > .gbody { display:block; padding-bottom:4px; }
+
+/* ---------- Gemischt ---------- */
+.s-mix { --sub:var(--accent); }
+.mixtile { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; padding:16px 20px; border:1.5px dashed var(--line); border-radius:18px; color:inherit; -webkit-tap-highlight-color:transparent; }
+.mixtile b { display:block; font-weight:600; } .mixtile small { color:var(--muted); font-size:.82rem; }
+.mixtile .go { color:var(--accent); font-weight:600; white-space:nowrap; }
+.mixrow { display:flex; align-items:center; gap:12px; padding:13px 0; cursor:pointer; }
+.mixrow + .mixrow { border-top:1px solid var(--line); }
+.mixrow input { width:20px; height:20px; accent-color:var(--accent); flex:none; }
+.mixrow .sw { width:10px; height:10px; border-radius:50%; flex:none; display:inline-block; }
+.mixrow .nm { flex:1; font-weight:500; } .mixrow .ct { color:var(--muted); font-size:.82rem; }
