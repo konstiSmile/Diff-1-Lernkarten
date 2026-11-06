@@ -143,8 +143,8 @@
     var known = 0, total = 0, items = 0, best = null, allPlaceholder = true;
     s.chapters.forEach(function (ch) {
       if (!ch.placeholder) allPlaceholder = false;
-      if (ch.kind === 'cards') { total += ch.cards.length; ch.cards.forEach(function (c) { if (DB.progress[c.id] === 'known') known++; }); }
-      else { items += ch.items.length; var b = tests(s.id, ch.id).best.exam; if (b !== undefined && (best === null || b > best)) best = b; }
+      if (ch.cards) { total += ch.cards.length; ch.cards.forEach(function (c) { if (DB.progress[c.id] === 'known') known++; }); }
+      if (ch.items) { items += ch.items.length; var b = tests(s.id, ch.id).best.exam; if (b !== undefined && (best === null || b > best)) best = b; }
     });
     var txt, pct = 0;
     if (total) { txt = known ? known + ' von ' + total + ' gewusst' : total + ' Karten'; pct = known / total * 100; }
@@ -223,7 +223,7 @@
   }
   function subjContent(sx) {
     var cards = 0, items = 0;
-    sx.chapters.forEach(function (ch) { if (ch.placeholder) return; if (ch.kind === 'cards') cards += ch.cards.length; else items += ch.items.length; });
+    sx.chapters.forEach(function (ch) { if (ch.placeholder) return; if (ch.cards) cards += ch.cards.length; if (ch.items) items += ch.items.length; });
     return { cards: cards, items: items };
   }
   function eligible() { return C.subjects.filter(function (x) { var c = subjContent(x); return !isHidden(x.id) && (c.cards || c.items); }); }
@@ -233,8 +233,8 @@
     sel.forEach(function (sx) {
       sx.chapters.forEach(function (ch) {
         if (ch.placeholder) return;
-        if (ch.kind === 'cards') ch.cards.forEach(function (c) { cards.push(Object.assign({}, c, { _s: sx.id })); });
-        else ch.items.forEach(function (it) { items.push(Object.assign({}, it, { _s: sx.id })); });
+        if (ch.cards) ch.cards.forEach(function (c) { cards.push(Object.assign({}, c, { _s: sx.id })); });
+        if (ch.items) ch.items.forEach(function (it) { items.push(Object.assign({}, it, { _s: sx.id })); });
       });
     });
     if (part === 'karten' || part === 'tests') {
@@ -269,12 +269,15 @@
     $('#mxT').onclick = function () { location.hash = '#/mix/tests'; };
   }
   function chapTile(s, ch) {
-    var txt, pct = 0;
-    if (ch.kind === 'cards') { var k = ch.cards.filter(function (c) { return DB.progress[c.id] === 'known'; }).length; txt = k ? k + ' von ' + ch.cards.length + ' gewusst' : ch.cards.length + ' Karten'; pct = k / ch.cards.length * 100; }
-    else { var b = tests(s.id, ch.id).best.exam; txt = ch.items.length + ' Fragen' + (b !== undefined ? ' · Klausur ' + b + ' %' : ''); pct = b || 0; }
+    var parts = [], pct = 0, k = 0, desc;
+    if (ch.cards) { k = ch.cards.filter(function (c) { return DB.progress[c.id] === 'known'; }).length; pct = k / ch.cards.length * 100; }
+    if (ch.items) { var b = tests(s.id, ch.id).best.exam; if (b !== undefined) pct = Math.max(pct, b); }
+    if (ch.cards && ch.items) { parts.push(ch.items.length + ' Fragen', ch.cards.length + ' Karten'); desc = 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation'; }
+    else if (ch.cards) { parts.push(k ? k + ' von ' + ch.cards.length + ' gewusst' : ch.cards.length + ' Karten'); desc = 'Karteikarten'; }
+    else { var b2 = tests(s.id, ch.id).best.exam; parts.push(ch.items.length + ' Fragen' + (b2 !== undefined ? ' · Klausur ' + b2 + ' %' : '')); desc = 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation'; }
     return '<a class="tile s-' + s.id + '" href="#/f/' + s.id + '/' + ch.id + '">' + (ch.placeholder ? '<span class="badge">Gerüst</span>' : '') +
-      '<div><h2 class="name">' + esc(ch.title) + '</h2><p class="desc">' + esc(ch.kind === 'cards' ? 'Karteikarten' : 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation') + '</p></div>' +
-      '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + pct + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
+      '<div><h2 class="name">' + esc(ch.title) + '</h2><p class="desc">' + esc(desc) + '</p></div>' +
+      '<div class="foot"><span>' + esc(parts.join(' · ')) + '</span><div class="bar"><div style="width:' + pct + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
   }
   function fachView(sid, gid) {
     var s = subj(sid); if (!s) return homeView();
@@ -284,7 +287,7 @@
     if (s.groups && !grp) {
       s.groups.forEach(function (g) {
         var chs = s.chapters.filter(function (c) { return c.group === g.id; }), cards = 0, items = 0, known = 0;
-        chs.forEach(function (c) { if (c.kind === 'cards') { cards += c.cards.length; c.cards.forEach(function (x) { if (DB.progress[x.id] === 'known') known++; }); } else items += c.items.length; });
+        chs.forEach(function (c) { if (c.cards) { cards += c.cards.length; c.cards.forEach(function (x) { if (DB.progress[x.id] === 'known') known++; }); } if (c.items) items += c.items.length; });
         var txt = !chs.length ? 'Inhalte folgen' : [chs.length + (chs.length === 1 ? ' Kapitel' : ' Kapitel'), cards ? cards + ' Karten' : '', items ? items + ' Fragen' : ''].filter(Boolean).join(' · ');
         h += '<a class="tile s-' + sid + '" href="#/f/' + sid + '/u/' + g.id + '">' + (chs.length ? '' : '<span class="badge">Folgt</span>') +
           '<div><h2 class="name">' + esc(g.name) + '</h2><p class="desc">' + esc(g.desc) + '</p></div>' +
@@ -302,7 +305,10 @@
     view.className = 's-' + sid;
     var grp = ch.group && (s.groups || []).filter(function (g) { return g.id === ch.group; })[0];
     if (grp) s = Object.assign({}, s, { href: '#/f/' + sid + '/u/' + grp.id, name: grp.name });
-    if (ch.kind === 'cards') cardsView(s, ch, q); else testsView(s, ch, q);
+    if (ch.cards && ch.items) {
+      if (q.c || q.mode === 'cards' || q.read) cardsView(Object.assign({}, s, { href: '#/f/' + sid + '/' + cid, name: ch.title.split(' · ')[0] }), Object.assign({}, ch, { kind: 'cards' }), q);
+      else testsView(s, ch, q);
+    } else if (ch.kind === 'cards') cardsView(s, ch, q); else testsView(s, ch, q);
   }
 
   // ====================================================================== Karteikarten
@@ -479,12 +485,17 @@
       var h = nav() + '<h1 style="font-size:1.55rem">' + esc(ch.title) + '</h1><p class="sub">' + esc(ch.sub || '') + '</p>';
       if (ch.placeholder) h += '<div class="banner"><b>Gerüst:</b> Das sind nur Beispielfragen, damit du die Test-Funktionen ausprobieren kannst. Die echten Inhalte folgen.</div>';
       h += '<div class="chips"><span class="lbl">Fragen pro Runde</span>' + [5, 10, 0].map(function (n) { return '<button class="chip' + (st.testN === n ? ' on' : '') + '" data-n="' + n + '">' + (n || 'Alle') + '</button>'; }).join('') + '</div>';
-      h += '<div class="modes">' + MODES.map(function (m) {
+      var cardsMode = '';
+      if (ch.cards) {
+        var kn = ch.cards.filter(function (c) { return DB.progress[c.id] === 'known'; }).length;
+        cardsMode = '<button class="mode" data-m="cards"><span class="ico">▤</span><span><span class="t">Karteikarten</span><br><span class="d">Umdrehen, gewusst oder nochmal</span></span><span class="r">' + ch.cards.length + ' Karten' + (kn ? '<b>' + kn + ' gewusst</b>' : '') + '</span></button>';
+      }
+      h += '<div class="modes">' + cardsMode + MODES.map(function (m) {
         var c = m.id === 'exam' ? total : counts[m.id], b = T.best[m.id];
         return '<button class="mode" data-m="' + m.id + '"' + (c ? '' : ' disabled') + '><span class="ico">' + m.ico + '</span><span><span class="t">' + m.name + '</span><br><span class="d">' + m.desc + '</span></span>' +
           '<span class="r">' + c + ' Fragen' + (b !== undefined ? '<b>Bestwert ' + b + ' %</b>' : '') + '</span></button>';
       }).join('') + '</div>';
-      h += '<div class="row" style="margin-top:14px"><button class="ghost" id="readQ">📖 Fragen lesen · ohne Wertung</button></div>';
+      h += '<div class="row" style="margin-top:14px">' + (ch.cards ? '<button class="ghost" id="readC">📖 Karten lesen</button>' : '') + '<button class="ghost" id="readQ">📖 Fragen lesen</button></div>';
       var wr = T.wrong.filter(function (id) { return BYID[id]; });
       if (wr.length) h += '<div class="row" style="margin-top:14px"><button class="ghost" id="wrong">Falsche Fragen wiederholen (' + wr.length + ')</button></div>';
       h += '<div class="tools"><button id="reset">Fortschritt zurücksetzen</button></div>';
@@ -492,6 +503,7 @@
       $$('.chip').forEach(function (b) { b.onclick = function () { st.testN = parseInt(b.dataset.n, 10); save(); hub(); }; });
       $$('.mode').forEach(function (b) { b.onclick = function () { start(b.dataset.m); }; });
       $('#readQ').onclick = function () { readItems(0); };
+      var rc = $('#readC'); if (rc) rc.onclick = function () { location.hash = '#/f/' + s.id + '/' + ch.id + '?read=1'; };
       var wb = $('#wrong'); if (wb) wb.onclick = function () { run(shuffle(wr).map(prep), 'wrong', 'Falsche Fragen'); };
       $('#reset').onclick = function () {
         var b = $('#reset');
@@ -500,19 +512,22 @@
     }
     function readItems(k) {
       var list = ITEMS, total = list.length; k = Math.max(0, Math.min(k, total - 1));
-      var it = list[k], body;
-      if (it.type === 'mc') body = '<div class="qtext">' + it.q + '</div><div class="opts">' + it.options.map(function (o, i) { return '<div class="opt' + (i === it.correct ? ' ok' : '') + '"><span class="k">' + 'ABCD'.charAt(i) + '</span><span>' + o + '</span></div>'; }).join('') + '</div>';
-      else if (it.type === 'tf') body = '<div class="qtext">' + it.statement + '</div><div class="tip"><b>' + (it.answer ? 'Richtig' : 'Falsch') + '.</b></div>';
-      else body = '<div class="qtext">' + gapSolution(it) + '</div>';
+      var it = list[k], qh, ah;
+      if (it.type === 'mc') { qh = it.q; ah = it.options[it.correct]; }
+      else if (it.type === 'tf') { qh = it.statement; ah = '<b>' + (it.answer ? 'Richtig' : 'Falsch') + '</b>'; }
+      else { qh = plainHTML(it); ah = gapSolution(it); }
       var h = nav('<button id="rEnd">Fertig</button>') + '<h1 style="font-size:1.4rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">Lesen · ohne Wertung</p>' +
-        '<div class="meta" style="margin-top:8px"><span>' + TYPES[it.type] + ' · ' + (k + 1) + ' / ' + total + '</span><span>' + esc(it.src || '') + '</span></div>' +
-        '<div class="pbar"><div style="width:' + ((k + 1) / total * 100) + '%"></div></div><div class="card">' + body + (it.expl ? '<div class="tip' + (it.warn ? ' warn' : '') + '">' + it.expl + '</div>' : '') + '</div>' +
+        '<div class="status"><span>' + TYPES[it.type] + ' · ' + (k + 1) + ' / ' + total + '</span><span>' + esc(it.src || '') + '</span></div>' +
+        '<div class="pbar"><div style="width:' + ((k + 1) / total * 100) + '%"></div></div>' +
+        '<div class="card"><div class="meta"><span></span><span class="side">Frage</span></div><div class="face">' + qh + '</div></div>' +
+        '<div class="card" style="margin-top:10px"><div class="meta"><span></span><span class="side" style="color:var(--green)">Antwort</span></div><div class="face">' + ah + '</div>' + (it.expl ? '<div class="tip' + (it.warn ? ' warn' : '') + '">' + it.expl + '</div>' : '') + '</div>' +
         '<div class="row"><button class="ghost" id="rPrev"' + (k === 0 ? ' disabled' : '') + '>← Zurück</button><button class="ghost" id="rNext"' + (k === total - 1 ? ' disabled' : '') + '>Weiter →</button></div>';
       view.innerHTML = h; window.scrollTo(0, 0);
       $('#rEnd').onclick = hub;
       $('#rPrev').onclick = function () { readItems(k - 1); }; $('#rNext').onclick = function () { readItems(k + 1); };
     }
     function start(mode) {
+      if (mode === 'cards') { location.hash = '#/f/' + s.id + '/' + ch.id + '?mode=cards'; return; }
       if (mode === 'exam') return examSetup();
       var ids = sh(pool(mode)).map(function (i) { return i.id; }); if (st.testN) ids = ids.slice(0, st.testN);
       run(ids.map(prep), mode, TYPES[mode]);

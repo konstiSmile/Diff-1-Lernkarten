@@ -66,10 +66,12 @@ def pers_cards(key, title, sub, num):
 pers_tests = tests_chapter('data_pers', 'psy', 'tp', 'Tests · Kapitel 1 und 2', 'Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
 pers_tests['group'] = 'pers'
 
+diff1_chapter = tests_chapter('data_diff1', 'diff1', 'k1', 'Kapitel 1 · Folgen und Grenzwerte', 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
+diff1_chapter['cards'] = cards
+
 CONTENT = dict(name=NAME, version=VERSION, subjects=[
     dict(id='diff1', name='Diff 1', desc='Differential- und Integralrechnung 1', chapters=[
-        dict(id='k1', title='Kapitel 1 · Folgen und Grenzwerte', sub='Karteikarten aus dem Skript', kind='cards', placeholder=False, cards=cards),
-        tests_chapter('data_diff1', 'diff1', 'tk1', 'Tests · Kapitel 1', 'Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)]),
+        diff1_chapter]),
     dict(id='quer', name='Querschnitt', desc='Funktionen mehrerer Veränderlicher und mehr', chapters=[
         tests_chapter('data_querschnitt', 'quer', 'k10', 'Kapitel 10 · Funktionen mehrerer Veränderlicher', 'Tests zum Skript', False)]),
     dict(id='psy', name='Psycho 2', desc='Persönlichkeit, Entwicklung, Diagnostik', groups=[
@@ -155,7 +157,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'q
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v17';
+const CACHE = 'lernkiste-v18';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{
