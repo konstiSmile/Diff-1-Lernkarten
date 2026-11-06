@@ -658,6 +658,13 @@
 
   // ====================================================================== Start
   applyPrefs();
+  var off = document.createElement('div'); off.className = 'offline'; off.setAttribute('role', 'status');
+  off.innerHTML = '<svg viewBox="0 0 24 24"><path d="M2 8.8a15 15 0 0 1 4-2.4M22 8.8a15 15 0 0 0-9.5-3.7M5 12.9a10 10 0 0 1 3.3-2M19 12.9a10 10 0 0 0-4.5-2.6M8.5 16.4a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"/></svg>Offline';
+  document.body.appendChild(off);
+  function netState() { off.classList.toggle('on', navigator.onLine === false); }
+  window.addEventListener('online', function () { netState(); toast('Wieder online'); });
+  window.addEventListener('offline', netState);
+  netState();
   window.addEventListener('hashchange', route);
   route();
   if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });

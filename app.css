@@ -203,3 +203,10 @@ textarea.imp { width:100%; min-height:90px; background:var(--bg); color:var(--in
   .grid.fach .tile { min-height:190px; }
   .tabbar nav { max-width:520px; }
 }
+
+/* Offline-Anzeige */
+.offline { position:fixed; top:calc(env(safe-area-inset-top, 0px) + 8px); right:10px; z-index:60; display:none; align-items:center; gap:5px;
+  background:var(--paper); color:var(--muted, #aaa); border:1px solid var(--line, #3a3733); border-radius:999px; padding:4px 10px 4px 8px;
+  font:600 .72rem -apple-system, system-ui, sans-serif; pointer-events:none; opacity:.92; }
+.offline.on { display:flex; }
+.offline svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }

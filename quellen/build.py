@@ -137,8 +137,8 @@ icon(180, f'{OUT}/apple-touch-icon.png'); icon(192, f'{OUT}/icon-192.png'); icon
 FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'querschnitt.html', 'psycho2.html',
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
-// Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v4 -> v5 ...).
-const CACHE = 'lernkiste-v4';
+// Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v5 -> v6 ...).
+const CACHE = 'lernkiste-v5';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{
