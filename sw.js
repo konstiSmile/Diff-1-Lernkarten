@@ -1,10 +1,10 @@
-// Offline-Speicher für die Karteikarten.
-// Bei jeder Änderung an Karten oder Tests die Versionsnummer erhöhen (v3 -> v4 ...).
-const CACHE = 'karteikarten-v3';
-const FILES = ['./', 'index.html', 'diff1.html', 'querschnitt.html', 'psycho2.html', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
+// Offline-Speicher für Konstis Lernkiste.
+// Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v4 -> v5 ...).
+const CACHE = 'lernkiste-v4';
+const FILES = ["./", "index.html", "app.css", "app.js", "content.js", "diff1.html", "querschnitt.html", "psycho2.html", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
