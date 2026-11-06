@@ -1,13 +1,13 @@
 {
-  "name": "DiffInt 1 – Karteikarten",
+  "name": "Karteikarten",
   "short_name": "Karteikarten",
-  "description": "Karteikarten zu Differential- und Integralrechnung 1, Kapitel 1",
+  "description": "Karteikarten fürs Studium: Diff1, Querschnitt, Psycho2",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f6f3ee",
-  "theme_color": "#2f5d8a",
+  "background_color": "#1b1a18",
+  "theme_color": "#1b1a18",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }

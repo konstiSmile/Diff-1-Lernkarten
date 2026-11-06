@@ -1,7 +1,7 @@
 // Offline-Speicher für die Karteikarten.
-// Bei jeder Änderung an den Karten die Versionsnummer erhöhen (v1 -> v2 ...).
-const CACHE = 'karteikarten-v1';
-const FILES = ['./', 'index.html', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
+// Bei jeder Änderung an den Karten die Versionsnummer erhöhen (v2 -> v3 ...).
+const CACHE = 'karteikarten-v2';
+const FILES = ['./', 'index.html', 'diff1.html', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
