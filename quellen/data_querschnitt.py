@@ -138,7 +138,7 @@ tf('q-tf-14', r'Die Wertemenge von \(f(x_1,x_2)=x_2^2-x_1\) ist ganz \(\mathbb R
 tf('q-tf-15', r'Jede lokale Maximalstelle ist auch eine globale Maximalstelle.', False,
    r'Lokal heißt nur: größter Wert in einer Umgebung. Global verlangt \(f(x)\le f(a)\) für <i>alle</i> \(x\in D\), also \(f(a)=\max W_f\).',
    'Def. 10.3', 'lokal global Maximalstelle')
-tf('q-tf-16', r'Satz 10.13 (\(\operatorname{grad}f(a)=0\)) gilt auch für Extremstellen \(a\) auf dem Rand von \(D\).', False,
+tf('q-tf-16', r'Die Bedingung \(\operatorname{grad}f(a)=0\) für Extremstellen gilt auch für Extremstellen \(a\) auf dem Rand von \(D\).', False,
    r'Der Satz gilt nur für <b>innere</b> Punkte. Am Rand kann ein Extremum mit \(\operatorname{grad}f\neq0\) auftreten, z. B. die Ecken von \([-1,1]^2\) bei \(x_1^2+x_2^2\).',
    'Satz 10.13, Beispiel 10.14 (2)', 'Rand innere Punkte Extremstelle', warn=True)
 tf('q-tf-17', r'Der Quotient \(\frac fg\) zweier in \(b\) stetiger Funktionen ist stets in \(b\) stetig.', False,

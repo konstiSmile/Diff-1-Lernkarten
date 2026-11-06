@@ -1,6 +1,6 @@
 // Offline-Speicher für Konstis Lernkiste.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v15';
+const CACHE = 'lernkiste-v16';
 const FILES = ["./", "index.html", "app.css", "app.js", "content.js", "diff1.html", "querschnitt.html", "psycho2.html", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener('install', e => {

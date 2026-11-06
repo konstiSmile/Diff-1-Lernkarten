@@ -175,7 +175,7 @@ add(id='pp-mc-12', type='mc', q='Wie heißt das Schema „<b>zwei oder mehr</b> 
 add(id='pp-mc-13', type='mc', q='Matheleistung und Intelligenz korrelieren mit r = .5. Wie viel Varianz der Matheleistung wird durch Intelligenz erklärt?',
     options=['5 %', '25 %', '50 %', '75 %'], correct=1,
     expl='r² = .25 → <b>25 %</b>. Nicht 50 %!', src=S2, kw='r2 Bestimmtheitsmaß Varianz Matheleistung Intelligenz')
-add(id='pp-mc-14', type='mc', q='Ab welcher Größenordnung spricht die Folie ungefähr von einer <b>hohen</b> Korrelation?',
+add(id='pp-mc-14', type='mc', q='Ab welcher Größenordnung gilt eine Korrelation in der Psychologie ungefähr als <b>hoch</b>?',
     options=['ab r = .1', 'ab r = .3', 'ab r = .5', 'ab r = .9'], correct=2,
     expl='Bis .3 gering, ab ca. <b>.5 hoch</b>, ab ca. .7–.8 (sehr) hoch.', src=S2, kw='Korrelation Größenordnung')
 add(id='pp-mc-15', type='mc', q='Schuhgröße korreliert (r = .39) mit dem Einkommen. Warum?',
@@ -190,7 +190,7 @@ add(id='pp-mc-17', type='mc', q='Was ist das Ziel der <b>Faktorenanalyse</b>?',
 add(id='pp-mc-18', type='mc', q='Welche Aussage zu Faktoren stimmt?',
     options=['Items desselben Faktors sollen unkorreliert sein', 'Items desselben Faktors sollen hoch korreliert, die Faktoren untereinander unkorreliert sein', 'Alle Faktoren sollen hoch miteinander korrelieren', 'Faktoren müssen vorab als Modell festgelegt werden'], correct=1,
     expl='Beobachtete Variablen eines Faktors: hoch korreliert; Faktoren untereinander: unkorreliert.', src=S2, kw='Faktoren Items korreliert unkorreliert')
-add(id='pp-mc-19', type='mc', q='Im Beispiel „Fragebogen Zielverfolgung“ steht Faktor 1 für …',
+add(id='pp-mc-19', type='mc', q='Fragebogen Zielverfolgung (8 Items, 3 Faktoren): Items wie „Ich neige dazu, auch in aussichtslosen Situationen zu kämpfen“ (C) laden hoch auf Faktor 1. Wofür steht Faktor 1?',
     options=['Flexibilität', 'Hartnäckigkeit', 'Gewissenhaftigkeit', 'Prüfungsangst'], correct=1,
     expl='Faktor 1 = <b>Hartnäckigkeit</b>, Faktor 2 = <b>Flexibilität</b>, Faktor 3 offen.', src=S2, kw='Zielverfolgung Hartnäckigkeit Flexibilität Faktor')
 add(id='pp-mc-20', type='mc', q='Zu welchem Ansatz gehört die <b>korrelative Forschung</b>?',
@@ -217,13 +217,13 @@ add(id='pp-tf-08', type='tf', statement='Eine Korrelation von r = .5 bedeutet, d
 add(id='pp-tf-09', type='tf', statement='Korrelationen erlauben keine Kausalaussagen.', answer=True,
     expl='Es kann A→B, B→A oder eine Drittvariable C wirken.', src=S2, kw='Korrelation Kausalität')
 add(id='pp-tf-10', type='tf', statement='Ohne Streuung (keine Varianz) lässt sich eine Korrelation berechnen.', answer=False,
-    expl='Ohne Varianz (Beispiel Aliens) ist keine Korrelation berechenbar.', src=S2, kw='Varianz Korrelation Aliens')
+    expl='Ohne Varianz (z. B. alle Aliens gleich groß und gleich schwer) ist keine Korrelation berechenbar.', src=S2, kw='Varianz Korrelation Aliens')
 add(id='pp-tf-11', type='tf', statement='Sehr hohe Korrelationen sind in der Psychologie selten.', answer=True,
     expl='Ein Phänomen wird selten nur von einem anderen beeinflusst.', src=S2, kw='Korrelation selten')
 add(id='pp-tf-12', type='tf', statement='Bei der Faktorenanalyse wird vorab ein explizites Modell festgelegt.', answer=False,
     expl='Die Daten „sprechen“ für sich selbst. Das Modell ist das <b>Ziel</b>, nicht der Ausgangspunkt.', src=S2, kw='Faktorenanalyse Modell')
-add(id='pp-tf-13', type='tf', statement='Im Beispiel der Zielverfolgung lädt Item G hauptsächlich auf Faktor 3.', answer=True,
-    expl='G lädt mit .76 auf Faktor 3.', src=S2, kw='Faktorladung Item G Faktor 3')
+add(id='pp-tf-13', type='tf', statement='Fragebogen Zielverfolgung (Faktor 1 = Hartnäckigkeit, Faktor 2 = Flexibilität): Das Item „Wenn ich auf unüberwindbare Hindernisse stoße, suche ich mir lieber ein neues Ziel“ (Item E) lädt hauptsächlich auf Faktor 2.', answer=True,
+    expl='Item E lädt mit <b>.88 auf Faktor 2</b> (Flexibilität), auf Faktor 1 nur mit .06. Inhaltlich passt das: ein neues Ziel suchen = flexibel sein.', src=S2, kw='Faktorladung Item E Faktor 2 Flexibilität Zielverfolgung')
 
 # Lückentext
 add(id='pp-gap-01', type='gap', text='Persönlichkeitspsychologie ist die {{empirische}} Wissenschaft von den {{überdauernden}}, nichtpathologischen, verhaltensrelevanten individuellen Besonderheiten von Menschen innerhalb einer bestimmten {{Population}}.',
