@@ -686,25 +686,68 @@
   }
 
   // ====================================================================== Verlauf
+  var vRange = 'w', vSel = null;
   function verlaufView() {
-    var DAYS = 14, now = new Date(), map = {}, i;
-    DB.log.forEach(function (e) { var d = dayKey(e[0]); map[d] = map[d] || {}; map[d][e[1]] = (map[d][e[1]] || 0) + 1; });
-    var days = [];
-    for (i = DAYS - 1; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i); days.push({ d: d, k: dayKey(d.getTime()), c: map[dayKey(d.getTime())] || {} }); }
-    function total(c) { return Object.keys(c).reduce(function (a, k) { return a + c[k]; }, 0); }
-    var max = Math.max.apply(null, days.map(function (x) { return total(x.c); }).concat([1]));
-    var today = total(days[DAYS - 1].c), week = days.slice(-7).reduce(function (a, x) { return a + total(x.c); }, 0), streak = 0;
-    for (i = DAYS - 1; i >= 0; i--) { if (total(days[i].c) > 0) streak++; else if (i === DAYS - 1) continue; else break; }
-    var WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-    var h = '<h1>Verlauf</h1><p class="sub">Beantwortete Fragen und Karten der letzten 14 Tage</p>' +
-      '<div class="stats"><div class="stat"><b>' + today + '</b><span>heute</span></div><div class="stat"><b>' + week + '</b><span>7 Tage</span></div><div class="stat"><b>' + streak + '</b><span>Tage in Folge</span></div></div>';
-    if (!DB.log.length) h += '<div class="note" style="text-align:center;padding:10px 6px 20px">Hier erscheint dein Verlauf, sobald du Karten oder Fragen beantwortest.</div>';
-    h += '<div class="group" style="padding:12px 14px"><div class="chart">' + days.map(function (x) {
-      var t = total(x.c), hh = Math.round(t / max * 108);
-      var stack = C.subjects.map(function (s) { var n = x.c[s.id] || 0; return n ? '<i style="height:' + Math.max(3, Math.round(n / t * hh)) + 'px;background:var(--c-' + s.id + ')"></i>' : ''; }).join('');
-      return '<div class="day"><div class="n">' + (t || '') + '</div><div class="stack">' + stack + '</div><div class="lab">' + (x.k === days[DAYS - 1].k ? 'Heute' : WD[x.d.getDay()]) + '</div></div>';
-    }).join('') + '</div><div class="legend">' + C.subjects.map(function (s) { return '<span><i class="sw" style="background:var(--c-' + s.id + ')"></i>' + esc(s.name) + '</span>'; }).join('') + '</div></div>';
-    view.innerHTML = h + '<p class="note" style="text-align:center">Die Farben zeigen das Fach. Gezählt wird jede beantwortete Karte und Testfrage.</p>';
+    var now = new Date(), i, MON = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
+    var WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], WDL = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+    var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Einträge pro Tag: { fach: {n, s} }
+    var map = {};
+    DB.log.forEach(function (e) { var d = dayKey(e[0]), m = map[d] = map[d] || {}, f = m[e[1]] = m[e[1]] || { n: 0, s: 0 }; f.n++; f.s += (typeof e[3] === 'number' ? e[3] : 0); });
+    function dayData(d) { return map[dayKey(d.getTime())] || {}; }
+    function total(c) { return Object.keys(c).reduce(function (a, k) { return a + c[k].n; }, 0); }
+    function merge(list) { var r = {}; list.forEach(function (c) { Object.keys(c).forEach(function (k) { var f = r[k] = r[k] || { n: 0, s: 0 }; f.n += c[k].n; f.s += c[k].s; }); }); return r; }
+    function dmy(d) { return d.getDate() + '. ' + MON[d.getMonth()]; }
+    function build() {
+      var out = [], d, c;
+      if (vRange === 'j') {
+        var dow = (today0.getDay() + 6) % 7, mon = new Date(today0.getFullYear(), today0.getMonth(), today0.getDate() - dow);
+        for (i = 11; i >= 0; i--) {
+          var st = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() - i * 7), en = new Date(st.getFullYear(), st.getMonth(), st.getDate() + 6), ds = [];
+          for (var k = 0; k < 7; k++) ds.push(dayData(new Date(st.getFullYear(), st.getMonth(), st.getDate() + k)));
+          out.push({ key: dayKey(st.getTime()), c: merge(ds), lab: i === 0 ? 'Jetzt' : (st.getDate() + '.' + (st.getMonth() + 1) + '.'), title: dmy(st) + ' – ' + dmy(en), sub: 'Woche', days: 7 });
+        }
+      } else {
+        var N = vRange === 'm' ? 30 : 7;
+        for (i = N - 1; i >= 0; i--) {
+          d = new Date(today0.getFullYear(), today0.getMonth(), today0.getDate() - i); c = dayData(d);
+          out.push({ key: dayKey(d.getTime()), c: c, lab: N > 7 ? ((d.getDate() % 5 === 0 && i > 1) ? String(d.getDate()) : '') : (i === 0 ? 'Heute' : WD[d.getDay()]), title: WDL[d.getDay()] + ', ' + dmy(d) + (i === 0 ? ' (heute)' : ''), sub: 'Tag', days: 1 });
+        }
+      }
+      return out;
+    }
+    function streakOf() {
+      var n = 0; for (i = 0; i < 400; i++) { var t = total(dayData(new Date(today0.getFullYear(), today0.getMonth(), today0.getDate() - i))); if (t > 0) n++; else if (i === 0) continue; else break; } return n;
+    }
+    function render() {
+      var bs = build(), max = Math.max.apply(null, bs.map(function (x) { return total(x.c); }).concat([1]));
+      var tod = total(dayData(today0)), wk = 0; for (i = 0; i < 7; i++) wk += total(dayData(new Date(today0.getFullYear(), today0.getMonth(), today0.getDate() - i)));
+      var rng = bs.reduce(function (a, x) { return a + total(x.c); }, 0), days = vRange === 'w' ? 7 : vRange === 'm' ? 30 : 84;
+      var sel = bs.filter(function (x) { return x.key === vSel; })[0];
+      var subLine = { w: 'Beantwortete Fragen und Karten der letzten 7 Tage', m: 'Beantwortete Fragen und Karten der letzten 30 Tage', j: 'Beantwortete Fragen und Karten der letzten 12 Wochen' }[vRange];
+      var h = '<h1>Verlauf</h1><p class="sub">' + subLine + '</p>' +
+        '<div class="stats"><div class="stat"><b>' + tod + '</b><span>heute</span></div><div class="stat"><b>' + wk + '</b><span>7 Tage</span></div><div class="stat"><b>' + streakOf() + '</b><span>Tage in Folge</span></div></div>' +
+        '<div class="seg" id="vseg"><button data-r="w" class="' + (vRange === 'w' ? 'on' : '') + '">Woche</button><button data-r="m" class="' + (vRange === 'm' ? 'on' : '') + '">Monat</button><button data-r="j" class="' + (vRange === 'j' ? 'on' : '') + '">12 Wochen</button></div>';
+      if (!DB.log.length) h += '<div class="note" style="text-align:center;padding:10px 6px 20px">Hier erscheint dein Verlauf, sobald du Karten oder Fragen beantwortest.</div>';
+      h += '<div class="group" style="padding:12px 14px"><div class="chart' + (vRange === 'm' ? ' dense' : '') + '">' + bs.map(function (x) {
+        var t = total(x.c), hh = Math.round(t / max * 108);
+        var stack = C.subjects.map(function (s) { var n = x.c[s.id] ? x.c[s.id].n : 0; return n ? '<i style="height:' + Math.max(3, Math.round(n / t * hh)) + 'px;background:var(--c-' + s.id + ')"></i>' : ''; }).join('');
+        return '<button type="button" class="day' + (x.key === vSel ? ' sel' : '') + '" data-k="' + x.key + '" aria-label="' + esc(x.title) + ': ' + t + '"><div class="n">' + (vRange === 'm' ? '' : (t || '')) + '</div><div class="stack">' + stack + '</div><div class="lab">' + x.lab + '</div></button>';
+      }).join('') + '</div><div class="legend">' + C.subjects.map(function (s) { return '<span><i class="sw" style="background:var(--c-' + s.id + ')"></i>' + esc(s.name) + '</span>'; }).join('') + '</div></div>';
+      if (sel) {
+        var t2 = total(sel.c);
+        h += '<div class="group daydet"><div class="dhead"><b>' + esc(sel.title) + '</b><span>' + (t2 ? t2 + (t2 === 1 ? ' Antwort' : ' Antworten') : 'nichts gelernt') + '</span></div>' +
+          C.subjects.filter(function (s) { return sel.c[s.id]; }).map(function (s) {
+            var f = sel.c[s.id], pct = Math.round(f.s / f.n * 100);
+            return '<div class="drow"><i class="sw" style="background:var(--c-' + s.id + ')"></i><span class="nm">' + esc(s.name) + '</span><span class="ct">' + f.n + ' · ' + pct + ' % gewusst/richtig</span></div>';
+          }).join('') + '</div>';
+      } else if (DB.log.length) h += '<p class="note" style="text-align:center">Tippe einen Balken an für Details.</p>';
+      h += '<p class="note" style="text-align:center">Gezählt wird jede beantwortete Karte und Testfrage. Im Zeitraum: ' + rng + ' in ' + days + ' Tagen.</p>';
+      view.innerHTML = h;
+      $$('#vseg button').forEach(function (b) { b.onclick = function () { vRange = b.dataset.r; vSel = null; render(); }; });
+      $$('.chart .day').forEach(function (b) { b.onclick = function () { vSel = (vSel === b.dataset.k) ? null : b.dataset.k; render(); }; });
+    }
+    vSel = null; render();
   }
 
   function neuView() {
