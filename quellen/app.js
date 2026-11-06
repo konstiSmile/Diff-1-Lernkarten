@@ -817,7 +817,7 @@
       '<p class="note" style="text-align:center">Dein Lernstand liegt nur auf diesem Gerät. Mit dem Backup sicherst du ihn.</p>';
     view.innerHTML = h;
     $$('#view .group').forEach(function (g) {
-      var t = $('h3', g); if (!t) return;
+      var t = $('h3', g); if (!t || t.textContent === 'Persönlich') return;
       var name = t.textContent, body = document.createElement('div'), btn = document.createElement('button');
       body.className = 'gbody'; while (t.nextSibling) body.appendChild(t.nextSibling); g.appendChild(body);
       btn.type = 'button'; btn.className = 'ghead'; btn.innerHTML = '<span>' + esc(name) + '</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
