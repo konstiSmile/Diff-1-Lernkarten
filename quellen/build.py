@@ -66,14 +66,29 @@ def pers_cards(key, title, sub, num):
 pers_tests = tests_chapter('data_pers', 'psy', 'tp', 'Tests · Kapitel 1 und 2', 'Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
 pers_tests['group'] = 'pers'
 
+import data_quer11
+quer11 = tests_chapter('data_quer11', 'quer', 'k11', 'Kapitel 11 · Gewöhnliche DGL erster Ordnung', 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
+quer11['group'] = 'dgl'
+quer11['cards'] = []
+for c in data_quer11.CARDS:
+    cid = f"quer-k11-{c['key']}"
+    quer11['cards'].append(dict(id=cid, red=False, src=c['src'], q=tex.convert(c['q']), a=tex.convert(c['a'])))
+    search.append(dict(s='quer', title=c['src'], label='Karteikarte · Kap. 11', route=f'/f/quer/k11?c={cid}', kw=c['kw'], text=tex.plain(c['q']) + ' — ' + tex.plain(c['a'])))
+assert len({c['key'] for c in data_quer11.CARDS}) == len(data_quer11.CARDS)
+assert len({i['id'] for i in data_quer11.ITEMS}) == len(data_quer11.ITEMS)
+quer10 = tests_chapter('data_querschnitt', 'quer', 'k10', 'Kapitel 10 · Funktionen mehrerer Veränderlicher', 'Tests zum Skript', False)
+quer10['group'] = 'mv'
+
 diff1_chapter = tests_chapter('data_diff1', 'diff1', 'k1', 'Kapitel 1 · Folgen und Grenzwerte', 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
 diff1_chapter['cards'] = cards
 
 CONTENT = dict(name=NAME, version=VERSION, subjects=[
     dict(id='diff1', name='Diff 1', desc='Differential- und Integralrechnung 1', chapters=[
         diff1_chapter]),
-    dict(id='quer', name='Querschnitt', desc='Funktionen mehrerer Veränderlicher und mehr', chapters=[
-        tests_chapter('data_querschnitt', 'quer', 'k10', 'Kapitel 10 · Funktionen mehrerer Veränderlicher', 'Tests zum Skript', False)]),
+    dict(id='quer', name='Querschnitt', desc='Mehrere Veränderliche, Differentialgleichungen', groups=[
+        dict(id='mv', name='Funktionen mehrerer Veränderlicher', desc='Kapitel 10'),
+        dict(id='dgl', name='Gewöhnliche Differentialgleichungen', desc='Kapitel 11 · erster Ordnung')], chapters=[
+        quer10, quer11]),
     dict(id='psy', name='Psycho 2', desc='Persönlichkeit, Entwicklung, Diagnostik', groups=[
         dict(id='pers', name='Persönlichkeitspsychologie', desc='Eigenschaften, Methoden, Theorien'),
         dict(id='entw', name='Entwicklungspsychologie', desc='Kommt später'),
@@ -157,7 +172,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'q
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v18';
+const CACHE = 'lernkiste-v19';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{
