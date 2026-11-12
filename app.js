@@ -2,6 +2,9 @@
   'use strict';
   var C = window.CONTENT;
   var KEY = 'lernkiste-v1';
+  // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
+  var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
+  var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
   var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null };
 
   // ====================================================================== Helfer
@@ -31,6 +34,37 @@
     }
     document.body.appendChild(t);
     setTimeout(function () { t.remove(); }, actionLabel ? 6000 : 2600);
+  }
+  // ---- Feedback-Warteschlange (bleibt bei Offline erhalten, eigener Speicher, nicht im Backup)
+  function fbQueue(v) {
+    try {
+      if (v === undefined) { var q = JSON.parse(localStorage.getItem(FB_Q) || '[]'); return Array.isArray(q) ? q : []; }
+      if (v.length) localStorage.setItem(FB_Q, JSON.stringify(v.slice(-20))); else localStorage.removeItem(FB_Q);
+    } catch (e) {}
+    return v || [];
+  }
+  function fbInfo() { var n = fbQueue().length; return n ? n + (n === 1 ? ' Nachricht wartet' : ' Nachrichten warten') + ' auf Internet' : 'Höchstens ' + FB_MAX + ' Zeichen'; }
+  function devId() {
+    try {
+      var d = localStorage.getItem(DEV_KEY);
+      if (!d) { d = 'g' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem(DEV_KEY, d); }
+      return d;
+    } catch (e) { return 'unbekannt'; }
+  }
+  var fbBusy = false;
+  function fbFlush(done) {
+    var q = fbQueue();
+    if (fbBusy || !q.length || navigator.onLine === false || !window.fetch) { if (done) done(!q.length); return; }
+    fbBusy = true;
+    var m = q[0];
+    fetch(FB_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ typ: 'feedback', text: m.text, version: C.version, geraet: devId(), seite: 'Einstellungen' }) })
+      .then(function () {
+        fbQueue(fbQueue().filter(function (x) { return !(x.ts === m.ts && x.text === m.text); }));
+        fbBusy = false;
+        if (fbQueue().length) fbFlush(done); else if (done) done(true);
+      })
+      .catch(function () { fbBusy = false; if (done) done(false); });
   }
   function isHidden(sid) { return DB.hidden.indexOf(sid) >= 0; }
   function setHidden(sid, on) {
@@ -1107,7 +1141,10 @@
       '<div class="setrow"><div class="l"><b>Verlauf löschen</b></div><button class="actbtn danger" id="bLog">Löschen</button></div>' +
       '<div class="setrow"><div class="l"><b>Lernstand zurücksetzen</b><small>Alle Fächer, Einstellungen bleiben</small></div><button class="actbtn danger" id="bProg">Zurücksetzen</button></div></div>' +
       '<div class="group"><h3>Feedback</h3>' +
-      '<div class="setrow soon"><div class="l"><b>Feedback / Ideen senden</b><small>Schreib uns, was dir fehlt oder besser sein könnte.</small></div><span class="soonbadge">Kommt bald</span></div></div>' +
+      '<div class="fbbox"><div class="l"><b>Feedback / Ideen senden</b><small>Schreib, was dir fehlt, was nicht klappt oder besser sein könnte. Anonym, ohne Namen.</small></div>' +
+      '<textarea id="fbText" class="fbtext" maxlength="' + FB_MAX + '" placeholder="Deine Nachricht …" aria-label="Feedback"></textarea>' +
+      '<input type="text" id="fbWeb" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' +
+      '<div class="fbrow"><small id="fbInfo" class="fbinfo">' + fbInfo() + '</small><button class="actbtn" id="fbSend" disabled>Senden</button></div></div></div>' +
       '<div class="group"><h3>App</h3>' +
       '<div class="setrow"><div class="l"><b>Version</b><small>' + esc(C.version) + '</small></div><button class="actbtn" id="bUpd">Nach Update suchen</button></div>' +
       '<div class="setrow"><div class="l"><b>Offline</b><small>Nach dem ersten Öffnen mit Internet funktioniert die App ohne Netz.</small></div></div></div>' +
@@ -1132,6 +1169,21 @@
       DB.settings.name = this.value.slice(0, 20); save(); document.title = appName(); $('#view .sub').textContent = appName();
     });
     $('#bShare').onclick = shareFile; $('#bCopy').onclick = copyText;
+    var fbT = $('#fbText'), fbB = $('#fbSend');
+    fbT.addEventListener('input', function () { fbB.disabled = !fbT.value.trim(); $('#fbInfo').textContent = fbT.value.length > FB_MAX - 200 ? (FB_MAX - fbT.value.length) + ' Zeichen übrig' : fbInfo(); });
+    fbB.onclick = function () {
+      var text = fbT.value.trim().slice(0, FB_MAX); if (!text) return;
+      if ($('#fbWeb').value) { fbT.value = ''; fbB.disabled = true; toast('Danke für dein Feedback!'); return; }
+      fbQueue(fbQueue().concat([{ text: text, ts: Date.now() }]));
+      fbT.value = ''; fbB.disabled = true;
+      if (navigator.onLine === false) { toast('Gespeichert · wird gesendet, sobald du online bist'); $('#fbInfo').textContent = fbInfo(); return; }
+      fbB.textContent = 'Sende …';
+      fbFlush(function (ok) {
+        if (!fbB.isConnected) return;
+        fbB.textContent = 'Senden'; $('#fbInfo').textContent = fbInfo();
+        toast(ok ? 'Danke für dein Feedback!' : 'Gerade keine Verbindung · wird später gesendet');
+      });
+    };
     function importFrom(text) {
       var o; try { o = JSON.parse(text); } catch (e) { toast('Das ist keine gültige Backup-Datei'); return; }
       if (!o || o.app !== 'lernkiste' || !o.data) { toast('Das ist kein Lernkiste-Backup'); return; }
@@ -1169,7 +1221,8 @@
   off.innerHTML = '<svg viewBox="0 0 24 24"><path d="M2 8.8a15 15 0 0 1 4-2.4M22 8.8a15 15 0 0 0-9.5-3.7M5 12.9a10 10 0 0 1 3.3-2M19 12.9a10 10 0 0 0-4.5-2.6M8.5 16.4a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"/></svg>Offline';
   document.body.appendChild(off);
   function netState() { off.classList.toggle('on', navigator.onLine === false); }
-  window.addEventListener('online', function () { netState(); toast('Wieder online'); });
+  window.addEventListener('online', function () { netState(); toast('Wieder online'); fbFlush(); });
+  setTimeout(function () { fbFlush(); }, 3000);
   window.addEventListener('offline', netState);
   netState();
   window.addEventListener('hashchange', route);
