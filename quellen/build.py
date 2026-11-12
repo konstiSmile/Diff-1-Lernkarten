@@ -82,9 +82,19 @@ quer10['group'] = 'mv'
 diff1_chapter = tests_chapter('data_diff1', 'diff1', 'k1', 'Kapitel 1 · Folgen und Grenzwerte', 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
 diff1_chapter['cards'] = cards
 
+import data_diff1_k2
+diff1_k2 = tests_chapter('data_diff1_k2', 'diff1', 'k2', 'Kapitel 2 · Vollständigkeit und Konvergenz', 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
+diff1_k2['cards'] = []
+for c in data_diff1_k2.CARDS:
+    cid = f"diff1-k2-{c['key']}"
+    diff1_k2['cards'].append(dict(id=cid, red=False, src=c['src'], q=tex.convert(c['q']), a=tex.convert(c['a'])))
+    search.append(dict(s='diff1', title=c['src'], label='Karteikarte · Kap. 2', route=f'/f/diff1/k2?c={cid}', kw=c['kw'], text=tex.plain(c['q']) + ' — ' + tex.plain(c['a'])))
+assert len({c['key'] for c in data_diff1_k2.CARDS}) == len(data_diff1_k2.CARDS)
+assert len({i['id'] for i in data_diff1_k2.ITEMS}) == len(data_diff1_k2.ITEMS)
+
 CONTENT = dict(name=NAME, version=VERSION, subjects=[
     dict(id='diff1', name='Diff 1', desc='Differential- und Integralrechnung 1', chapters=[
-        diff1_chapter]),
+        diff1_chapter, diff1_k2]),
     dict(id='quer', name='Querschnitt', desc='Mehrere Veränderliche, Differentialgleichungen', groups=[
         dict(id='mv', name='Funktionen mehrerer Veränderlicher', desc='Kapitel 10'),
         dict(id='dgl', name='Gewöhnliche Differentialgleichungen', desc='Kapitel 11 · erster Ordnung')], chapters=[
@@ -172,7 +182,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'q
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v19';
+const CACHE = 'lernkiste-v20';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{
