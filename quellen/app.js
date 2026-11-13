@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null };
+  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0 };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -57,7 +57,7 @@
     if (fbBusy || !q.length || navigator.onLine === false || !window.fetch) { if (done) done(!q.length); return; }
     fbBusy = true;
     var m = q[0];
-    fetch(FB_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    fetch(FB_URL, { method: 'POST', mode: 'no-cors', credentials: 'omit', referrerPolicy: 'no-referrer', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ typ: 'feedback', text: m.text, version: C.version, geraet: devId(), seite: 'Einstellungen' }) })
       .then(function () {
         fbQueue(fbQueue().filter(function (x) { return !(x.ts === m.ts && x.text === m.text); }));
@@ -65,6 +65,59 @@
         if (fbQueue().length) fbFlush(done); else if (done) done(true);
       })
       .catch(function () { fbBusy = false; if (done) done(false); });
+  }
+  // ---- Anonyme Nutzungsstatistik (nur mit Einwilligung, Standard aus): keine Geräte-ID, nichts auf dem Gerät gespeichert
+  var statSeen = {}, statHiddenAt = 0;
+  function statPing(art, fach) {
+    if (!DB.settings.stats || navigator.onLine === false || !window.fetch) return;
+    try {
+      fetch(FB_URL, { method: 'POST', mode: 'no-cors', credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store', keepalive: true,
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ typ: 'nutzung', art: art, fach: fach || '', version: C.version }) }).catch(function () {});
+    } catch (e) {}
+  }
+  function statFach(sid) {
+    if (statSeen[sid] || !subj(sid)) return;
+    statSeen[sid] = 1; statPing('fach', sid);
+  }
+  function statVisible() {
+    if (document.visibilityState === 'hidden') { statHiddenAt = Date.now(); return; }
+    if (statHiddenAt && Date.now() - statHiddenAt > 30 * 60 * 1000) { statSeen = {}; statPing('start'); }
+    statHiddenAt = 0;
+  }
+  // ---- Kachel (Overlay) z. B. für den Datenschutz
+  var tileEl = null, tileKey = null;
+  function closeTile() {
+    if (!tileEl) return;
+    tileEl.remove(); tileEl = null; document.body.classList.remove('pvopen');
+    document.removeEventListener('keydown', tileKey);
+  }
+  function openTile(title, html) {
+    closeTile();
+    var w = document.createElement('div'); w.className = 'pvwrap';
+    w.innerHTML = '<div class="pvcard" role="dialog" aria-modal="true" aria-label="' + esc(title) + '">' +
+      '<div class="pvhead"><b>' + esc(title) + '</b><button type="button" class="pvx" aria-label="Schließen">✕</button></div>' +
+      '<div class="pvbody">' + html + '</div>' +
+      '<button type="button" class="actbtn pvok">Schließen</button></div>';
+    w.onclick = function (e) { if (e.target === w || e.target.closest('.pvx, .pvok')) closeTile(); };
+    tileKey = function (e) { if (e.key === 'Escape') closeTile(); };
+    document.addEventListener('keydown', tileKey);
+    document.body.appendChild(w); document.body.classList.add('pvopen'); tileEl = w;
+    cleanups.push(closeTile);
+    $('.pvx', w).focus();
+  }
+  function privacyHTML() {
+    return '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst oder die Nutzungsstatistik einschaltest.</p>' +
+      '<h4>Auf deinem Gerät</h4>' +
+      '<p>Lernstand, Verlauf, eigene Karten und Einstellungen (auch dein Name) liegen nur im Speicher deines Browsers. Sie verlassen das Gerät nicht, außer du speicherst selbst ein Backup. Damit die App offline läuft, speichert der Browser außerdem die App-Dateien.</p>' +
+      '<h4>Beim Laden der App</h4>' +
+      '<p>Die App liegt bei GitHub Pages (GitHub, USA). Wie jeder Webserver verarbeitet GitHub dabei technisch deine IP-Adresse. Die App lädt keine Werbung, keine Tracker und nichts von fremden Seiten.</p>' +
+      '<h4>Feedback (nur wenn du sendest)</h4>' +
+      '<p>Gesendet werden dein Text, die App-Version und eine zufällige Kennung gegen Spam. Diese Kennung wird beim ersten Feedback auf dem Gerät gespeichert und sagt nichts über dich. Kein Name. Ziel ist eine private Google-Tabelle über Google Apps Script (Google, Server auch in den USA). Google verarbeitet dabei technisch deine IP-Adresse, in der Tabelle landet sie nicht. Schreib bitte keine persönlichen Daten in den Text.</p>' +
+      '<h4>Nutzungsstatistik (nur wenn eingeschaltet)</h4>' +
+      '<p>Standardmäßig aus. Wenn du sie einschaltest, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Den Zeitpunkt notiert die Tabelle. Keine Geräte-ID, kein Name, keine Antworten oder Lernstände, und auf dem Gerät wird dafür nichts gespeichert außer deiner Einstellung. Einzelne Personen lassen sich so nicht unterscheiden. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
+      '<h4>Wie lange</h4>' +
+      '<p>Einträge in der Tabelle werden nach spätestens 12 Monaten automatisch gelöscht. Weil keine Namen gespeichert werden, lassen sich Einträge keiner Person zuordnen.</p>';
   }
   function isHidden(sid) { return DB.hidden.indexOf(sid) >= 0; }
   function setHidden(sid, on) {
@@ -181,6 +234,7 @@
     else if (p[0] === 'f' && p[1] && !p[2]) fachView(p[1]);
     else if (p[0] === 'f' && p[1] && p[2]) chapterView(p[1], p[2], r.q);
     else homeView();
+    if (p[0] === 'f' && p[1]) statFach(p[1]);
     setTab(tab);
     if (!(p[0] === 'f' && p[2] && r.q.c)) window.scrollTo(0, 0);
   }
@@ -1156,13 +1210,15 @@
       '<div class="setrow"><div class="l"><b>Verlauf löschen</b></div><button class="actbtn danger" id="bLog">Löschen</button></div>' +
       '<div class="setrow"><div class="l"><b>Lernstand zurücksetzen</b><small>Alle Fächer, Einstellungen bleiben</small></div><button class="actbtn danger" id="bProg">Zurücksetzen</button></div></div>' +
       '<div class="group"><h3>Feedback</h3>' +
-      '<div class="fbbox"><div class="l"><b>Feedback / Ideen senden</b><small>Schreib, was dir fehlt, was nicht klappt oder besser sein könnte. Anonym, ohne Namen.</small></div>' +
+      '<div class="fbbox"><div class="l"><b>Feedback / Ideen senden</b><small>Schreib, was dir fehlt, was nicht klappt oder besser sein könnte. Anonym, ohne Namen. Bitte keine persönlichen Daten hineinschreiben.</small></div>' +
       '<textarea id="fbText" class="fbtext" maxlength="' + FB_MAX + '" placeholder="Deine Nachricht …" aria-label="Feedback"></textarea>' +
       '<input type="text" id="fbWeb" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' +
       '<div class="fbrow"><small id="fbInfo" class="fbinfo">' + fbInfo() + '</small><button class="actbtn" id="fbSend" disabled>Senden</button></div></div></div>' +
       '<div class="group"><h3>App</h3>' +
       '<div class="setrow"><div class="l"><b>Version</b><small>' + esc(C.version) + '</small></div><button class="actbtn" id="bUpd">Nach Update suchen</button></div>' +
-      '<div class="setrow"><div class="l"><b>Offline</b><small>Nach dem ersten Öffnen mit Internet funktioniert die App ohne Netz.</small></div></div></div>' +
+      '<div class="setrow"><div class="l"><b>Offline</b><small>Nach dem ersten Öffnen mit Internet funktioniert die App ohne Netz.</small></div></div>' +
+      '<div class="setrow"><div class="l"><b>Anonyme Nutzungsstatistik</b><small>Zählt nur App-Starts und geöffnete Fächer. Ohne Geräte-ID, Namen oder Lernstand.</small></div>' + segHTML('stats', [[0, 'Aus'], [1, 'An']], st.stats ? 1 : 0) + '</div>' +
+      '<div class="setrow tap" id="privRow" role="button" tabindex="0"><div class="l"><b>Datenschutz</b><small>Was die App speichert und sendet</small></div><button class="actbtn" id="bPriv" type="button">Lesen</button></div></div>' +
       '<p class="note" style="text-align:center">Dein Lernstand liegt nur auf diesem Gerät. Mit dem Backup sicherst du ihn.</p>';
     view.innerHTML = h;
     $$('#view .group').forEach(function (g) {
@@ -1184,6 +1240,8 @@
       DB.settings.name = this.value.slice(0, 20); save(); document.title = appName(); $('#view .sub').textContent = appName();
     });
     $('#bShare').onclick = shareFile; $('#bCopy').onclick = copyText;
+    $('#privRow').onclick = function () { openTile('Datenschutz', privacyHTML()); };
+    $('#privRow').onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.onclick(); } };
     var fbT = $('#fbText'), fbB = $('#fbSend');
     fbT.addEventListener('input', function () { fbB.disabled = !fbT.value.trim(); $('#fbInfo').textContent = fbT.value.length > FB_MAX - 200 ? (FB_MAX - fbT.value.length) + ' Zeichen übrig' : fbInfo(); });
     fbB.onclick = function () {
@@ -1252,6 +1310,8 @@
   netState();
   window.addEventListener('hashchange', route);
   route();
+  statPing('start');
+  document.addEventListener('visibilitychange', statVisible);
   // ---- Automatische Update-Prüfung (höchstens alle 20 Stunden) und Hinweis, nie mitten im Test
   var updReady = false, updDismissed = false, bar = document.createElement('div');
   bar.className = 'updbar'; bar.setAttribute('role', 'status');

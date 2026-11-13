@@ -1,0 +1,33 @@
+import json
+from playwright.sync_api import sync_playwright
+errs=[]; got=[]
+B='http://localhost:8765/index.html'
+with sync_playwright() as p:
+    b=p.chromium.launch(executable_path='/usr/bin/google-chrome',args=['--no-sandbox'])
+    ctx=b.new_context(viewport={'width':390,'height':780},service_workers='block')
+    ctx.route('https://script.google.com/**', lambda r: (got.append(json.loads(r.request.post_data)), r.fulfill(status=200, body='ok')))
+    pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg.goto(B); pg.wait_for_timeout(800)
+    pg.goto(B+'#/f/psy'); pg.wait_for_timeout(500)
+    print('aus – pings:', got)
+    pg.goto(B+'#/einstellungen'); pg.wait_for_selector('.ghead')
+    pg.click('.ghead:has-text("App")')
+    pg.click('.seg[data-k=stats] button[data-v="1"]'); pg.wait_for_timeout(200)
+    print('setting:', pg.evaluate("JSON.parse(localStorage.getItem('lernkiste-v1')).settings.stats"))
+    print('localStorage keys:', pg.evaluate("Object.keys(localStorage)"))
+    pg.click('#privRow'); pg.wait_for_selector('.pvcard')
+    bb=pg.eval_on_selector('.pvcard','e=>{const r=e.getBoundingClientRect();return [r.top,r.bottom,innerHeight]}')
+    print('tile box', bb, 'overflow', pg.evaluate('document.documentElement.scrollWidth'))
+    pg.locator('.pvcard').screenshot(path='/home/claude/patch/tile.png')
+    pg.click('.pvok'); print('closed:', pg.locator('.pvcard').count()==0)
+    pg.click('#bPriv'); pg.mouse.click(5,5); print('backdrop closes:', pg.locator('.pvcard').count()==0)
+    pg.click('#bPriv'); pg.keyboard.press('Escape'); print('esc closes:', pg.locator('.pvcard').count()==0)
+    pg.click('#bPriv'); pg.goto(B+'#/'); pg.wait_for_timeout(200); print('route closes:', pg.locator('.pvcard').count()==0, pg.evaluate("document.body.classList.contains('tileopen')"))
+    pg.reload(); pg.wait_for_timeout(800)
+    pg.goto(B+'#/f/psy'); pg.wait_for_timeout(300)
+    pg.goto(B+'#/f/psy/u/pers'); pg.wait_for_timeout(300)
+    pg.goto(B+'#/f/diff1'); pg.wait_for_timeout(300)
+    print('an – pings:', got)
+    print('keys after:', pg.evaluate("Object.keys(localStorage)"))
+    print('errs', errs)
+    b.close()
