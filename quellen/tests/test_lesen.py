@@ -23,7 +23,7 @@ with sync_playwright() as p:
     for _ in range(21): pg.click('#rNext')
     print(pg.inner_text('.meta').replace('\n',' ')); ovf('readQ3'); pg.screenshot(path='/tmp/d1read_q3.png', full_page=True)
     pg.goto(B+'#/f/diff1/k1'); pg.reload(); pg.wait_for_selector('.mode'); pg.click('.mode >> nth=4'); pg.wait_for_selector('.chip'); print('exam setup:', pg.inner_text('#view')[:120].replace('\n',' '))
-    pg.goto(B+'#/f/psy/k1'); pg.reload(); pg.wait_for_selector('#bRead'); pg.click('#bRead'); pg.wait_for_selector('#rNext'); print('psy lesen ok', pg.inner_text('.status').replace('\n',' '))
+    pg.goto(B+'#/f/psy/k1?mode=cards'); pg.reload(); pg.wait_for_selector('#bRead'); pg.click('#bRead'); pg.wait_for_selector('#rNext'); print('psy lesen ok', pg.inner_text('.status').replace('\n',' '))
     pg.goto(B+'#/mix'); pg.reload(); pg.wait_for_selector('.mixrow'); print('mix:', pg.inner_text('.row').replace('\n',' '))
     b.close()
 print('errs',errs)

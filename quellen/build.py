@@ -63,8 +63,14 @@ def pers_cards(key, title, sub, num):
         out.append(dict(id=cid, red=False, src=c['src'], q=tex.convert(c['q']), a=tex.convert(c['a'])))
         search.append(dict(s='psy', title=c['src'], label=f'Karteikarte · Kap. {num}', route=f'/f/psy/{key}?c={cid}', kw=c['kw'], text=tex.plain(c['q']) + ' — ' + tex.plain(c['a'])))
     return dict(id=key, group='pers', title=title, sub=sub, kind='cards', placeholder=False, cards=out)
-pers_tests = tests_chapter('data_pers', 'psy', 'tp', 'Tests · Kapitel 1 und 2', 'Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
-pers_tests['group'] = 'pers'
+def pers_chapter(key, title, num):
+    ch = pers_cards(key, title, 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', num)
+    its = [i for i in data_pers.ITEMS if i['src'] == ('Teil %d · Kap. %d' % (num, num))]
+    for it in its:
+        search.append(dict(s='psy', title=it['src'], label=TYPES[it['type']], route=f"/f/psy/{key}?q={it['id']}", kw=it.get('kw', ''), text=test_text(it)))
+    ch['items'] = [conv_item(i) for i in its]
+    return ch
+assert len({i['id'] for i in data_pers.ITEMS}) == len(data_pers.ITEMS)
 
 import data_quer11
 quer11 = tests_chapter('data_quer11', 'quer', 'k11', 'Kapitel 11 · Gewöhnliche DGL erster Ordnung', 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
@@ -103,9 +109,8 @@ CONTENT = dict(name=NAME, version=VERSION, subjects=[
         dict(id='pers', name='Persönlichkeitspsychologie', desc='Eigenschaften, Methoden, Theorien'),
         dict(id='entw', name='Entwicklungspsychologie', desc='Kommt später'),
         dict(id='diag', name='Diagnostische Psychologie', desc='Kommt später')], chapters=[
-        pers_cards('k1', 'Kapitel 1 · Einführung und Eigenschaften', 'Karteikarten: Definition, Traits, Konstrukte', 1),
-        pers_cards('k2', 'Kapitel 2 · Methoden', 'Karteikarten: Forschungsansätze, Korrelation, Faktorenanalyse', 2),
-        pers_tests]),
+        pers_chapter('k1', 'Kapitel 1 · Einführung und Eigenschaften', 1),
+        pers_chapter('k2', 'Kapitel 2 · Methoden', 2)]),
 ], search=search)
 js = 'window.CONTENT = ' + json.dumps(CONTENT, ensure_ascii=False).replace('</', '<\\/') + ';\n'
 assert 'http' not in re.sub(r'xmlns=\\"http://www.w3.org/1998/Math/MathML\\"', '', js), 'externe Verweise'
@@ -182,7 +187,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'q
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v21';
+const CACHE = 'lernkiste-v22';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{

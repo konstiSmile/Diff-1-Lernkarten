@@ -97,6 +97,17 @@
     d = d || {};
     d.v = 1; d.recent = d.recent || []; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || []; d.custom = d.custom || {}; d.custom.folders = d.custom.folders || [];
     d.settings = Object.assign({}, DEFAULTS, d.settings || {});
+    // Psycho: früheres Test-Kapitel „tp“ (Kap. 1 und 2) ist auf k1/k2 verteilt; offene Fehler übernehmen. Alter Schlüssel bleibt.
+    var tp = d.tests['psy/tp'];
+    if (tp && !tp.moved) {
+      ['k1', 'k2'].forEach(function (k) {
+        var c = chap('psy', k); if (!c || !c.items) return;
+        var ids = {}; c.items.forEach(function (i) { ids[i.id] = 1; });
+        var t = d.tests['psy/' + k] = d.tests['psy/' + k] || { best: {}, wrong: [] }; t.best = t.best || {}; t.wrong = t.wrong || [];
+        (tp.wrong || []).forEach(function (w) { if (ids[w] && t.wrong.indexOf(w) < 0) t.wrong.push(w); });
+      });
+      tp.moved = 1;
+    }
     return d;
   }
   function migrate(d) {
@@ -110,7 +121,9 @@
   var DB = (function () {
     var d = rd(KEY), fresh = !d;
     d = normalizeDB(d);
-    if (fresh) { migrate(d); try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+    var moved = d.tests['psy/tp'] && d.tests['psy/tp'].moved === 1 && !d.tests['psy/tp'].saved;
+    if (fresh) migrate(d);
+    if (fresh || moved) { if (moved) d.tests['psy/tp'].saved = 1; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
     return d;
   })();
   function save() {
@@ -335,6 +348,7 @@
     view.innerHTML = h + '</div>';
   }
   function chapterView(sid, cid, q) {
+    if (sid === 'psy' && cid === 'tp') { location.replace('#/f/psy/u/pers'); return; }
     var s = subj(sid), ch = chap(sid, cid); if (!s || !ch) return homeView();
     view.className = 's-' + sid;
     var grp = ch.group && (s.groups || []).filter(function (g) { return g.id === ch.group; })[0];

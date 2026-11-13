@@ -242,3 +242,77 @@ add(id='pp-gap-07', type='gap', text='Eine Scheinkorrelation durch eine dritte V
     expl='Konfundierung: Vermischung zweier Einflüsse.', src=S2, kw='Konfundierung Scheinkorrelation')
 add(id='pp-gap-08', type='gap', text='Eine Faktorladung ist die {{Korrelation}} zwischen einer Variable (Item) und einem {{Faktor}}.',
     expl='Item ↔ Faktor, nicht Item ↔ Item.', src=S2, kw='Faktorladung Korrelation Faktor')
+
+# ---------------------------------------------------------------- Ergänzung 13. Nov. 2026 (Kapitel 1 und 2 je mit eigenen Tests)
+# Kapitel 1
+add(id='pp-mc-21', type='mc', q='Welche Frage gehört <b>nicht</b> zu den fünf Leitfragen der Persönlichkeitspsychologie?',
+    options=['Was sind die Ursachen der Unterschiede zwischen Menschen?', 'Wie stark lassen sich die Merkmale beeinflussen?', 'Wie groß sind die Unterschiede?', 'Wie behandelt man psychische Störungen?'], correct=3,
+    expl='Die fünf Fragen: Beschaffenheit der Merkmale, Ausmaß der Unterschiede, Abhängigkeit der Merkmale voneinander, Ursachen, Beeinflussbarkeit. Störungen gehören nicht dazu (nicht-pathologisch).', src=S1, kw='Leitfragen Ursachen Beeinflussbarkeit Ausmaß')
+add(id='pp-mc-22', type='mc', q='Was bedeutet „<b>überdauernd</b>“ in der Arbeitsdefinition der Persönlichkeitspsychologie?',
+    options=['lebenslang unveränderlich', 'mittel- und langfristige Phänomene', 'nur in einer einzigen Situation beobachtbar', 'genetisch festgelegt'], correct=1,
+    expl='Überdauernd = mittel- und langfristig, nicht „lebenslang unveränderlich“.', src=S1, kw='überdauernd mittelfristig langfristig')
+add(id='pp-mc-23', type='mc', q='Wozu dient die <b>Alltagspsychologie</b>?',
+    options=['Menschen beschreiben, ihr Verhalten erklären und vorhersagen', 'psychische Störungen behandeln', 'Faktoren aus Korrelationen gewinnen', 'Konstrukte direkt messen'], correct=0,
+    expl='Beschreiben, erklären, vorhersagen. Die Persönlichkeitspsychologie fragt dann, welche Merkmale konkret gemeint sind.', src=S1, kw='Alltagspsychologie beschreiben erklären vorhersagen')
+add(id='pp-mc-24', type='mc', q='Wie sind Eigenschaften wie Geselligkeit in der Bevölkerung typischerweise verteilt?',
+    options=['normalverteilt: die meisten liegen in der Mitte', 'gleichverteilt: jede Ausprägung gleich häufig', 'in zwei klare Gruppen geteilt (gesellig / ungesellig)', 'die meisten liegen an den Extremen'], correct=0,
+    expl='Eigenschaften sind <b>normalverteilt</b> und bilden ein <b>Kontinuum</b>: die meisten sind „mittel gesellig“.', src=S1, kw='Normalverteilung Kontinuum Geselligkeit')
+add(id='pp-mc-25', type='mc', q='Klausur, Zahnarzt und Fallschirmspringen lösen jeweils negative Gedanken, Schwitzen, Zittern und Angst aus. Das Konstrukt „Ängstlichkeit“ fasst all das zusammen. Wofür ist das ein Beispiel?',
+    options=['Ökonomie von Konstrukten', 'Konfundierung', 'State-Angst', 'ideografischer Ansatz'], correct=0,
+    expl='Ein Konstrukt fasst viele Beobachtungen <b>sparsam</b> zusammen: Ökonomie von Konstrukten.', src=S1, kw='Ökonomie Konstrukt Ängstlichkeit')
+add(id='pp-mc-26', type='mc', q='Die Persönlichkeitspsychologie betrachtet auch rein <b>körperliche</b> Merkmale. Welches der folgenden ist eines?',
+    options=['sommersprossig', 'gewissenhaft', 'cholerisch', 'hilfsbereit'], correct=0,
+    expl='Körperliche Merkmale sind z. B. mittelgroß, schlank, sommersprossig, braunäugig, blond.', src=S1, kw='körperliche Merkmale sommersprossig')
+add(id='pp-tf-14', type='tf', statement='Eigenschaften sind Kategorien: Eine Person ist entweder gesellig oder ungesellig.', answer=False,
+    expl='Eigenschaften sind <b>Dimensionen</b> (Kontinuum), jede Person liegt irgendwo auf der Skala.', src=S1, kw='Kontinuum Dimension Kategorie')
+add(id='pp-tf-15', type='tf', statement='Ein Konstrukt ist ein theoretischer Sachverhalt, der nicht direkt beobachtbar ist.', answer=True,
+    expl='Konstrukte sind gedanklicher Natur. Auch Dispositionen sind Konstrukte.', src=S1, kw='Konstrukt beobachtbar theoretisch')
+add(id='pp-tf-16', type='tf', statement='Eine Disposition muss nach Asendorpf lebenslang unveränderlich sein.', answer=False,
+    expl='Gefordert ist nur <b>mittelfristige</b> Stabilität: zumindest Wochen oder Monate.', src=S1, kw='Disposition lebenslang mittelfristig')
+add(id='pp-tf-17', type='tf', statement='Die Persönlichkeitspsychologie betrachtet auch rein körperliche Merkmale wie Augenfarbe oder Körpergröße.', answer=True,
+    expl='Neben z. B. gewissenhaft oder ängstlich auch braunäugig, mittelgroß, blond.', src=S1, kw='körperliche Merkmale')
+add(id='pp-tf-18', type='tf', statement='Wer bei allen Prüfungen die Nerven verliert, zeigt eher State-Angst als Trait-Angst.', answer=False,
+    expl='Stabil über alle Prüfungen = <b>Trait</b> (Prüfungsangst). State wäre situationsabhängig.', src=S1, kw='Trait State Prüfungsangst')
+add(id='pp-tf-19', type='tf', statement='Zu den Leitfragen der Persönlichkeitspsychologie gehört, wie stark sich Merkmale durch Training, Umweltveränderungen oder Medikamente beeinflussen lassen.', answer=True,
+    expl='Das ist die Frage nach der <b>Beeinflussbarkeit</b>.', src=S1, kw='Beeinflussbarkeit Training Medikamente')
+add(id='pp-gap-09', type='gap', text='Ein nicht direkt beobachtbarer, theoretischer Sachverhalt innerhalb einer Theorie heißt {{Konstrukt}}.',
+    expl='Dispositionen sind Konstrukte.', src=S1, kw='Konstrukt')
+add(id='pp-gap-10', type='gap', text='Eine Disposition überdauert nach Asendorpf zumindest {{Wochen}} oder {{Monate}}.',
+    expl='Mittelfristige zeitliche Stabilität.', src=S1, kw='Disposition Wochen Monate')
+add(id='pp-gap-11', type='gap', text='Eigenschaften sind in der Bevölkerung meist {{normalverteilt|normal verteilt}}: die meisten Personen liegen in der Mitte.',
+    expl='Normalverteilung (Gauß) und Kontinuum.', src=S1, kw='Normalverteilung')
+
+# Kapitel 2
+add(id='pp-mc-27', type='mc', q='„Ist Lisa intelligenter als Anna?“ Zu welchem Forschungsansatz passt diese Frage?',
+    options=['ideografisch', 'nomothetisch', 'korrelative Forschung', 'Faktorenanalyse'], correct=0,
+    expl='Es geht um einzelne Individuen, nicht um Zusammenhänge in vielen Personen: <b>ideografisch</b>.', src=S2, kw='ideografisch Lisa Anna')
+add(id='pp-mc-28', type='mc', q='„Je mehr Strecke mit dem Auto, desto weniger Sprit im Tank.“ Was für ein Zusammenhang ist das?',
+    options=['eine negative Korrelation', 'eine positive Korrelation', 'keine Korrelation', 'eine Faktorladung'], correct=0,
+    expl='„Je mehr, desto weniger“ = negativ (Beispiel r = −.5).', src=S2, kw='negative Korrelation je mehr desto weniger')
+add(id='pp-mc-29', type='mc', q='In einer Gruppe sind alle gleich groß und gleich schwer. Was gilt für die Korrelation von Größe und Gewicht?',
+    options=['Sie lässt sich nicht berechnen.', 'r = 1', 'r = 0', 'r = −1'], correct=0,
+    expl='Ohne Streuung (keine Varianz) ist keine Korrelation berechenbar (Beispiel „Aliens“).', src=S2, kw='Varianz Streuung Korrelation berechenbar')
+add(id='pp-mc-30', type='mc', q='Fleiß korreliert mit r = .3 mit der Matheleistung. Wie viel Prozent der Varianz der Matheleistung erklärt Fleiß?',
+    options=['9 %', '30 %', '3 %', '60 %'], correct=0,
+    expl='r² = .3 · .3 = .09 → 9 %.', src=S2, kw='r2 Fleiß Matheleistung Varianz')
+add(id='pp-mc-31', type='mc', q='Welche zwei Entscheidungen trifft der Forscher bei der <b>Faktorenanalyse</b> selbst?',
+    options=['Welches Item zu welchem Faktor gehört und wie die Faktoren benannt werden', 'Welches Modell vorab gilt und wie groß die Stichprobe ist', 'Welche Items korrelieren und wie hoch die Ladungen sind', 'Ob die Daten normalverteilt sind und welche Skala gilt'], correct=0,
+    expl='Die Ladungen ergeben sich aus den Daten; zuordnen und benennen muss der Forscher.', src=S2, kw='Faktorenanalyse Entscheidungen benennen zuordnen')
+add(id='pp-tf-20', type='tf', statement='Korrelationsforschung untersucht zwei oder mehr Merkmale an vielen Individuen.', answer=True,
+    expl='Variationsforschung: ein Merkmal; Korrelationsforschung: zwei oder mehr. Beides nomothetisch.', src=S2, kw='Korrelationsforschung Merkmale Individuen')
+add(id='pp-tf-21', type='tf', statement='Psychografie untersucht viele Merkmale an einer einzigen Person.', answer=True,
+    expl='Psychografie = eine Individualität (ideografisch). Mehrere Individualitäten: Komparationsforschung.', src=S2, kw='Psychografie Individualität')
+add(id='pp-tf-22', type='tf', statement='Der Korrelationskoeffizient r liegt immer zwischen 0 und 1.', answer=False,
+    expl='r liegt zwischen <b>−1 und +1</b>; negative Werte heißen „je mehr, desto weniger“.', src=S2, kw='Korrelationskoeffizient Wertebereich')
+add(id='pp-tf-23', type='tf', statement='Bei der Faktorenanalyse sind Items desselben Faktors hoch korreliert, die Faktoren untereinander aber unkorreliert.', answer=True,
+    expl='Ziel sind möglichst unabhängige Dimensionen.', src=S2, kw='Faktorenanalyse unkorreliert Items')
+add(id='pp-tf-24', type='tf', statement='Schuhgröße und Einkommen korrelieren auch getrennt nach Geschlecht noch deutlich.', answer=False,
+    expl='Getrennt nach Geschlecht <b>nicht signifikant</b> (Männer .11, Frauen −.18): Scheinkorrelation durch Geschlecht.', src=S2, kw='Schuhgröße Einkommen Geschlecht Scheinkorrelation')
+add(id='pp-tf-25', type='tf', statement='„Sind Frauen hilfsbereiter als Männer?“ ist eine nomothetische Fragestellung.', answer=True,
+    expl='Gruppenunterschied über viele Personen = nomothetisch.', src=S2, kw='nomothetisch Gruppenunterschied')
+add(id='pp-gap-12', type='gap', text='Der Korrelationskoeffizient r liegt zwischen {{−1|-1}} und {{+1|1}}.',
+    expl='Positiv: je mehr, desto mehr. Negativ: je mehr, desto weniger.', src=S2, kw='Korrelationskoeffizient Wertebereich')
+add(id='pp-gap-13', type='gap', text='Die {{Faktorenanalyse}} reduziert viele Variablen auf eine kleinere Zahl möglichst unabhängiger Faktoren.',
+    expl='Sammelbegriff für Verfahren, die Korrelationsmuster analysieren.', src=S2, kw='Faktorenanalyse Reduktion')
+add(id='pp-gap-14', type='gap', text='Ideografische Forschung, die zwei oder mehr Individualitäten vergleicht, heißt {{Komparationsforschung}}.',
+    expl='Eine Individualität: Psychografie.', src=S2, kw='Komparationsforschung ideografisch')
