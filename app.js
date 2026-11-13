@@ -131,7 +131,8 @@
       if (statAskedNow || DB.settings.statsAsked || tileEl || document.body.classList.contains('immersive')) return;
       statAskedNow = true;
       openTile('Kurze Frage', '<p>Darf die Lernkiste <b>anonym zählen</b>, wie oft sie geöffnet wird und welche Fächer genutzt werden? Das hilft, die App zu verbessern.</p>' +
-        '<p>Gesendet werden nur „App-Start“ oder das geöffnete Fach und die App-Version. Keine Namen, keine Geräte-ID, kein Lernstand.</p>' +
+        '<div class="pvkey"><b>Ich kann damit niemanden zuordnen</b><p>Es werden keine personenbezogenen Daten erhoben. Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“ – nicht, wer die App geöffnet hat, mit welchem Gerät oder von wo. Auch zwei Einträge kann ich nicht derselben Person zuordnen.</p></div>' +
+        '<p>Gesendet werden nur „App-Start“ oder das geöffnete Fach und die App-Version. Kein Name, keine E-Mail, keine IP-Adresse, keine Geräte-ID, kein Standort, kein Lernstand.</p>' +
         '<p class="note">Du kannst das jederzeit ändern: Einstellungen → App. Dort steht auch alles zum Datenschutz.</p>',
         '<div class="row"><button type="button" class="ghost" id="stNo">Nein</button><button type="button" class="primary" id="stYes">Ja, gern</button></div>');
       function answer(on) {
@@ -144,7 +145,8 @@
     }, 1500);
   }
   function privacyHTML() {
-    return '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst oder die Nutzungsstatistik einschaltest.</p>' +
+    return '<div class="pvkey"><b>Das Wichtigste zuerst</b><p>Ich erhebe keine personenbezogenen Daten. Ich bekomme weder deinen Namen noch deine E-Mail-Adresse, IP-Adresse, eine Geräte-Kennung oder deinen Lernstand. Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“. Ich kann nicht erkennen, wer die App nutzt, mit welchem Gerät oder von wo, und auch nicht, ob zwei Einträge von derselben Person stammen.</p></div>' +
+      '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst oder die Nutzungsstatistik einschaltest.</p>' +
       '<h4>Auf deinem Gerät</h4>' +
       '<p>Lernstand, Verlauf, eigene Karten und Einstellungen (auch dein Name) liegen nur im Speicher deines Browsers. Sie verlassen das Gerät nicht, außer du speicherst selbst ein Backup. Damit die App offline läuft, speichert der Browser außerdem die App-Dateien.</p>' +
       '<h4>Beim Laden der App</h4>' +
@@ -152,9 +154,12 @@
       '<h4>Feedback (nur wenn du sendest)</h4>' +
       '<p>Gesendet werden dein Text, die App-Version und eine zufällige Kennung gegen Spam. Diese Kennung wird beim ersten Feedback auf dem Gerät gespeichert und sagt nichts über dich. Kein Name. Ziel ist eine private Google-Tabelle über Google Apps Script (Google, Server auch in den USA). Google verarbeitet dabei technisch deine IP-Adresse, in der Tabelle landet sie nicht. Schreib bitte keine persönlichen Daten in den Text.</p>' +
       '<h4>Nutzungsstatistik (nur wenn eingeschaltet)</h4>' +
-      '<p>Nur mit deiner Zustimmung: Die App fragt einmal, und du kannst es jederzeit ändern. Wenn sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Beim Öffnen kommt dazu nur, ob es der erste Start heute, in dieser Woche oder überhaupt auf diesem Gerät ist (ja/nein). So lässt sich zählen, wie viele Geräte die App nutzen, ohne sie zu unterscheiden. Dafür merkt sich die App auf deinem Gerät das Datum der letzten Meldung; das wird nicht gesendet und beim Ausschalten gelöscht. Den Zeitpunkt notiert die Tabelle. Keine Geräte-ID, kein Name, keine Antworten oder Lernstände. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
+      '<p><b>Die Statistik ist vollständig anonym.</b> Sie zählt nur, <i>wie oft</i> die App und die Fächer geöffnet werden, nicht <i>wer</i> sie öffnet. Kein Eintrag enthält etwas, das auf dich oder dein Gerät schließen lässt.</p>' +
+      '<p>Nur mit deiner Zustimmung: Die App fragt einmal, und du kannst es jederzeit ändern. Wenn sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Beim Öffnen kommt dazu nur, ob es der erste Start heute, in dieser Woche oder überhaupt auf diesem Gerät ist (ja/nein). So lässt sich zählen, wie viele Geräte die App nutzen, ohne sie zu unterscheiden. Dafür merkt sich die App auf deinem Gerät das Datum der letzten Meldung; das wird nicht gesendet und beim Ausschalten gelöscht. Den Zeitpunkt notiert die Tabelle. Nicht gesendet werden: Name, E-Mail, IP-Adresse, Geräte-ID, Gerätetyp, Standort, Antworten oder Lernstände. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
       '<h4>Wie lange</h4>' +
-      '<p>Einträge in der Tabelle werden nach spätestens 12 Monaten automatisch gelöscht. Weil keine Namen gespeichert werden, lassen sich Einträge keiner Person zuordnen.</p>';
+      '<p>Einträge in der Tabelle werden nach spätestens 12 Monaten automatisch gelöscht.</p>' +
+      '<h4>Keine Rückschlüsse auf dich</h4>' +
+      '<p>In der Tabelle steht nie, wer etwas gesendet hat. Ich kann Einträge keiner Person und keinem Gerät zuordnen und lege auch keine Profile an. Die einzige Ausnahme wäre, wenn du selbst etwas Persönliches in ein Feedback schreibst – deshalb bitte nicht.</p>';
   }
   function isHidden(sid) { return DB.hidden.indexOf(sid) >= 0; }
   function setHidden(sid, on) {
@@ -1255,7 +1260,7 @@
       '<div class="group"><h3>App</h3>' +
       '<div class="setrow"><div class="l"><b>Version</b><small>' + esc(C.version) + '</small></div><button class="actbtn" id="bUpd">Nach Update suchen</button></div>' +
       '<div class="setrow"><div class="l"><b>Offline</b><small>Nach dem ersten Öffnen mit Internet funktioniert die App ohne Netz.</small></div></div>' +
-      '<div class="setrow"><div class="l"><b>Anonyme Nutzungsstatistik</b><small>Zählt nur App-Starts und geöffnete Fächer. Ohne Geräte-ID, Namen oder Lernstand.</small></div>' + segHTML('stats', [[0, 'Aus'], [1, 'An']], st.stats ? 1 : 0) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Anonyme Nutzungsstatistik</b><small>Ohne personenbezogene Daten: zählt nur App-Starts und geöffnete Fächer. Kein Name, keine IP-Adresse, keine Geräte-ID, kein Lernstand. Niemand ist daran erkennbar, auch nicht für mich.</small></div>' + segHTML('stats', [[0, 'Aus'], [1, 'An']], st.stats ? 1 : 0) + '</div>' +
       '<div class="setrow tap" id="privRow" role="button" tabindex="0"><div class="l"><b>Datenschutz</b><small>Was die App speichert und sendet</small></div><button class="actbtn" id="bPriv" type="button">Lesen</button></div></div>' +
       '<p class="note" style="text-align:center">Dein Lernstand liegt nur auf diesem Gerät. Mit dem Backup sicherst du ihn.</p>';
     view.innerHTML = h;
