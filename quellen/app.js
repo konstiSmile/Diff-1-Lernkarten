@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0 };
+  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '' };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -27,7 +27,7 @@
   }
   function toast(msg, actionLabel, action) {
     $$('.toast').forEach(function (x) { x.remove(); });
-    var t = document.createElement('div'); t.className = 'toast'; t.appendChild(document.createTextNode(msg));
+    var t = document.createElement('div'); t.className = 'toast' + (msg.length > 40 ? ' long' : ''); t.appendChild(document.createTextNode(msg));
     if (actionLabel) {
       var b = document.createElement('button'); b.type = 'button'; b.className = 'toastact'; b.textContent = actionLabel;
       b.onclick = function () { t.remove(); action(); }; t.appendChild(b);
@@ -223,8 +223,43 @@
   })();
   function save() {
     if (DB.log.length > 20000) DB.log.splice(0, DB.log.length - 20000);
-    try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) {}
+    try { localStorage.setItem(KEY, JSON.stringify(DB)); saveWarned = false; }
+    catch (e) {
+      if (saveWarned) return; saveWarned = true;
+      setTimeout(function () { toast('Achtung: Speichern hat nicht geklappt (Speicher voll oder gesperrt). Bitte mach ein Backup.', 'Backup', shareFile); }, 50);
+    }
   }
+  var saveWarned = false;
+  // ---- Eigene Karten: Merker für Änderungen seit dem letzten Backup und Erinnerung
+  function ownTouch() { if (!DB.settings.ownDirty) DB.settings.ownDirty = Date.now(); }
+  function ownCount() { return DB.custom.folders.reduce(function (n, f) { return n + f.cards.length; }, 0); }
+  function backupMarked() { DB.settings.lastBackup = Date.now(); DB.settings.ownDirty = 0; save(); }
+  function ownFirstTip() {
+    if (DB.settings.ownTip) return; DB.settings.ownTip = Date.now(); save();
+    setTimeout(function () { toast('Tipp: Eigene Karten liegen nur auf diesem Gerät. Sichere sie ab und zu mit einem Backup.', 'Backup', shareFile); }, 400);
+  }
+  var nagDone = false;
+  function backupNag() {
+    if (nagDone) return; nagDone = true;
+    if (ownCount() && !DB.settings.lastBackup && !DB.settings.ownDirty) { DB.settings.ownDirty = Date.now(); save(); }
+    var d = DB.settings.ownDirty, today = dayKey(Date.now());
+    if (!d || !ownCount() || Date.now() - d < 7 * 864e5 || DB.settings.nagDay === today) return;
+    setTimeout(function () {
+      if (tileEl || document.body.classList.contains('immersive')) { nagDone = false; return; }
+      DB.settings.nagDay = today; save();
+      var n = Math.floor((Date.now() - d) / 864e5);
+      toast('Deine eigenen Karten sind seit ' + n + ' Tagen nicht gesichert.', 'Backup', shareFile);
+    }, 2500);
+  }
+  function backupHint() {
+    if (!ownCount()) return '';
+    var lb = DB.settings.lastBackup, d = DB.settings.ownDirty || !lb;
+    var txt = d ? (lb ? 'Seit dem letzten Backup (' + new Date(lb).toLocaleDateString('de-DE') + ') hast du Karten geändert.' : 'Deine eigenen Karten sind noch nicht gesichert.')
+      : 'Gesichert im Backup vom ' + new Date(lb).toLocaleDateString('de-DE') + '.';
+    return '<div class="bkhint' + (d ? ' warn' : '') + '"><div><b>' + (d ? 'Backup empfohlen' : 'Alles gesichert') + '</b><small>' + txt + ' Eigene Karten liegen nur auf diesem Gerät und gehen verloren, wenn die Browserdaten gelöscht werden.</small></div>' +
+      (d ? '<button type="button" class="actbtn" id="bkNow">Backup</button>' : '') + '</div>';
+  }
+  function bindBackupHint() { var b = $('#bkNow'); if (b) b.onclick = shareFile; }
   function logAns(fach, id, score) { DB.log.push([Date.now(), fach, id, Math.round(score * 100) / 100]); }
   function tests(sid, cid) { var k = sid + '/' + cid, t = DB.tests[k] = DB.tests[k] || {}; t.best = t.best || {}; t.wrong = t.wrong || []; return t; }
 
@@ -277,7 +312,7 @@
     else if (p[0] === 'f' && p[1] && p[2]) chapterView(p[1], p[2], r.q);
     else homeView();
     if (p[0] === 'f' && p[1]) statFach(p[1]);
-    statAsk();
+    statAsk(); backupNag();
     setTab(tab);
     if (!(p[0] === 'f' && p[2] && r.q.c)) window.scrollTo(0, 0);
   }
@@ -1110,11 +1145,12 @@
           '</span><div class="bar"><div style="width:' + (f.cards.length ? k / f.cards.length * 100 : 0) + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
       }).join('') + '</div>';
     } else h += '<div class="note" style="text-align:center;padding:8px 6px 18px">Noch keine eigenen Ordner. Lege einen an und schreib deine Karten selbst, mit Symbolen und Formeln.</div>';
+    h += backupHint();
     h += '<div class="group" style="padding:14px 16px;margin-top:16px"><b>Neuer Ordner</b><div class="newrow"><input class="txt wide" id="fname" type="text" maxlength="40" placeholder="Name, z. B. Analysis Formeln" autocomplete="off"><button class="actbtn" id="fadd">Anlegen</button></div></div>';
-    view.innerHTML = h;
+    view.innerHTML = h; bindBackupHint();
     function add() {
       var name = $('#fname').value.trim().replace(/\s+/g, ' '); if (!name) { toast('Bitte einen Namen eingeben'); return; }
-      var f = { id: newId('o'), name: name, cards: [] }; DB.custom.folders.push(f); save(); location.hash = '#/neu/' + f.id;
+      var f = { id: newId('o'), name: name, cards: [] }; DB.custom.folders.push(f); ownTouch(); save(); location.hash = '#/neu/' + f.id;
     }
     $('#fadd').onclick = add; $('#fname').addEventListener('keydown', function (e) { if (e.key === 'Enter') add(); });
   }
@@ -1139,10 +1175,11 @@
             '<button class="actbtn" data-edit="' + c.id + '">Bearbeiten</button><button class="actbtn danger" data-del="' + c.id + '">Löschen</button></div>';
         }).join('') + '</div>';
       }
+      h += backupHint();
       h += '<div class="tools"><button id="imp">' + (importOpen ? 'Einfügen schließen' : 'Mehrere Karten einfügen') + '</button><button id="fren">Ordner umbenennen</button><button id="fdel">Ordner löschen</button></div>';
       if (importOpen) h += '<div class="group" style="padding:12px 16px"><b>Mehrere Karten einfügen</b><p class="note" style="margin:4px 0 0">Eine Karte pro Zeile: <code>Frage ; Antwort</code></p><textarea class="imp" id="impTx" placeholder="Was ist 2+2 ; 4"></textarea><div id="impInfo" class="note"></div><div class="row"><button class="primary" id="impGo">Importieren</button></div></div>';
       var scr = window.scrollY, hadFocus = document.activeElement && document.activeElement.id;
-      view.innerHTML = h; window.scrollTo(0, scr);
+      view.innerHTML = h; window.scrollTo(0, scr); bindBackupHint();
       var q = $('#qIn'), a = $('#aIn');
       function prev() { $('#pvQ').innerHTML = q.value.trim() ? '<b>F:</b> ' + rich(q.value) : ''; $('#pvA').innerHTML = a.value.trim() ? '<b>A:</b> ' + rich(a.value) : ''; }
       q.addEventListener('focus', function () { last = 'q'; }); a.addEventListener('focus', function () { last = 'a'; });
@@ -1163,21 +1200,21 @@
       $('#esave').onclick = function () {
         var qv = q.value.trim(), av = a.value.trim(); if (!qv || !av) { toast('Frage und Antwort ausfüllen'); return; }
         if (ed) { ed.q = qv; ed.a = av; toast('Gespeichert'); } else f.cards.push({ id: newId('oc'), q: qv, a: av, ts: Date.now() });
-        editId = null; save(); draw(); if (!ed) { window.scrollTo(0, scr); $('#qIn').focus({ preventScroll: true }); }
+        editId = null; ownTouch(); save(); draw(); if (!ed) { window.scrollTo(0, scr); $('#qIn').focus({ preventScroll: true }); ownFirstTip(); }
       };
       var ec = $('#ecancel'); if (ec) ec.onclick = function () { editId = null; draw(); };
       $$('[data-edit]').forEach(function (b) { b.onclick = function () { editId = b.dataset.edit; draw(); window.scrollTo(0, 0); }; });
       $$('[data-del]').forEach(function (b) {
         b.onclick = function () {
           if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'Wirklich?'; setTimeout(function () { if (b.isConnected) { b.textContent = 'Löschen'; delete b.dataset.sure; } }, 3000); return; }
-          var id = b.dataset.del; f.cards = f.cards.filter(function (c) { return c.id !== id; }); delete DB.progress[id]; save(); draw();
+          var id = b.dataset.del; f.cards = f.cards.filter(function (c) { return c.id !== id; }); delete DB.progress[id]; ownTouch(); save(); draw();
         };
       });
       $('#imp').onclick = function () { importOpen = !importOpen; draw(); };
-      $('#fren').onclick = function () { var n = prompt('Neuer Name für den Ordner', f.name); if (n && n.trim()) { f.name = n.trim().slice(0, 40); save(); draw(); } };
+      $('#fren').onclick = function () { var n = prompt('Neuer Name für den Ordner', f.name); if (n && n.trim()) { f.name = n.trim().slice(0, 40); ownTouch(); save(); draw(); } };
       $('#fdel').onclick = function () {
         var b = $('#fdel'); if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'Wirklich löschen?'; return; }
-        DB.custom.folders = DB.custom.folders.filter(function (x) { return x.id !== f.id; }); f.cards.forEach(function (c) { delete DB.progress[c.id]; }); save(); location.hash = '#/neu'; toast('Ordner gelöscht');
+        DB.custom.folders = DB.custom.folders.filter(function (x) { return x.id !== f.id; }); f.cards.forEach(function (c) { delete DB.progress[c.id]; }); ownTouch(); save(); location.hash = '#/neu'; toast('Ordner gelöscht');
       };
       if (importOpen) {
         var tx = $('#impTx');
@@ -1185,7 +1222,7 @@
         tx.addEventListener('input', function () { var n = parse().length; $('#impInfo').textContent = n ? n + ' Karten erkannt' : ''; });
         $('#impGo').onclick = function () {
           var list = parse(); if (!list.length) { toast('Keine Karten erkannt. Format: Frage ; Antwort'); return; }
-          list.forEach(function (c) { f.cards.push({ id: newId('oc'), q: c.q, a: c.a, ts: Date.now() }); }); save(); importOpen = false; draw(); toast(list.length + ' Karten hinzugefügt');
+          list.forEach(function (c) { f.cards.push({ id: newId('oc'), q: c.q, a: c.a, ts: Date.now() }); }); ownTouch(); save(); importOpen = false; draw(); toast(list.length + ' Karten hinzugefügt'); ownFirstTip();
         };
       }
     }
@@ -1197,17 +1234,20 @@
   function segHTML(key, opts, val) {
     return '<div class="seg small" data-k="' + key + '">' + opts.map(function (o) { return '<button data-v="' + o[0] + '" class="' + (String(val) === String(o[0]) ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>';
   }
-  function exportText() { return JSON.stringify({ app: 'lernkiste', v: 1, exported: new Date().toISOString(), data: DB }); }
+  function exportText() {
+    var d = JSON.parse(JSON.stringify(DB)); d.settings.ownDirty = 0; d.settings.lastBackup = Date.now();
+    return JSON.stringify({ app: 'lernkiste', v: 1, exported: new Date().toISOString(), data: d });
+  }
   function shareFile() {
     var txt = exportText(), name = 'lernkiste-backup-' + dayKey(Date.now()) + '.json', blob = new Blob([txt], { type: 'application/json' }), file = null;
     try { file = new File([blob], name, { type: 'application/json' }); } catch (e) {}
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'Lernkiste Backup' }).catch(function () {});
-    else { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); URL.revokeObjectURL(a.href); }, 1000); toast('Backup gespeichert'); }
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'Lernkiste Backup' }).then(backupMarked, function () {});
+    else { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); URL.revokeObjectURL(a.href); }, 1000); backupMarked(); toast('Backup gespeichert'); }
   }
   function copyText() {
     var txt = exportText();
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { toast('Backup kopiert'); }, function () { toast('Kopieren nicht möglich'); });
-    else { var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('Backup kopiert'); } catch (e) { toast('Kopieren nicht möglich'); } ta.remove(); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { backupMarked(); toast('Backup kopiert'); }, function () { toast('Kopieren nicht möglich'); });
+    else { var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); backupMarked(); toast('Backup kopiert'); } catch (e) { toast('Kopieren nicht möglich'); } ta.remove(); }
   }
   function mergeInto(a, b) {
     Object.assign(a.progress, b.progress || {});
@@ -1246,7 +1286,7 @@
       '<div class="setrow"><div class="l"><b>Klausur: Minuten</b></div>' + segHTML('examMin', [[10, '10'], [20, '20'], [30, '30']], st.examMin) + '</div>' +
       '<div class="setrow"><div class="l"><b>Klausur: Fragen</b></div>' + segHTML('examN', [[8, '8'], [12, '12'], [16, '16']], st.examN) + '</div></div>' +
       '<div class="group"><h3>Daten und Backup</h3>' +
-      '<div class="setrow"><div class="l"><b>Backup speichern</b><small>Lernstand, Verlauf und Einstellungen als Datei</small></div><button class="actbtn" id="bShare">Datei</button></div>' +
+      '<div class="setrow"><div class="l"><b>Backup speichern</b><small>Lernstand, Verlauf, eigene Karten und Einstellungen als Datei</small></div><button class="actbtn" id="bShare">Datei</button></div>' +
       '<div class="setrow"><div class="l"><b>Backup als Text kopieren</b><small>Zum Einfügen auf einem anderen Gerät</small></div><button class="actbtn" id="bCopy">Kopieren</button></div>' +
       '<div class="setrow"><div class="l"><b>Backup einspielen</b><small>Aus Datei oder eingefügtem Text</small></div><span style="display:flex;gap:6px"><button class="actbtn" id="bFile">Datei</button><button class="actbtn" id="bPaste">Text</button></span></div>' +
       '<div id="impbox"></div><input type="file" id="file" accept=".json,application/json,text/plain" style="display:none">' +
