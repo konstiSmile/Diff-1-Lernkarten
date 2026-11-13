@@ -316,3 +316,8 @@ add(id='pp-gap-13', type='gap', text='Die {{Faktorenanalyse}} reduziert viele Va
     expl='Sammelbegriff für Verfahren, die Korrelationsmuster analysieren.', src=S2, kw='Faktorenanalyse Reduktion')
 add(id='pp-gap-14', type='gap', text='Ideografische Forschung, die zwei oder mehr Individualitäten vergleicht, heißt {{Komparationsforschung}}.',
     expl='Eine Individualität: Psychografie.', src=S2, kw='Komparationsforschung ideografisch')
+
+# Teil 3 (Kap. 3a und 3b) liegt in data_pers3.py
+from data_pers3 import CARDS3, ITEMS3
+CARDS.update(CARDS3)
+ITEMS += ITEMS3

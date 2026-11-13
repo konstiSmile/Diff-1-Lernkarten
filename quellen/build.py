@@ -56,16 +56,16 @@ def tests_chapter(modname, sid, cid, title, sub, placeholder):
     return dict(id=cid, title=title, sub=sub, kind='tests', placeholder=placeholder, items=[conv_item(i) for i in m.ITEMS])
 
 import data_pers
-def pers_cards(key, title, sub, num):
+def pers_cards(key, title, sub, num, lab=None):
     out = []
     for c in data_pers.CARDS[key]:
         cid = f"psy-pers-{key}-{c['key']}"
         out.append(dict(id=cid, red=False, src=c['src'], q=tex.convert(c['q']), a=tex.convert(c['a'])))
-        search.append(dict(s='psy', title=c['src'], label=f'Karteikarte · Kap. {num}', route=f'/f/psy/{key}?c={cid}', kw=c['kw'], text=tex.plain(c['q']) + ' — ' + tex.plain(c['a'])))
+        search.append(dict(s='psy', title=c['src'], label=f'Karteikarte · Kap. {lab or num}', route=f'/f/psy/{key}?c={cid}', kw=c['kw'], text=tex.plain(c['q']) + ' — ' + tex.plain(c['a'])))
     return dict(id=key, group='pers', title=title, sub=sub, kind='cards', placeholder=False, cards=out)
-def pers_chapter(key, title, num):
-    ch = pers_cards(key, title, 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', num)
-    its = [i for i in data_pers.ITEMS if i['src'] == ('Teil %d · Kap. %d' % (num, num))]
+def pers_chapter(key, title, num, lab=None):
+    ch = pers_cards(key, title, 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', num, lab)
+    its = [i for i in data_pers.ITEMS if i['src'] == ('Teil %d · Kap. %s' % (num, lab or num))]
     for it in its:
         search.append(dict(s='psy', title=it['src'], label=TYPES[it['type']], route=f"/f/psy/{key}?q={it['id']}", kw=it.get('kw', ''), text=test_text(it)))
     ch['items'] = [conv_item(i) for i in its]
@@ -125,6 +125,8 @@ CONTENT = dict(name=NAME, version=VERSION, subjects=[
         dict(id='diag', name='Diagnostische Psychologie', desc='Beobachtung, Tests, Interviews')], chapters=[
         pers_chapter('k1', 'Kapitel 1 · Einführung und Eigenschaften', 1),
         pers_chapter('k2', 'Kapitel 2 · Methoden', 2),
+        pers_chapter('k3a', 'Kapitel 3a · Geschichte und Eigenschaftsparadigma', 3, '3a'),
+        pers_chapter('k3b', 'Kapitel 3b · Behaviorismus, Evolution, Informationsverarbeitung, Neurowissenschaft', 3, '3b'),
         diag_chapter('d1', 'Teil 1 · Grundlagen, Beobachtung, Tests, Interviews', 1)]),
 ], search=search)
 js = 'window.CONTENT = ' + json.dumps(CONTENT, ensure_ascii=False).replace('</', '<\\/') + ';\n'
@@ -208,7 +210,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'q
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v24';
+const CACHE = 'lernkiste-v25';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{
