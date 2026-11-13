@@ -304,3 +304,8 @@ add(id='pd-gap-12', type='gap', text='Den Gesamt-IQ gibt man mit {{Prozentrang}}
     expl='Indexwerte sind IQ-standardisiert.', kw='Gesamt-IQ Prozentrang')
 add(id='pd-gap-13', type='gap', text='Die Sammlung von Informationen über eine Erkrankung oder Störung heißt {{Anamnese}}.',
     expl='Eine Form des Interviews.', kw='Anamnese')
+
+# Teil 2 liegt in data_diag2.py
+from data_diag2 import CARDS2, ITEMS2
+CARDS.update(CARDS2)
+ITEMS += ITEMS2
