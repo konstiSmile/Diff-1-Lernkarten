@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0 };
+  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0 };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -77,7 +77,7 @@
     } catch (e) {}
   }
   function statFach(sid) {
-    if (statSeen[sid] || !subj(sid)) return;
+    if (!DB.settings.stats || statSeen[sid] || !subj(sid)) return;
     statSeen[sid] = 1; statPing('fach', sid);
   }
   function statVisible() {
@@ -92,19 +92,40 @@
     tileEl.remove(); tileEl = null; document.body.classList.remove('pvopen');
     document.removeEventListener('keydown', tileKey);
   }
-  function openTile(title, html) {
+  function openTile(title, html, foot) {
     closeTile();
     var w = document.createElement('div'); w.className = 'pvwrap';
     w.innerHTML = '<div class="pvcard" role="dialog" aria-modal="true" aria-label="' + esc(title) + '">' +
       '<div class="pvhead"><b>' + esc(title) + '</b><button type="button" class="pvx" aria-label="Schließen">✕</button></div>' +
       '<div class="pvbody">' + html + '</div>' +
-      '<button type="button" class="actbtn pvok">Schließen</button></div>';
+      (foot || '<button type="button" class="actbtn pvok">Schließen</button>') + '</div>';
     w.onclick = function (e) { if (e.target === w || e.target.closest('.pvx, .pvok')) closeTile(); };
     tileKey = function (e) { if (e.key === 'Escape') closeTile(); };
     document.addEventListener('keydown', tileKey);
     document.body.appendChild(w); document.body.classList.add('pvopen'); tileEl = w;
     cleanups.push(closeTile);
     $('.pvx', w).focus();
+  }
+  // ---- Einmalige Frage nach der Nutzungsstatistik (Einwilligung); ohne Antwort beim nächsten Start erneut
+  var statAskedNow = false;
+  function statAsk() {
+    if (statAskedNow || DB.settings.statsAsked) return;
+    if (DB.settings.stats) { DB.settings.statsAsked = Date.now(); save(); return; }
+    setTimeout(function () {
+      if (statAskedNow || DB.settings.statsAsked || tileEl || document.body.classList.contains('immersive')) return;
+      statAskedNow = true;
+      openTile('Kurze Frage', '<p>Darf die Lernkiste <b>anonym zählen</b>, wie oft sie geöffnet wird und welche Fächer genutzt werden? Das hilft, die App zu verbessern.</p>' +
+        '<p>Gesendet werden nur „App-Start“ oder das geöffnete Fach und die App-Version. Keine Namen, keine Geräte-ID, kein Lernstand.</p>' +
+        '<p class="note">Du kannst das jederzeit ändern: Einstellungen → App. Dort steht auch alles zum Datenschutz.</p>',
+        '<div class="row"><button type="button" class="ghost" id="stNo">Nein</button><button type="button" class="primary" id="stYes">Ja, gern</button></div>');
+      function answer(on) {
+        DB.settings.stats = on ? 1 : 0; DB.settings.statsAsked = Date.now(); save(); closeTile();
+        if (on) { statPing('start'); var r = parseHash().parts; if (r[0] === 'f' && r[1]) statFach(r[1]); }
+        toast(on ? 'Danke!' : 'Okay, es wird nichts gezählt');
+      }
+      $('#stYes').onclick = function () { answer(true); };
+      $('#stNo').onclick = function () { answer(false); };
+    }, 1500);
   }
   function privacyHTML() {
     return '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst oder die Nutzungsstatistik einschaltest.</p>' +
@@ -115,7 +136,7 @@
       '<h4>Feedback (nur wenn du sendest)</h4>' +
       '<p>Gesendet werden dein Text, die App-Version und eine zufällige Kennung gegen Spam. Diese Kennung wird beim ersten Feedback auf dem Gerät gespeichert und sagt nichts über dich. Kein Name. Ziel ist eine private Google-Tabelle über Google Apps Script (Google, Server auch in den USA). Google verarbeitet dabei technisch deine IP-Adresse, in der Tabelle landet sie nicht. Schreib bitte keine persönlichen Daten in den Text.</p>' +
       '<h4>Nutzungsstatistik (nur wenn eingeschaltet)</h4>' +
-      '<p>Standardmäßig aus. Wenn du sie einschaltest, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Den Zeitpunkt notiert die Tabelle. Keine Geräte-ID, kein Name, keine Antworten oder Lernstände, und auf dem Gerät wird dafür nichts gespeichert außer deiner Einstellung. Einzelne Personen lassen sich so nicht unterscheiden. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
+      '<p>Nur mit deiner Zustimmung: Die App fragt einmal, und du kannst es jederzeit ändern. Wenn sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Den Zeitpunkt notiert die Tabelle. Keine Geräte-ID, kein Name, keine Antworten oder Lernstände, und auf dem Gerät wird dafür nichts gespeichert außer deiner Einstellung. Einzelne Personen lassen sich so nicht unterscheiden. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
       '<h4>Wie lange</h4>' +
       '<p>Einträge in der Tabelle werden nach spätestens 12 Monaten automatisch gelöscht. Weil keine Namen gespeichert werden, lassen sich Einträge keiner Person zuordnen.</p>';
   }
@@ -235,6 +256,7 @@
     else if (p[0] === 'f' && p[1] && p[2]) chapterView(p[1], p[2], r.q);
     else homeView();
     if (p[0] === 'f' && p[1]) statFach(p[1]);
+    statAsk();
     setTab(tab);
     if (!(p[0] === 'f' && p[2] && r.q.c)) window.scrollTo(0, 0);
   }

@@ -328,3 +328,4 @@ body.pvopen { overflow:hidden; }
 .pvbody p { margin:0 0 10px; }
 .pvbody h4 { margin:14px 0 4px; font-size:.74rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; }
 .pvok { align-self:stretch; margin-top:12px; padding:10px 12px; }
+.pvcard > .row { margin-top:12px; } .pvcard > .row button { flex:1; padding:10px 12px; }
