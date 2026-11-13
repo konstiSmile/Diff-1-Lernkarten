@@ -68,12 +68,28 @@
   }
   // ---- Anonyme Nutzungsstatistik (nur mit Einwilligung, Standard aus): keine Geräte-ID, nichts auf dem Gerät gespeichert
   var statSeen = {}, statHiddenAt = 0;
+  // Merker nur auf dem Gerät (nicht im Backup): Datum/Woche der letzten Meldung und ob schon einmal gemeldet. Gesendet werden nur Ja/Nein-Werte.
+  var STAT_KEY = 'lernkiste-stat';
+  function statMarks() { try { var m = JSON.parse(localStorage.getItem(STAT_KEY) || '{}'); return m && typeof m === 'object' ? m : {}; } catch (e) { return {}; } }
+  function statForget() { try { localStorage.removeItem(STAT_KEY); } catch (e) {} }
+  function weekKey(ts) {
+    var d = new Date(ts), t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), wd = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - wd);
+    var y = t.getUTCFullYear(); return y + '-W' + Math.ceil(((t - Date.UTC(y, 0, 1)) / 864e5 + 1) / 7);
+  }
   function statPing(art, fach) {
     if (!DB.settings.stats || navigator.onLine === false || !window.fetch) return;
+    var body = { typ: 'nutzung', art: art, fach: fach || '', version: C.version }, mark = null;
+    if (art === 'start') {
+      var now = Date.now(), m = statMarks(), dk = dayKey(now), wk = weekKey(now);
+      body.tag = m.d !== dk ? 1 : 0; body.woche = m.w !== wk ? 1 : 0; body.neu = m.e ? 0 : 1;
+      mark = { d: dk, w: wk, e: 1 };
+    }
     try {
       fetch(FB_URL, { method: 'POST', mode: 'no-cors', credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store', keepalive: true,
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ typ: 'nutzung', art: art, fach: fach || '', version: C.version }) }).catch(function () {});
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+        .then(function () { if (mark && DB.settings.stats) try { localStorage.setItem(STAT_KEY, JSON.stringify(mark)); } catch (e) {} })
+        .catch(function () {});
     } catch (e) {}
   }
   function statFach(sid) {
@@ -119,7 +135,7 @@
         '<p class="note">Du kannst das jederzeit ändern: Einstellungen → App. Dort steht auch alles zum Datenschutz.</p>',
         '<div class="row"><button type="button" class="ghost" id="stNo">Nein</button><button type="button" class="primary" id="stYes">Ja, gern</button></div>');
       function answer(on) {
-        DB.settings.stats = on ? 1 : 0; DB.settings.statsAsked = Date.now(); save(); closeTile();
+        DB.settings.stats = on ? 1 : 0; DB.settings.statsAsked = Date.now(); save(); closeTile(); if (!on) statForget();
         if (on) { statPing('start'); var r = parseHash().parts; if (r[0] === 'f' && r[1]) statFach(r[1]); }
         toast(on ? 'Danke!' : 'Okay, es wird nichts gezählt');
       }
@@ -136,7 +152,7 @@
       '<h4>Feedback (nur wenn du sendest)</h4>' +
       '<p>Gesendet werden dein Text, die App-Version und eine zufällige Kennung gegen Spam. Diese Kennung wird beim ersten Feedback auf dem Gerät gespeichert und sagt nichts über dich. Kein Name. Ziel ist eine private Google-Tabelle über Google Apps Script (Google, Server auch in den USA). Google verarbeitet dabei technisch deine IP-Adresse, in der Tabelle landet sie nicht. Schreib bitte keine persönlichen Daten in den Text.</p>' +
       '<h4>Nutzungsstatistik (nur wenn eingeschaltet)</h4>' +
-      '<p>Nur mit deiner Zustimmung: Die App fragt einmal, und du kannst es jederzeit ändern. Wenn sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Den Zeitpunkt notiert die Tabelle. Keine Geräte-ID, kein Name, keine Antworten oder Lernstände, und auf dem Gerät wird dafür nichts gespeichert außer deiner Einstellung. Einzelne Personen lassen sich so nicht unterscheiden. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
+      '<p>Nur mit deiner Zustimmung: Die App fragt einmal, und du kannst es jederzeit ändern. Wenn sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Beim Öffnen kommt dazu nur, ob es der erste Start heute, in dieser Woche oder überhaupt auf diesem Gerät ist (ja/nein). So lässt sich zählen, wie viele Geräte die App nutzen, ohne sie zu unterscheiden. Dafür merkt sich die App auf deinem Gerät das Datum der letzten Meldung; das wird nicht gesendet und beim Ausschalten gelöscht. Den Zeitpunkt notiert die Tabelle. Keine Geräte-ID, kein Name, keine Antworten oder Lernstände. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
       '<h4>Wie lange</h4>' +
       '<p>Einträge in der Tabelle werden nach spätestens 12 Monaten automatisch gelöscht. Weil keine Namen gespeichert werden, lassen sich Einträge keiner Person zuordnen.</p>';
   }
@@ -1254,7 +1270,7 @@
     });
     $$('.seg[data-k] button').forEach(function (b) {
       b.onclick = function () {
-        var k = b.parentNode.dataset.k, v = b.dataset.v; DB.settings[k] = isNaN(v) ? v : +v; save(); applyPrefs();
+        var k = b.parentNode.dataset.k, v = b.dataset.v; DB.settings[k] = isNaN(v) ? v : +v; save(); applyPrefs(); if (k === 'stats' && !DB.settings.stats) statForget();
         var y = window.scrollY; settingsView(); window.scrollTo(0, y);
       };
     });
