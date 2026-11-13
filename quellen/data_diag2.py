@@ -328,10 +328,10 @@ add(id='pd2-gap-02', type='gap', text='Diagnostik mit dem Ziel, Personen oder Be
     expl='Strategie Veränderung.', kw='Förderdiagnostik')
 add(id='pd2-gap-03', type='gap', text='Die kriteriale Bezugsnorm heißt auch {{Idealnorm}}, weil sie reale mit idealen Leistungen vergleicht.',
     expl='Bezeichnung bei Gaude (1989); „sachliche Bezugsnorm“ bei Ingenkamp (1985).', kw='Idealnorm')
-add(id='pd2-gap-04', type='gap', text='1. Axiom der KTT: X = {{W(T)|W|wahrer Wert}} + e.',
-    expl='Beobachteter Wert = wahrer Wert + zufälliger Messfehler.', kw='1. Axiom Formel')
-add(id='pd2-gap-05', type='gap', text='Nach dem 2. Axiom ist der erwartete Mittelwert des Messfehlers {{Null|0}}.',
-    expl='Auch die Korrelation zwischen Testwert und Messfehler ist Null.', kw='2. Axiom Mittelwert')
+add(id='pd2-gap-04', type='gap', text='1. Axiom der KTT: Der beobachtete Testwert setzt sich aus dem wahren Wert und einem zufällig verteilten {{Messfehler}} zusammen.',
+    expl='X = W(T) + e.', kw='1. Axiom Formel')
+add(id='pd2-gap-05', type='gap', text='Nach dem 2. Axiom variiert die Messung eines Merkmals bei einer Person um den {{wahren Wert}}.',
+    expl='Daraus folgt: Der erwartete Mittelwert des Messfehlers ist Null, ebenso die Korrelation zwischen Testwert und Messfehler.', kw='2. Axiom Mittelwert')
 add(id='pd2-gap-06', type='gap', text='Je {{häufiger|öfter|mehr}} man misst, desto mehr nähert man sich dem wahren Wert.',
     expl='Folgerung auf der Folie zum 3. Axiom.', kw='häufiger messen wahrer Wert')
 add(id='pd2-gap-07', type='gap', text='Standardisierung eines Konstrukts durch Angabe des Verhaltens, das es anzeigt, heißt {{Operationalisierung}}.',
@@ -344,11 +344,15 @@ add(id='pd2-gap-10', type='gap', text='Bei der Split-Half-Reliabilität trennt d
     expl='Wichtig: Item-Paarlinge mit annähernd gleicher Schwierigkeit.', kw='Odd-even')
 add(id='pd2-gap-11', type='gap', text='Inhaltliche Validität wird mittels eines {{Repräsentationsschlusses|Repräsentationsschluss}} ermittelt.',
     expl='Die Items bilden eine repräsentative Stichprobe aus dem Merkmalsbereich (z. B. Englisch-Vokabeln).', kw='Repräsentationsschluss')
-add(id='pd2-gap-12', type='gap', text='Die Korrelation bei der Kriteriumsvalidität kann zwischen −1 und +1 liegen, Reliabilitätskoeffizienten dagegen nur zwischen {{0|null}} und +1.',
-    expl='Reliabilität: r = 1 kein Messfehler, r = 0 riesiger Messfehler. Kriteriumsvalidität: z. B. Schulnoten als Kriterium für Intelligenz.', kw='Kriteriumsvalidität Wertebereich')
+add(id='pd2-gap-12', type='gap', text='Reliabilität kann nur {{geschätzt|geschaetzt}}, nicht gemessen werden.',
+    expl='Reliabilitätskoeffizienten liegen zwischen 0 und +1; r > .7 gilt als ausreichend.', kw='Kriteriumsvalidität Wertebereich')
 add(id='pd2-gap-13', type='gap', text='Konstrukte werden aus messbaren Sachverhalten, sogenannten {{Indikatoren}}, erschlossen.',
     expl='Deshalb heißen sie latente Konstrukte.', kw='Konstrukt Indikatoren')
 add(id='pd2-gap-14', type='gap', text='Konkurrente Validität: Test und Kriterium werden {{zeitgleich|gleichzeitig}} erhoben.',
     expl='Prädiktiv: Kriterium liegt in der Zukunft.', kw='konkurrente Validität')
 add(id='pd2-gap-15', type='gap', text='Eine niedrige Korrelation zwischen Test und Kriterium kann durch {{Konfundierung}} mit anderen Variablen entstehen.',
     expl='Eines der Probleme der Validität in der KTT.', kw='Konfundierung')
+
+# Zahlen nicht mehr per Lückentext (13. Nov., Chat 1.11): Werte als R/F
+add(id='pd2-tf-27', type='tf', statement='Nach dem 2. Axiom der KTT ist der erwartete Mittelwert des Messfehlers Null.', answer=True,
+    expl='Auch die Korrelation zwischen Testwert und Messfehler ist Null.', kw='2. Axiom Mittelwert Null')

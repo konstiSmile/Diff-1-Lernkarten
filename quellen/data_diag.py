@@ -296,8 +296,8 @@ add(id='pd-gap-08', type='gap', text='Indirekte Beobachtung erfolgt zeitversetzt
     expl='Direkte Beobachtung ist zeitgleich.', kw='indirekte Beobachtung Video')
 add(id='pd-gap-09', type='gap', text='IQ nach Stern = geistiges Alter / {{reales Alter|Lebensalter|reales}} × 100.',
     expl='Stern (1912).', kw='Stern IQ Formel')
-add(id='pd-gap-10', type='gap', text='Der WISC-V hat {{5|fünf}} Indizes mit {{15|fünfzehn}} Untertests.',
-    expl='SV, VRV, FS, AGD, VG → Gesamt-IQ.', kw='WISC Indizes Untertests')
+add(id='pd-gap-10', type='gap', text='Der Untertest Mosaiktest gehört zum Index {{Visuell-räumliche Verarbeitung|VRV|visuell räumliche Verarbeitung}}.',
+    expl='Die fünf Indizes SV, VRV, FS, AGD, VG fließen in den Gesamt-IQ ein.', kw='WISC Indizes Untertests')
 add(id='pd-gap-11', type='gap', text='Der Untertest Formenwaage gehört zum Index {{Fluides Schlussfolgern|FS}}.',
     expl='Mosaiktest → VRV, Zahlen-Symbol-Test → VG, Buchstaben-Zahlen-Folgen → AGD, Gemeinsamkeiten finden → SV.', kw='Formenwaage FS')
 add(id='pd-gap-12', type='gap', text='Den Gesamt-IQ gibt man mit {{Prozentrang}} und Vertrauensintervall an.',
@@ -309,3 +309,9 @@ add(id='pd-gap-13', type='gap', text='Die Sammlung von Informationen über eine 
 from data_diag2 import CARDS2, ITEMS2
 CARDS.update(CARDS2)
 ITEMS += ITEMS2
+
+# Zahlen nicht mehr per Lückentext (13. Nov., Chat 1.11): stattdessen als MC
+S = 'Diagnostik · Teil 1'
+add(id='pd-mc-27', type='mc', q='Wie viele <b>Indizes</b> und <b>Untertests</b> hat der WISC-V?',
+    options=['5 Indizes, 15 Untertests', '4 Indizes, 10 Untertests', '5 Indizes, 10 Untertests', '7 Indizes, 15 Untertests'], correct=0,
+    expl='Indizes: SV, VRV, FS, AGD, VG; sie fließen in den Gesamt-IQ ein.', kw='WISC Indizes Untertests')
