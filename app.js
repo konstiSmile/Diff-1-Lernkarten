@@ -145,7 +145,7 @@
     }, 1500);
   }
   function privacyHTML() {
-    return '<div class="pvkey"><b>Das Wichtigste zuerst</b><p>Ich erhebe keine personenbezogenen Daten. Ich bekomme weder deinen Namen noch deine E-Mail-Adresse, IP-Adresse, eine Geräte-Kennung oder deinen Lernstand. Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“. Ich kann nicht erkennen, wer die App nutzt, mit welchem Gerät oder von wo, und auch nicht, ob zwei Einträge von derselben Person stammen.</p></div>' +
+    return '<div class="pvkey"><b>Das Wichtigste zuerst</b><p>Ich erhebe keine personenbezogenen Daten. Ich bekomme weder deinen Namen noch deine E-Mail-Adresse, IP-Adresse, eine Geräte-Kennung oder deinen Lernstand. Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“. Ich kann nicht erkennen, wer die App nutzt, mit welchem Gerät oder von wo, und bei der Statistik auch nicht, ob zwei Einträge von derselben Person stammen.</p></div>' +
       '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst oder die Nutzungsstatistik einschaltest.</p>' +
       '<h4>Auf deinem Gerät</h4>' +
       '<p>Lernstand, Verlauf, eigene Karten und Einstellungen (auch dein Name) liegen nur im Speicher deines Browsers. Sie verlassen das Gerät nicht, außer du speicherst selbst ein Backup. Damit die App offline läuft, speichert der Browser außerdem die App-Dateien.</p>' +
@@ -159,7 +159,7 @@
       '<h4>Wie lange</h4>' +
       '<p>Einträge in der Tabelle werden nach spätestens 12 Monaten automatisch gelöscht.</p>' +
       '<h4>Keine Rückschlüsse auf dich</h4>' +
-      '<p>In der Tabelle steht nie, wer etwas gesendet hat. Ich kann Einträge keiner Person und keinem Gerät zuordnen und lege auch keine Profile an. Die einzige Ausnahme wäre, wenn du selbst etwas Persönliches in ein Feedback schreibst – deshalb bitte nicht.</p>';
+      '<p>In der Tabelle steht nie, wer etwas gesendet hat. Ich kann Einträge keiner Person und keinem Gerät zuordnen (die Spam-Kennung beim Feedback ist reiner Zufall und verrät nichts über dich) und lege auch keine Profile an. Die einzige Ausnahme wäre, wenn du selbst etwas Persönliches in ein Feedback schreibst – deshalb bitte nicht.</p>';
   }
   function isHidden(sid) { return DB.hidden.indexOf(sid) >= 0; }
   function setHidden(sid, on) {
