@@ -1,6 +1,6 @@
 # Psycho 2 · Diagnostische Psychologie (Vorlesung Barchfeld-Pekrun, LMU) · Teil 1
 # Quelle: Folien „2025 Diagnostik Teil 1 KURZ“ (36 Folien). Nur Inhalte aus den Folien
-# plus zwei Erläuterungen des Nutzers (Zuordnung Folie 3, rote Linien Folie 25).
+# plus zwei Erläuterungen des Nutzers (Zuordnung Folie 3, rote Linien Folie 25 = nur Unkenntlichmachung durch die Dozentin, kein Inhalt).
 
 def C(key, src, q, a, kw=''):
     return dict(key=key, src=src, q=q, a=a, kw=kw)
@@ -112,8 +112,8 @@ CARDS_D1 = [
       '<b>Sprachverständnis:</b> Fähigkeit, <b>Sinn und Bedeutung von Lautäußerungen</b> zu erfassen. Beziehung zu Phonetik und Phonologie in der Linguistik sowie zu Kognitionspsychologie und Wahrnehmung in der Psychologie.<br><br><b>Gemeinsamkeiten finden (GF):</b> Gemeinsamkeiten von je <b>2 Wörtern</b> (Gegenstände/abstrakte Begriffe) finden, z. B. Rot – Grün, Fluss – Berg, Wütend – Fröhlich.',
       'Sprachverständnis SV Lautäußerungen Phonetik Phonologie Gemeinsamkeiten finden GF'),
     C('vg', W, 'Was misst der Index <b>Verarbeitungsgeschwindigkeit (VG)</b> und welcher Untertest gehört dazu?',
-      '<b>Verarbeitungsgeschwindigkeit:</b> die <b>Menge an Bit</b>, die ein Lebewesen <b>pro Zeiteinheit</b> mit seinen Sinnesorganen aufnehmen und in seinem Gehirn verarbeiten kann.<br><br>Untertest: <b>Zahlen-Symbol-Test A</b>. Die roten Linien auf der Folie stellen den <b>Blickverlauf (Augentracking)</b> der Testperson nach, also wie effizient sie das Blatt absucht.',
-      'Verarbeitungsgeschwindigkeit VG Bit Zeiteinheit Zahlen-Symbol-Test Augentracking'),
+      '<b>Verarbeitungsgeschwindigkeit:</b> die <b>Menge an Bit</b>, die ein Lebewesen <b>pro Zeiteinheit</b> mit seinen Sinnesorganen aufnehmen und in seinem Gehirn verarbeiten kann.<br><br>Untertest: <b>Zahlen-Symbol-Test A</b>.',
+      'Verarbeitungsgeschwindigkeit VG Bit Zeiteinheit Zahlen-Symbol-Test'),
     C('fs', W, 'Was misst der Index <b>Fluides Schlussfolgern (FS)</b> und welcher Untertest gehört dazu?',
       '<b>Fluides Schlussfolgern:</b> <b>simultane Verarbeitung von visuellen Reizen</b>; <b>induktives Denken</b>.<br><br>Untertest: <b>Formenwaage</b> (Waagen mit Formen; gesucht ist, was die letzte Waage ausgleicht; einfache und schwierige Aufgaben).',
       'Fluides Schlussfolgern FS simultan visuell induktives Denken Formenwaage'),
