@@ -955,7 +955,7 @@
         var cmd = m[0]; p += cmd.length;
         if (cmd === 'frac') { var a = group(), b = group(); return '<mfrac>' + a + b + '</mfrac>'; }
         if (cmd === 'sqrt') { return '<msqrt>' + group() + '</msqrt>'; }
-        if (cmd === 'mathbb') { ws(); var L = src[p] === '{' ? (function () { p++; var t = src.slice(p, src.indexOf('}', p)); p = src.indexOf('}', p) + 1; return t; })() : (src[p++] || ''); var M = { N: 'ℕ', Z: 'ℤ', Q: 'ℚ', R: 'ℝ', C: 'ℂ' }; return '<mi>' + (M[L] || esc(L)) + '</mi>'; }
+        if (cmd === 'mathbb') { ws(); var L = src[p] === '{' ? (function () { p++; var e = src.indexOf('}', p); if (e < 0) e = n; var t = src.slice(p, e); p = Math.min(e + 1, n); return t; })() : (src[p++] || ''); var M = { N: 'ℕ', Z: 'ℤ', Q: 'ℚ', R: 'ℝ', C: 'ℂ' }; return '<mi>' + (M[L] || esc(L)) + '</mi>'; }
         if (cmd === 'lim') return '<mi>lim</mi>';
         if (GREEK[cmd] !== undefined) { return BIGOPS[cmd] ? '<mo largeop="true">' + GREEK[cmd] + '</mo>' : (/[a-zΑ-ω]/.test(GREEK[cmd]) && !/[∞]/.test(GREEK[cmd]) ? '<mi>' + GREEK[cmd] + '</mi>' : '<mo>' + GREEK[cmd] + '</mo>'); }
         return '<mtext>\\' + esc(cmd) + '</mtext>';
@@ -1198,10 +1198,20 @@
         toast(ok ? 'Danke für dein Feedback!' : 'Gerade keine Verbindung · wird später gesendet');
       });
     };
+    // Fremde Backups säubern: Namen, IDs, Einstellungen ohne HTML-Zeichen; Kartentexte werden beim Anzeigen ohnehin maskiert (rich).
+    function cleanImport(o, qa) {
+      if (typeof o === 'string') return qa ? o.slice(0, 5000) : o.replace(/[<>"'`]/g, '').slice(0, 300);
+      if (typeof o === 'number') return isFinite(o) ? o : 0;
+      if (typeof o === 'boolean' || o === null) return o;
+      if (Array.isArray(o)) return o.slice(0, 50000).map(function (x) { return cleanImport(x, qa); });
+      if (typeof o === 'object') { var r = {}; Object.keys(o).forEach(function (k) { if (k === '__proto__' || k === 'constructor' || k === 'prototype') return; r[k.replace(/[<>"'`]/g, '')] = cleanImport(o[k], k === 'q' || k === 'a'); }); return r; }
+      return null;
+    }
     function importFrom(text) {
       var o; try { o = JSON.parse(text); } catch (e) { toast('Das ist keine gültige Backup-Datei'); return; }
       if (!o || o.app !== 'lernkiste' || !o.data) { toast('Das ist kein Lernkiste-Backup'); return; }
-      var d = normalizeDB(o.data), n = Object.keys(d.progress).length, l = d.log.length;
+      if (typeof o.data !== 'object' || Array.isArray(o.data)) { toast('Das ist kein Lernkiste-Backup'); return; }
+      var d = normalizeDB(cleanImport(o.data)), n = Object.keys(d.progress).length, l = d.log.length;
       $('#impbox').innerHTML = '<div class="tip" style="margin:8px 0">Backup gefunden: ' + n + ' bewertete Karten, ' + l + ' Verlaufseinträge.</div>' +
         '<div class="row" style="margin:0 0 10px"><button class="ghost" id="iMerge">Zusammenführen</button><button class="ghost" id="iRepl">Ersetzen</button><button class="ghost" id="iCancel">Abbrechen</button></div>';
       $('#iMerge').onclick = function () { mergeInto(DB, d); save(); applyPrefs(); toast('Backup zusammengeführt'); settingsView(); };

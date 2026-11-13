@@ -120,10 +120,16 @@ print('content.js', len(js) // 1024, 'KB', len(search), 'Suchtreffer-Einträge')
 
 # ---------------------------------------------------------------- Shell
 shutil.copy('app.css', f'{OUT}/app.css'); shutil.copy('app.js', f'{OUT}/app.js')
+import hashlib, base64
+THEME_JS = "try{var s=JSON.parse(localStorage.getItem('lernkiste-v1')||'null'),t=s&&s.settings&&s.settings.theme;if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}"
+CSP = ("default-src 'self'; script-src 'self' 'sha256-" + base64.b64encode(hashlib.sha256(THEME_JS.encode()).digest()).decode() + "'; "
+       "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; "
+       "object-src 'none'; base-uri 'none'; form-action 'none'")
 open(f'{OUT}/index.html', 'w', encoding='utf-8').write(f'''<!DOCTYPE html>
 <html lang="de" data-theme="dark">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="{CSP}">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{NAME}</title>
 <meta name="theme-color" content="#1b1a18">
@@ -135,7 +141,7 @@ open(f'{OUT}/index.html', 'w', encoding='utf-8').write(f'''<!DOCTYPE html>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="stylesheet" href="app.css">
-<script>try{{var s=JSON.parse(localStorage.getItem('lernkiste-v1')||'null'),t=s&&s.settings&&s.settings.theme;if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(t)document.documentElement.setAttribute('data-theme',t)}}catch(e){{}}</script>
+<script>{THEME_JS}</script>
 </head>
 <body>
 <main id="app"><div id="view"></div></main>
@@ -187,7 +193,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'q
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v22';
+const CACHE = 'lernkiste-v23';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{
