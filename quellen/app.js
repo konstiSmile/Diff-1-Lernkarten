@@ -331,6 +331,7 @@
     var grp = gid ? (s.groups || []).filter(function (g) { return g.id === gid; })[0] : null;
     if (gid && !grp) { location.hash = '#/f/' + sid; return; }
     var h = '<div class="nav"><a href="#/' + (grp ? 'f/' + sid : '') + '">‹ ' + esc(grp ? s.name : 'Start') + '</a></div><h1>' + esc(grp ? grp.name : s.name) + '</h1><p class="sub">' + esc(grp ? s.name : s.desc) + '</p><div class="grid">';
+    if (sid === 'psy' && !grp) h = h.replace(/<div class="grid">$/, '<p class="disclaimer">Alle Inhalte dieser App wurden nicht von der Dozentin bzw. dem Dozenten überprüft und sind ohne jede Gewähr zu verwenden. Es können sich Fehler eingeschlichen haben, und die Klausur kann andere Inhalte abfragen.</p><div class="grid">');
     if (s.groups && !grp) {
       s.groups.forEach(function (g) {
         var chs = s.chapters.filter(function (c) { return c.group === g.id; }), cards = 0, items = 0, known = 0;
