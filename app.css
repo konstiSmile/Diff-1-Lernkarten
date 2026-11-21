@@ -336,3 +336,18 @@ body.pvopen { overflow:hidden; }
 .pvbody h4 { margin:14px 0 4px; font-size:.74rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; }
 .pvok { align-self:stretch; margin-top:12px; padding:10px 12px; }
 .pvcard > .row { margin-top:12px; } .pvcard > .row button { flex:1; padding:10px 12px; }
+
+/* Echtes Multiple Choice (Psycho 2) und Frage melden (v35) */
+.mhint { color:var(--muted); font:500 .8rem -apple-system, system-ui, sans-serif; margin:-2px 0 10px; }
+.mopt .box { flex:none; width:22px; height:22px; border-radius:6px; border:1.5px solid var(--muted); display:grid; place-items:center; font:700 .8rem -apple-system, system-ui, sans-serif; color:var(--paper); margin-top:1px; box-sizing:border-box; }
+.mopt.sel .box { background:var(--sub, var(--accent)); border-color:var(--sub, var(--accent)); }
+div.mopt { cursor:default; }
+.mopt.ok .box { background:var(--green); border-color:var(--green); }
+.mopt.bad .box { background:var(--red); border-color:var(--red); }
+.mopt.okn { background:var(--paper); }
+.mopt.miss { border-color:var(--red); border-style:dashed; background:var(--paper); }
+.mlab { display:block; margin-top:4px; font:600 .74rem -apple-system, system-ui, sans-serif; }
+.mopt.ok .mlab, .mopt.okn .mlab { color:var(--green); } .mopt.bad .mlab, .mopt.miss .mlab { color:var(--red); }
+.fb.mid { color:var(--ink); }
+.pvbody .fbtext { min-height:80px; margin:4px 0 8px; }
+.tools button:disabled { color:var(--muted); cursor:default; }

@@ -58,7 +58,7 @@
     fbBusy = true;
     var m = q[0];
     fetch(FB_URL, { method: 'POST', mode: 'no-cors', credentials: 'omit', referrerPolicy: 'no-referrer', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ typ: 'feedback', text: m.text, version: C.version, geraet: devId(), seite: 'Einstellungen' }) })
+      body: JSON.stringify({ typ: 'feedback', text: m.text, version: C.version, geraet: devId(), seite: m.seite || 'Einstellungen' }) })
       .then(function () {
         fbQueue(fbQueue().filter(function (x) { return !(x.ts === m.ts && x.text === m.text); }));
         fbBusy = false;
@@ -146,13 +146,13 @@
   }
   function privacyHTML() {
     return '<div class="pvkey"><b>Das Wichtigste zuerst</b><p>Ich erhebe keine personenbezogenen Daten. Ich bekomme weder deinen Namen noch deine E-Mail-Adresse, IP-Adresse, eine Geräte-Kennung oder deinen Lernstand. Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“. Ich kann nicht erkennen, wer die App nutzt, mit welchem Gerät oder von wo, und bei der Statistik auch nicht, ob zwei Einträge von derselben Person stammen.</p></div>' +
-      '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst oder die Nutzungsstatistik einschaltest.</p>' +
+      '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst, eine Frage meldest oder die Nutzungsstatistik einschaltest.</p>' +
       '<h4>Auf deinem Gerät</h4>' +
       '<p>Lernstand, Verlauf, eigene Karten und Einstellungen (auch dein Name) liegen nur im Speicher deines Browsers. Sie verlassen das Gerät nicht, außer du speicherst selbst ein Backup. Damit die App offline läuft, speichert der Browser außerdem die App-Dateien.</p>' +
       '<h4>Beim Laden der App</h4>' +
       '<p>Die App liegt bei GitHub Pages (GitHub, USA). Wie jeder Webserver verarbeitet GitHub dabei technisch deine IP-Adresse. Die App lädt keine Werbung, keine Tracker und nichts von fremden Seiten.</p>' +
-      '<h4>Feedback (nur wenn du sendest)</h4>' +
-      '<p>Gesendet werden dein Text, die App-Version und eine zufällige Kennung gegen Spam. Diese Kennung wird beim ersten Feedback auf dem Gerät gespeichert und sagt nichts über dich. Kein Name. Ziel ist eine private Google-Tabelle über Google Apps Script (Google, Server auch in den USA). Google verarbeitet dabei technisch deine IP-Adresse, in der Tabelle landet sie nicht. Schreib bitte keine persönlichen Daten in den Text.</p>' +
+      '<h4>Feedback und „Frage melden“ (nur wenn du sendest)</h4>' +
+      '<p>Gesendet werden dein Text (beim Melden: Grund, Kommentar, Fach und Nummer der Frage), die App-Version und eine zufällige Kennung gegen Spam. Diese Kennung wird beim ersten Feedback auf dem Gerät gespeichert und sagt nichts über dich. Kein Name. Ziel ist eine private Google-Tabelle über Google Apps Script (Google, Server auch in den USA). Google verarbeitet dabei technisch deine IP-Adresse, in der Tabelle landet sie nicht. Schreib bitte keine persönlichen Daten in den Text.</p>' +
       '<h4>Nutzungsstatistik (nur wenn eingeschaltet)</h4>' +
       '<p><b>Die Statistik ist vollständig anonym.</b> Sie zählt nur, <i>wie oft</i> die App und die Fächer geöffnet werden, nicht <i>wer</i> sie öffnet. Kein Eintrag enthält etwas, das auf dich oder dein Gerät schließen lässt.</p>' +
       '<p>Nur mit deiner Zustimmung: Die App fragt einmal, und du kannst es jederzeit ändern. Wenn sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Beim Öffnen kommt dazu nur, ob es der erste Start heute, in dieser Woche oder überhaupt auf diesem Gerät ist (ja/nein). So lässt sich zählen, wie viele Geräte die App nutzen, ohne sie zu unterscheiden. Dafür merkt sich die App auf deinem Gerät das Datum der letzten Meldung; das wird nicht gesendet und beim Ausschalten gelöscht. Den Zeitpunkt notiert die Tabelle. Nicht gesendet werden: Name, E-Mail, IP-Adresse, Geräte-ID, Gerätetyp, Standort, Antworten oder Lernstände. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
@@ -260,7 +260,7 @@
       (d ? '<button type="button" class="actbtn" id="bkNow">Backup</button>' : '') + '</div>';
   }
   function bindBackupHint() { var b = $('#bkNow'); if (b) b.onclick = shareFile; }
-  function logAns(fach, id, score) { DB.log.push([Date.now(), fach, id, Math.round(score * 100) / 100]); }
+  function logAns(fach, id, score, pts) { var e = [Date.now(), fach, id, Math.round(score * 100) / 100]; if (typeof pts === 'number') e.push(pts); DB.log.push(e); }
   function tests(sid, cid) { var k = sid + '/' + cid, t = DB.tests[k] = DB.tests[k] || {}; t.best = t.best || {}; t.wrong = t.wrong || []; return t; }
 
   var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
@@ -626,16 +626,74 @@
     if (it.type === 'mc') return it.q; if (it.type === 'tf') return it.statement;
     return gapParts(it).map(function (p) { return p.t !== undefined ? p.t : '…'; }).join('');
   }
+  // ---- Echtes Multiple Choice (Psycho 2): 4 Optionen, 1–4 richtig, je Option ±1, mindestens 0 → 0/2/4 Punkte
+  function corrSet(it) { return Array.isArray(it.correct) ? it.correct : [it.correct]; }
+  function isMulti(it, sid) { return it.type === 'mc' && (it._s || sid) === 'psy'; }
+  function mcPoints(it, sel) {
+    var c = corrSet(it), p = 0; sel = sel || [];
+    it.options.forEach(function (_, i) { p += (sel.indexOf(i) >= 0) === (c.indexOf(i) >= 0) ? 1 : -1; });
+    return Math.max(0, p);
+  }
+  function mcMarked(it, sel, order) {
+    var c = corrSet(it); order = order || it.options.map(function (_, i) { return i; });
+    return '<div class="opts">' + order.map(function (oi) {
+      var on = !!sel && sel.indexOf(oi) >= 0, r = c.indexOf(oi) >= 0, cls, lab;
+      if (!sel) { cls = r ? 'ok' : 'okn'; lab = r ? 'richtig' : ''; }
+      else if (on && r) { cls = 'ok'; lab = 'Richtig angekreuzt'; }
+      else if (!on && !r) { cls = 'okn'; lab = 'Richtig weggelassen'; }
+      else if (on) { cls = 'bad'; lab = 'Falsch angekreuzt'; }
+      else { cls = 'miss'; lab = 'Vergessen · wäre richtig'; }
+      return '<div class="opt mopt ' + cls + '"><span class="box">' + (on || (!sel && r) ? '✓' : '') + '</span><span>' + it.options[oi] + (lab ? '<small class="mlab">' + lab + '</small>' : '') + '</span></div>';
+    }).join('') + '</div>';
+  }
+  // Auswertung getrennt nach Art, z. B. „MC 22/32 Punkte · R/F 8/10 · Lücke 2,5/4“
+  function breakdown(rows) {
+    var g = {}, L = { mcp: 'MC', mc: 'MC', tf: 'R/F', gap: 'Lücke' };
+    rows.forEach(function (r) {
+      var k = r.p !== undefined ? 'mcp' : r.it.type, x = g[k] = g[k] || { a: 0, m: 0 };
+      x.a += r.p !== undefined ? r.p : r.s; x.m += r.p !== undefined ? r.it.options.length : 1;
+    });
+    if (g.mcp && g.mc) L.mc = 'Single Choice';
+    return ['mcp', 'mc', 'tf', 'gap'].filter(function (k) { return g[k]; }).map(function (k) { return L[k] + ' ' + fmt(g[k].a) + '/' + g[k].m + (k === 'mcp' ? ' Punkte' : ''); }).join(' · ');
+  }
+  // ---- Frage melden: geht über die Feedback-Warteschlange ins Blatt „Feedback“ (Seite = Fach + Fragen-ID)
+  var REP_WHY = ['Antwort falsch', 'Mehrere Antworten passen', 'Unklar formuliert', 'Erklärung fehlt oder falsch', 'Tippfehler', 'Sonstiges'];
+  function reportQ(it, sid, btn) {
+    if (!it) return;
+    var fach = it._s || sid, why = '';
+    openTile('Frage melden',
+      '<p class="note" style="margin:0 0 10px">Was stimmt nicht? Die Nummer der Frage wird mitgeschickt.</p>' +
+      '<div class="chips" id="repWhy">' + REP_WHY.map(function (w) { return '<button type="button" class="chip" data-w="' + w + '">' + w + '</button>'; }).join('') + '</div>' +
+      '<textarea id="repText" class="fbtext" maxlength="500" placeholder="Kommentar (optional)" aria-label="Kommentar"></textarea>' +
+      '<p class="note" style="margin:0">Bitte keine persönlichen Daten hineinschreiben.</p>',
+      '<div class="row"><button type="button" class="ghost pvok">Abbrechen</button><button type="button" class="primary" id="repGo" disabled>Senden</button></div>');
+    var go = $('#repGo'), ta = $('#repText');
+    function upd() { go.disabled = !why && !ta.value.trim(); }
+    $$('#repWhy .chip').forEach(function (b) {
+      b.onclick = function () { why = why === b.dataset.w ? '' : b.dataset.w; $$('#repWhy .chip').forEach(function (x) { x.classList.toggle('on', x.dataset.w === why); }); upd(); };
+    });
+    ta.addEventListener('input', upd);
+    go.onclick = function () {
+      var c = ta.value.trim().slice(0, 500);
+      if (!why && !c) return;
+      fbQueue(fbQueue().concat([{ text: 'Frage gemeldet · ' + (why || 'Kommentar') + (c ? ': ' + c : ''), ts: Date.now(), seite: ('Frage ' + fach + ' · ' + it.id).slice(0, 80) }]));
+      closeTile();
+      if (btn) { btn.textContent = 'Gemeldet ✓'; btn.disabled = true; }
+      if (navigator.onLine === false) { toast('Gespeichert · wird gesendet, sobald du online bist'); return; }
+      fbFlush(function (ok) { toast(ok ? 'Danke, Frage gemeldet' : 'Gerade keine Verbindung · wird später gesendet'); });
+    };
+  }
   function grade(it, ans) {
-    if (it.type === 'mc') return ans === it.correct ? 1 : 0;
+    if (it.type === 'mc') return Array.isArray(ans) ? mcPoints(it, ans) / it.options.length : ans === it.correct ? 1 : 0;
     if (it.type === 'tf') return ans === it.answer ? 1 : 0;
     var parts = gapParts(it).filter(function (p) { return p.g; }), ok = 0;
     if (!parts.length) return 0;
     parts.forEach(function (p, k) { var v = norm((ans && ans[k]) || ''); if (v && p.g.some(function (a) { return norm(a) === v; })) ok++; });
     return ok / parts.length;
   }
-  function solutionHTML(it) {
-    var s = it.type === 'mc' ? '<div class="tip"><b>Richtig:</b> ' + it.options[it.correct] + '</div>' :
+  function solutionHTML(it, multi, sel, order) {
+    var s = it.type === 'mc' && multi ? mcMarked(it, sel, order) + '<div class="tip"><b>' + (sel ? mcPoints(it, sel) + ' / ' + it.options.length + ' Punkte' : 'Nicht beantwortet · 0 Punkte') + '</b></div>' :
+      it.type === 'mc' ? '<div class="tip"><b>Richtig:</b> ' + corrSet(it).map(function (i) { return it.options[i]; }).join(' · ') + '</div>' :
       it.type === 'tf' ? '<div class="tip"><b>' + (it.answer ? 'Richtig' : 'Falsch') + '.</b></div>' : '<div class="tip">' + gapSolution(it) + '</div>';
     if (it.expl) s += '<div class="tip' + (it.warn ? ' warn' : '') + '">' + it.expl + '</div>';
     return s;
@@ -652,9 +710,9 @@
     var sh = s.mix ? function (l) { return mixShuffle(l, st.mixMode === 'even'); } : shuffle;
     function pool(type) { return ITEMS.filter(function (i) { return i.type === type; }); }
     function nav(extra) { return '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a>' + (extra || '') + '</div>'; }
-    function prep(id) { var it = BYID[id]; return { it: it, order: it.type === 'mc' ? shuffle(it.options.map(function (_, i) { return i; })) : null }; }
+    function prep(id) { var it = BYID[id]; return { it: it, order: it.type === 'mc' ? shuffle(it.options.map(function (_, i) { return i; })) : null, multi: isMulti(it, s.id) }; }
     function finishLog(r) {
-      logAns(r.it._s || s.id, r.it.id, r.s);
+      logAns(r.it._s || s.id, r.it.id, r.s, r.p);
       var ix = T.wrong.indexOf(r.it.id);
       if (r.s === 1 && ix >= 0) T.wrong.splice(ix, 1);
       if (r.s < 1 && ix < 0) T.wrong.push(r.it.id);
@@ -673,7 +731,7 @@
       }
       h += '<div class="modes">' + cardsMode + MODES.map(function (m) {
         var c = m.id === 'exam' ? total : counts[m.id], b = T.best[m.id];
-        return '<button class="mode" data-m="' + m.id + '"' + (c ? '' : ' disabled') + '><span class="ico">' + m.ico + '</span><span><span class="t">' + m.name + '</span><br><span class="d">' + m.desc + '</span></span>' +
+        return '<button class="mode" data-m="' + m.id + '"' + (c ? '' : ' disabled') + '><span class="ico">' + m.ico + '</span><span><span class="t">' + m.name + '</span><br><span class="d">' + (m.id === 'mc' && s.id === 'psy' ? 'Vier Antworten, 1 bis 4 richtig' : m.desc) + '</span></span>' +
           '<span class="r">' + c + ' Fragen' + (b !== undefined ? '<b>Bestwert ' + b + ' %</b>' : '') + '</span></button>';
       }).join('') + '</div>';
       h += '<div class="row" style="margin-top:14px">' + (ch.cards ? '<button class="ghost" id="readC">📖 Karten lesen</button>' : '') + '<button class="ghost" id="readQ">📖 Fragen lesen</button></div>';
@@ -694,7 +752,7 @@
     function readItems(k) {
       var list = ITEMS, total = list.length; k = Math.max(0, Math.min(k, total - 1));
       var it = list[k], qh, ah;
-      if (it.type === 'mc') { qh = it.q; ah = it.options[it.correct]; }
+      if (it.type === 'mc') { qh = it.q; ah = corrSet(it).map(function (i) { return it.options[i]; }).join('<br>'); }
       else if (it.type === 'tf') { qh = it.statement; ah = '<b>' + (it.answer ? 'Richtig' : 'Falsch') + '</b>'; }
       else { qh = plainHTML(it); ah = gapSolution(it); }
       var h = nav('<button id="rEnd">Fertig</button>') + '<h1 style="font-size:1.4rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">Lesen · ohne Wertung</p>' +
@@ -715,6 +773,7 @@
     }
     function questionBody(p, values) {
       var it = p.it;
+      if (it.type === 'mc' && p.multi) return '<div class="qtext">' + it.q + '</div><div class="mhint">1 bis 4 Antworten sind richtig</div><div class="opts">' + p.order.map(function (oi) { var on = values && values.indexOf(oi) >= 0; return '<button class="opt mopt' + (on ? ' sel' : '') + '" data-o="' + oi + '" aria-pressed="' + on + '"><span class="box">' + (on ? '✓' : '') + '</span><span>' + it.options[oi] + '</span></button>'; }).join('') + '</div>';
       if (it.type === 'mc') return '<div class="qtext">' + it.q + '</div><div class="opts">' + p.order.map(function (oi, k) { return '<button class="opt" data-o="' + oi + '"><span class="k">' + 'ABCD'.charAt(k) + '</span><span>' + it.options[oi] + '</span></button>'; }).join('') + '</div>';
       if (it.type === 'tf') return '<div class="qtext">' + it.statement + '</div><div class="tfrow"><button class="opt" data-v="1">Richtig</button><button class="opt" data-v="0">Falsch</button></div>';
       return '<div class="qtext gaptext">' + gapHTML(it, values) + '</div>';
@@ -731,16 +790,36 @@
           '<div class="meta"><span>' + title + ' · ' + (i + 1) + ' / ' + queue.length + '</span><span>' + esc(it.src || '') + '</span></div>' +
           '<div class="pbar"><div style="width:' + (i / queue.length * 100) + '%"></div></div><div class="card">' + questionBody(p) + '<div id="fb"></div></div>';
         if (it.type === 'gap') h += '<div class="row" id="gaprow"><button class="ghost" id="reveal">Lösung zeigen</button><button class="primary" id="check">Prüfen</button></div>';
+        if (p.multi) h += '<div class="row" id="mcrow"><button class="primary" id="mcheck" disabled>Prüfen</button></div>';
         view.innerHTML = h; window.scrollTo(0, 0);
         $('#quit').onclick = hub;
-        function answered(score) {
-          if (done) return; done = true; results.push({ it: it, s: score });
-          $('#fb').innerHTML = '<div class="fb ' + (score === 1 ? 'ok' : 'bad') + '">' + (score === 1 ? '✓ Richtig' : score > 0 ? '◐ Teilweise richtig' : '✗ Nicht ganz') + '</div>' +
+        function answered(score, pts) {
+          if (done) return; done = true; results.push({ it: it, s: score, p: pts });
+          var head = pts !== undefined ? (pts === it.options.length ? '✓ ' : pts > 0 ? '◐ ' : '✗ ') + pts + ' / ' + it.options.length + ' Punkte' : score === 1 ? '✓ Richtig' : score > 0 ? '◐ Teilweise richtig' : '✗ Nicht ganz';
+          $('#fb').innerHTML = '<div class="fb ' + (score === 1 ? 'ok' : score > 0 && pts !== undefined ? 'mid' : 'bad') + '">' + head + '</div>' +
             (it.expl ? '<div class="tip' + (it.warn ? ' warn' : '') + '">' + it.expl + '</div>' : '') +
-            '<div class="row"><button class="primary" id="next">' + (i === queue.length - 1 ? 'Ergebnis ›' : 'Weiter ›') + '</button></div>';
+            '<div class="row"><button class="primary" id="next">' + (i === queue.length - 1 ? 'Ergebnis ›' : 'Weiter ›') + '</button></div>' +
+            '<div class="tools"><button id="rep">Frage melden</button></div>';
           $('#next').onclick = function () { i++; show(); };
+          $('#rep').onclick = function () { reportQ(it, s.id, $('#rep')); };
         }
-        if (it.type === 'mc') {
+        if (p.multi) {
+          var sel = [], mb = $('#mcheck');
+          $$('.opt').forEach(function (b) {
+            b.onclick = function () {
+              var o = parseInt(b.dataset.o, 10), ix = sel.indexOf(o);
+              if (ix >= 0) sel.splice(ix, 1); else sel.push(o);
+              var on = ix < 0; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); $('.box', b).textContent = on ? '✓' : '';
+              mb.disabled = !sel.length;
+            };
+          });
+          mb.onclick = function () {
+            if (!sel.length) return;
+            var pts = mcPoints(it, sel);
+            $('.opts', view).outerHTML = mcMarked(it, sel, p.order); $('#mcrow').remove();
+            answered(pts / it.options.length, pts);
+          };
+        } else if (it.type === 'mc') {
           $$('.opt').forEach(function (b) {
             b.onclick = function () {
               var o = parseInt(b.dataset.o, 10);
@@ -780,10 +859,10 @@
         results.forEach(finishLog);
         if (mode !== 'wrong' && (T.best[mode] === undefined || pct > T.best[mode])) T.best[mode] = pct;
         save();
-        var bad = results.filter(function (r) { return r.s < 1; });
-        var h = nav() + '<div class="card"><div class="score"><div class="big">' + pct + ' %</div><div class="note">' + fmt(pts) + ' von ' + queue.length + ' richtig · ' + title + '</div></div></div>';
+        var bad = results.filter(function (r) { return r.s < 1; }), hasP = results.some(function (r) { return r.p !== undefined; });
+        var h = nav() + '<div class="card"><div class="score"><div class="big">' + pct + ' %</div><div class="note">' + (hasP ? breakdown(results) : fmt(pts) + ' von ' + queue.length + ' richtig') + ' · ' + title + '</div></div></div>';
         if (bad.length) {
-          h += '<div class="list">' + bad.map(function (r) { return '<details class="it"><summary><span class="st bad">✗</span><span>' + plainHTML(r.it) + '</span></summary><div class="body">' + solutionHTML(r.it) + '</div></details>'; }).join('') + '</div>' +
+          h += '<div class="list">' + bad.map(function (r) { return '<details class="it"><summary><span class="st ' + (r.s > 0 ? 'mid">◐' : 'bad">✗') + '</span><span>' + plainHTML(r.it) + '</span></summary><div class="body">' + solutionHTML(r.it, r.p !== undefined) + '</div></details>'; }).join('') + '</div>' +
             '<div class="row" style="margin-top:14px"><button class="ghost" id="againWrong">Falsche wiederholen</button><button class="primary" id="again">Nochmal</button></div>';
         } else h += '<div class="tip" style="margin-top:12px">Alles richtig. Stark!</div><div class="row"><button class="primary" id="again">Nochmal</button></div>';
         h += '<div class="tools"><button id="menu">Zum Menü</button></div>';
@@ -815,14 +894,15 @@
       onLeave(function () { clearInterval(timer); });
       function stash() { if (queue[cur].it.type === 'gap') ans[cur] = $$('input.gap').map(function (x) { return x.value; }); }
       function clockText() { var left = Math.max(0, Math.round((end - Date.now()) / 1000)); return { txt: Math.floor(left / 60) + ':' + ('0' + (left % 60)).slice(-2), left: left }; }
-      function answeredAt(i) { var a = ans[i]; if (a === null || a === undefined) return false; return Array.isArray(a) ? a.some(function (v) { return v.trim(); }) : true; }
+      function answeredAt(i) { var a = ans[i]; if (a === null || a === undefined) return false; if (queue[i].multi) return a.length > 0; return Array.isArray(a) ? a.some(function (v) { return v.trim(); }) : true; }
       function show() {
         var p = queue[cur], it = p.it, c = clockText();
         view.innerHTML = '<div class="nav"><span class="clock' + (c.left < 60 ? ' low' : '') + '" id="clock">⏱ ' + c.txt + '</span><button id="submit">Abgeben</button></div>' +
           '<div class="dots">' + queue.map(function (_, i) { return '<button data-i="' + i + '" class="' + (i === cur ? 'cur ' : '') + (answeredAt(i) ? 'done' : '') + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
           '<div class="meta"><span>Frage ' + (cur + 1) + ' / ' + queue.length + '</span><span>' + TYPES[it.type] + '</span></div><div class="card">' + questionBody(p, Array.isArray(ans[cur]) ? ans[cur] : null) + '</div>' +
           '<div class="row"><button class="ghost" id="prev"' + (cur === 0 ? ' disabled' : '') + '>‹ Zurück</button><button class="ghost" id="nxt"' + (cur === queue.length - 1 ? ' disabled' : '') + '>Weiter ›</button></div>';
-        if (it.type === 'mc') $$('.opt').forEach(function (b) { if (ans[cur] === parseInt(b.dataset.o, 10)) b.classList.add('sel'); b.onclick = function () { ans[cur] = parseInt(b.dataset.o, 10); show(); }; });
+        if (p.multi) $$('.opt').forEach(function (b) { b.onclick = function () { var o = parseInt(b.dataset.o, 10), a = ans[cur] || [], ix = a.indexOf(o); if (ix >= 0) a.splice(ix, 1); else a.push(o); ans[cur] = a; show(); }; });
+        else if (it.type === 'mc') $$('.opt').forEach(function (b) { if (ans[cur] === parseInt(b.dataset.o, 10)) b.classList.add('sel'); b.onclick = function () { ans[cur] = parseInt(b.dataset.o, 10); show(); }; });
         else if (it.type === 'tf') $$('.opt').forEach(function (b) { if (ans[cur] === (b.dataset.v === '1')) b.classList.add('sel'); b.onclick = function () { ans[cur] = b.dataset.v === '1'; show(); }; });
         else $$('input.gap').forEach(function (x, kk, all) {
           x.addEventListener('input', stash);
@@ -843,19 +923,23 @@
       }
       function finish(timeout) {
         if (finished) return; finished = true; clearInterval(timer); setImm(false);
-        var pts = 0, rows = queue.map(function (p, i) { var sc = grade(p.it, ans[i]); pts += sc; return { it: p.it, s: sc }; });
-        var pct = Math.round(pts / queue.length * 100);
+        var pts = 0, rows = queue.map(function (p, i) {
+          if (p.multi) { var a = ans[i] && ans[i].length ? ans[i] : null, mp = a ? mcPoints(p.it, a) : 0; pts += mp / p.it.options.length; return { it: p.it, s: mp / p.it.options.length, p: mp, a: a, o: p.order }; }
+          var sc = grade(p.it, ans[i]); pts += sc; return { it: p.it, s: sc };
+        });
+        var pct = Math.round(pts / queue.length * 100), hasP = rows.some(function (r) { return r.p !== undefined; });
         rows.forEach(finishLog);
         if (T.best.exam === undefined || pct > T.best.exam) T.best.exam = pct;
         save();
         var used = Math.round((Date.now() - (end - minutes * 60000)) / 1000);
-        view.innerHTML = nav() + '<div class="card"><div class="score"><div class="big">' + fmt(pts) + ' / ' + queue.length + '</div><div class="note">' + pct + ' % · Note ' + noteFor(pct) + ' (Richtwert)' +
+        view.innerHTML = nav() + '<div class="card"><div class="score"><div class="big">' + (hasP ? pct + ' %' : fmt(pts) + ' / ' + queue.length) + '</div><div class="note">' + (hasP ? breakdown(rows) : pct + ' %') + ' · Note ' + noteFor(pct) + ' (Richtwert)' +
           (timeout ? ' · Zeit abgelaufen' : ' · ' + Math.floor(used / 60) + ':' + ('0' + used % 60).slice(-2) + ' Min benötigt') + '</div></div></div><div class="list">' +
           rows.map(function (r) {
             var cls = r.s === 1 ? 'ok' : r.s > 0 ? 'mid' : 'bad', sym = r.s === 1 ? '✓' : r.s > 0 ? '◐' : '✗';
-            return '<details class="it"><summary><span class="st ' + cls + '">' + sym + '</span><span>' + plainHTML(r.it) + '</span></summary><div class="body">' + solutionHTML(r.it) + '</div></details>';
+            return '<details class="it"><summary><span class="st ' + cls + '">' + sym + '</span><span>' + plainHTML(r.it) + '</span></summary><div class="body">' + solutionHTML(r.it, r.p !== undefined, r.a, r.o) + '<div class="tools"><button data-rep="' + r.it.id + '">Frage melden</button></div></div></details>';
           }).join('') + '</div><div class="row" style="margin-top:14px"><button class="ghost" id="menu">Zum Menü</button><button class="primary" id="again">Neue Klausur</button></div>';
         window.scrollTo(0, 0); $('#menu').onclick = hub; $('#again').onclick = examSetup;
+        $$('[data-rep]').forEach(function (b) { b.onclick = function () { reportQ(BYID[b.dataset.rep], s.id, b); }; });
       }
       show(); timer = setInterval(tick, 500);
     }
@@ -865,7 +949,7 @@
       view.innerHTML = nav('<button id="all">Alle Tests</button>') +
         '<div class="meta"><span>' + esc(ch.title) + ' · ' + TYPES[it.type] + '</span><span>' + esc(it.src || '') + '</span></div>' +
         '<div class="card"><div class="qtext">' + (it.type === 'gap' ? gapSolution(it) : plainHTML(it)) + '</div>' +
-        (it.type === 'mc' ? '<div class="opts">' + it.options.map(function (o, i) { return '<div class="opt' + (i === it.correct ? ' ok' : '') + '"><span class="k">' + 'ABCD'.charAt(i) + '</span><span>' + o + '</span></div>'; }).join('') + '</div>' : '') +
+        (it.type === 'mc' ? '<div class="opts">' + it.options.map(function (o, i) { return '<div class="opt' + (corrSet(it).indexOf(i) >= 0 ? ' ok' : '') + '"><span class="k">' + 'ABCD'.charAt(i) + '</span><span>' + o + '</span></div>'; }).join('') + '</div>' : '') +
         (it.type === 'tf' ? '<div class="tip"><b>' + (it.answer ? 'Richtig' : 'Falsch') + '.</b></div>' : '') + (it.expl ? '<div class="tip' + (it.warn ? ' warn' : '') + '">' + it.expl + '</div>' : '') + '</div>';
       $('#all').onclick = hub; highlight($('.card', view), terms);
     }
@@ -1013,10 +1097,13 @@
     var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     // Einträge pro Tag: { fach: {n, s} }
     var map = {};
-    DB.log.forEach(function (e) { var d = dayKey(e[0]), m = map[d] = map[d] || {}, f = m[e[1]] = m[e[1]] || { n: 0, s: 0 }; f.n++; f.s += (typeof e[3] === 'number' ? e[3] : 0); });
+    DB.log.forEach(function (e) {
+      var d = dayKey(e[0]), m = map[d] = map[d] || {}, f = m[e[1]] = m[e[1]] || { n: 0, s: 0, k: 0, p: 0, pm: 0 }; f.n++;
+      if (typeof e[4] === 'number') { f.p += e[4]; f.pm += 4; } else { f.k++; f.s += (typeof e[3] === 'number' ? e[3] : 0); }
+    });
     function dayData(d) { return map[dayKey(d.getTime())] || {}; }
     function total(c) { return Object.keys(c).reduce(function (a, k) { return a + c[k].n; }, 0); }
-    function merge(list) { var r = {}; list.forEach(function (c) { Object.keys(c).forEach(function (k) { var f = r[k] = r[k] || { n: 0, s: 0 }; f.n += c[k].n; f.s += c[k].s; }); }); return r; }
+    function merge(list) { var r = {}; list.forEach(function (c) { Object.keys(c).forEach(function (k) { var f = r[k] = r[k] || { n: 0, s: 0, k: 0, p: 0, pm: 0 }; f.n += c[k].n; f.s += c[k].s; f.k += c[k].k; f.p += c[k].p; f.pm += c[k].pm; }); }); return r; }
     function dmy(d) { return d.getDate() + '. ' + MON[d.getMonth()]; }
     function build() {
       var out = [], d, c;
@@ -1058,8 +1145,10 @@
         var t2 = total(sel.c);
         h += '<div class="group daydet"><div class="dhead"><b>' + esc(sel.title) + '</b><span>' + (t2 ? t2 + (t2 === 1 ? ' Antwort' : ' Antworten') : 'nichts gelernt') + '</span></div>' +
           allSubj().filter(function (s) { return sel.c[s.id]; }).map(function (s) {
-            var f = sel.c[s.id], pct = Math.round(f.s / f.n * 100);
-            return '<div class="drow"><i class="sw" style="background:var(--c-' + s.id + ')"></i><span class="nm">' + esc(s.name) + '</span><span class="ct">' + f.n + ' · ' + pct + ' % gewusst/richtig</span></div>';
+            var f = sel.c[s.id], parts = [];
+            if (f.k) parts.push(Math.round(f.s / f.k * 100) + ' % gewusst/richtig');
+            if (f.pm) parts.push('MC ' + f.p + '/' + f.pm + ' Punkte');
+            return '<div class="drow"><i class="sw" style="background:var(--c-' + s.id + ')"></i><span class="nm">' + esc(s.name) + '</span><span class="ct">' + f.n + ' · ' + parts.join(' · ') + '</span></div>';
           }).join('') + '</div>';
       } else if (DB.log.length) h += '<p class="note" style="text-align:center">Tippe einen Balken an für Details.</p>';
       h += '<p class="note" style="text-align:center">Gezählt wird jede beantwortete Karte und Testfrage. Im Zeitraum: ' + rng + ' in ' + days + ' Tagen.</p>';
