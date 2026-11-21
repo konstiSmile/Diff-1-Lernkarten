@@ -310,6 +310,11 @@ from data_diag2 import CARDS2, ITEMS2
 CARDS.update(CARDS2)
 ITEMS += ITEMS2
 
+# Teil 3 liegt in data_diag3.py
+from data_diag3 import CARDS3, ITEMS3
+CARDS['d3'] = CARDS3
+ITEMS += ITEMS3
+
 # Zahlen nicht mehr per Lückentext (13. Nov., Chat 1.11): stattdessen als MC
 S = 'Diagnostik · Teil 1'
 add(id='pd-mc-27', type='mc', q='Wie viele <b>Indizes</b> und <b>Untertests</b> hat der WISC-V?',
