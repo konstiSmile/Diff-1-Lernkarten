@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1 };
+  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1 };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -190,7 +190,7 @@
   function rd(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function normalizeDB(d) {
     d = d || {};
-    d.v = 1; d.recent = d.recent || []; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || []; d.custom = d.custom || {}; d.custom.folders = d.custom.folders || [];
+    d.v = 1; d.recent = d.recent || []; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || []; d.custom = d.custom || {}; d.custom.folders = d.custom.folders || []; d.badges = (d.badges && typeof d.badges === 'object' && !Array.isArray(d.badges)) ? d.badges : {};
     d.settings = Object.assign({}, DEFAULTS, d.settings || {});
     // Psycho: früheres Test-Kapitel „tp“ (Kap. 1 und 2) ist auf k1/k2 verteilt; offene Fehler übernehmen. Alter Schlüssel bleibt.
     var tp = d.tests['psy/tp'];
@@ -313,7 +313,7 @@
     else if (p[0] === 'f' && p[1] && p[2]) chapterView(p[1], p[2], r.q);
     else homeView();
     if (p[0] === 'f' && p[1]) statFach(p[1]);
-    statAsk(); backupNag();
+    statAsk(); backupNag(); badgeCheck();
     setTab(tab);
     if (!(p[0] === 'f' && p[2] && r.q.c)) window.scrollTo(0, 0);
   }
@@ -404,6 +404,68 @@
       }).join('') + '</div>');
     }
     return rows.length ? '<div class="group today">' + rows.join('') + '</div>' : '';
+  }
+
+  // ====================================================================== Motivation (v37): Mosaik je Kapitel, Abzeichen
+  var CROWN = '<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></svg>';
+  function heat(r) { if (!r) return 'hn'; var a = r.last5.reduce(function (x, y) { return x + y; }, 0) / r.last5.length; return a < 0.2 ? 'h0' : a < 0.45 ? 'h1' : a < 0.65 ? 'h2' : a < 0.85 ? 'h3' : 'h4'; }
+  function mosaicHTML(items) {
+    var ls = learnState(), nm = 0;
+    var tiles = items.map(function (it, i) { var r = ls[it.id], m = levelOf(r) === 'gemeistert'; if (m) nm++; return '<button type="button" class="mt ' + heat(r) + '" data-mi="' + i + '" aria-label="Frage ' + (i + 1) + '">' + (m ? CROWN : '') + '</button>'; }).join('');
+    var seen = items.filter(function (it) { return ls[it.id]; }).length;
+    return '<div class="mosaic"><div class="mhead"><b>Fragen-Übersicht</b><span>' + seen + ' / ' + items.length + ' geübt' + (nm ? ' · ' + nm + ' gemeistert' : '') + '</span></div>' +
+      '<div class="mgrid">' + tiles + '</div><div id="minfo" class="minfo">Farbe nach den letzten 5 Antworten, grau = neu, Krone = gemeistert. Antippen für Details.</div></div>';
+  }
+  function wireMosaic(items, practice) {
+    $$('.mgrid .mt').forEach(function (b) {
+      b.onclick = function () {
+        var i = +b.dataset.mi, it = items[i], r = learnState()[it.id];
+        $$('.mgrid .mt.on').forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on');
+        var avg = r ? Math.round(r.last5.reduce(function (x, y) { return x + y; }, 0) / r.last5.length * 100) : 0;
+        var last = !r ? '' : r.pts !== undefined ? 'zuletzt ' + r.pts + '/4' : r.s === 1 ? 'zuletzt richtig' : r.s > 0 ? 'zuletzt teilweise' : 'zuletzt falsch';
+        $('#minfo').innerHTML = '<span><b>Frage ' + (i + 1) + '</b> · ' + TYPES[it.type] + '<br>' + (r ? r.n + '× beantwortet · Ø ' + avg + ' % · ' + last + ' · ' + levelOf(r) : 'noch nicht geübt') + '</span><button type="button" class="actbtn" id="mGo">Üben ›</button>';
+        $('#mGo').onclick = function () { practice(it.id); };
+      };
+    });
+  }
+  var BADGES = [
+    ['first', 'Erste Antwort', 'Die erste Karte oder Frage beantwortet'],
+    ['goal', 'Tagesziel erreicht', 'An einem Tag das Tagesziel geschafft'],
+    ['chain7', '7 Lerntage', 'Lerntage-Kette von 7 Tagen'],
+    ['chain30', '30 Lerntage', 'Lerntage-Kette von 30 Tagen'],
+    ['n100', '100 Antworten', 'Insgesamt 100 Karten und Fragen'],
+    ['n1000', '1000 Antworten', 'Insgesamt 1000 Karten und Fragen'],
+    ['allsubj', 'Alle Fächer geübt', 'In jedem Fach mindestens einmal geübt'],
+    ['chapseen', 'Kapitel durch', 'Alle Karten und Fragen eines Kapitels einmal geübt'],
+    ['chapmaster', 'Kapitel gemeistert', 'Alle Fragen eines Kapitels gemeistert'],
+    ['exam1', 'Note 1,x', 'Zeit-Simulation mit Note 1,7 oder besser']
+  ];
+  function badgeCheck() {
+    if (!DB.settings.mBadges) return;
+    var got = DB.badges, ls = learnState(), L = DB.log.length, fresh = [];
+    function has(id, cond) { if (got[id] || !cond()) return; got[id] = Date.now(); fresh.push(id); }
+    has('first', function () { return L > 0; });
+    has('goal', function () { var g = DB.settings.mGoal || 30, c = {}; return DB.log.some(function (e) { var d = dayNum(e[0]); c[d] = (c[d] || 0) + 1; return c[d] >= g; }); });
+    var ch = chainOf();
+    has('chain7', function () { return ch >= 7; }); has('chain30', function () { return ch >= 30; });
+    has('n100', function () { return L >= 100; }); has('n1000', function () { return L >= 1000; });
+    has('allsubj', function () { var s = {}; DB.log.forEach(function (e) { s[e[1]] = 1; }); return C.subjects.every(function (x) { return s[x.id]; }); });
+    function chaps(fn) { return C.subjects.some(function (x) { return x.chapters.some(function (c) { return !c.placeholder && fn(c); }); }); }
+    has('chapseen', function () { return chaps(function (c) { var a = (c.cards || []).concat(c.items || []); return a.length && a.every(function (z) { return ls[z.id]; }); }); });
+    has('chapmaster', function () { return chaps(function (c) { return c.items && c.items.length && c.items.every(function (z) { return levelOf(ls[z.id]) === 'gemeistert'; }); }); });
+    has('exam1', function () { return Object.keys(DB.tests).some(function (k) { var b = DB.tests[k].best; return b && b.exam >= 85; }); });
+    if (fresh.length) {
+      save();
+      if (!document.body.classList.contains('immersive')) toast('Abzeichen: ' + BADGES.filter(function (b) { return b[0] === fresh[0]; })[0][1] + (fresh.length > 1 ? ' (+' + (fresh.length - 1) + ')' : ''));
+    }
+  }
+  function badgesHTML() {
+    if (!DB.settings.mBadges) return '';
+    var got = DB.badges, n = BADGES.filter(function (b) { return got[b[0]]; }).length;
+    return '<div class="group badges"><div class="bhead"><b>Abzeichen</b><span>' + n + ' von ' + BADGES.length + '</span></div><div class="bgrid">' + BADGES.map(function (b) {
+      var t = got[b[0]];
+      return '<div class="bdg' + (t ? ' got' : '') + '"><b>' + b[1] + '</b><small>' + (t ? new Date(t).toLocaleDateString('de-DE') : b[2]) + '</small></div>';
+    }).join('') + '</div></div>';
   }
 
   // ====================================================================== Start / Fach
@@ -824,6 +886,7 @@
           '<span class="r">' + c + ' Fragen' + (b !== undefined ? '<b>Bestwert ' + b + ' %</b>' : '') + '</span></button>';
       }).join('') + '</div>';
       h += '<div class="row" style="margin-top:14px">' + (ch.cards ? '<button class="ghost" id="readC">📖 Karten lesen</button>' : '') + '<button class="ghost" id="readQ">📖 Fragen lesen</button></div>';
+      if (st.mMosaic && !s.mix) h += mosaicHTML(ITEMS);
       var wr = T.wrong.filter(function (id) { return BYID[id]; });
       if (wr.length) h += '<div class="row" style="margin-top:14px"><button class="ghost" id="wrong">Falsche Fragen wiederholen (' + wr.length + ')</button></div>';
       h += '<div class="tools"><button id="reset">Fortschritt zurücksetzen</button></div>';
@@ -831,6 +894,7 @@
       $$('.chip').forEach(function (b) { b.onclick = function () { st.testN = parseInt(b.dataset.n, 10); save(); hub(); }; });
       $$('.mode').forEach(function (b) { b.onclick = function () { start(b.dataset.m); }; });
       $('#readQ').onclick = function () { readItems(0); };
+      if (st.mMosaic && !s.mix) wireMosaic(ITEMS, function (id) { run([prep(id)], 'wrong', 'Einzelfrage'); });
       var rc = $('#readC'); if (rc) rc.onclick = function () { location.hash = '#/f/' + s.id + '/' + ch.id + '?read=1'; };
       var wb = $('#wrong'); if (wb) wb.onclick = function () { run(shuffle(wr).map(prep), 'wrong', 'Falsche Fragen'); };
       $('#reset').onclick = function () {
@@ -947,7 +1011,7 @@
         var pts = results.reduce(function (a, r) { return a + r.s; }, 0), pct = Math.round(pts / queue.length * 100);
         results.forEach(finishLog);
         if (mode !== 'wrong' && (T.best[mode] === undefined || pct > T.best[mode])) T.best[mode] = pct;
-        save();
+        save(); badgeCheck();
         var bad = results.filter(function (r) { return r.s < 1; }), hasP = results.some(function (r) { return r.p !== undefined; });
         var h = nav() + '<div class="card"><div class="score"><div class="big">' + pct + ' %</div><div class="note">' + (hasP ? breakdown(results) : fmt(pts) + ' von ' + queue.length + ' richtig') + ' · ' + title + '</div></div></div>';
         if (bad.length) {
@@ -1019,7 +1083,7 @@
         var pct = Math.round(pts / queue.length * 100), hasP = rows.some(function (r) { return r.p !== undefined; });
         rows.forEach(finishLog);
         if (T.best.exam === undefined || pct > T.best.exam) T.best.exam = pct;
-        save();
+        save(); badgeCheck();
         var used = Math.round((Date.now() - (end - minutes * 60000)) / 1000);
         view.innerHTML = nav() + '<div class="card"><div class="score"><div class="big">' + (hasP ? pct + ' %' : fmt(pts) + ' / ' + queue.length) + '</div><div class="note">' + (hasP ? breakdown(rows) : pct + ' %') + ' · Note ' + noteFor(pct) + ' (Richtwert)' +
           (timeout ? ' · Zeit abgelaufen' : ' · ' + Math.floor(used / 60) + ':' + ('0' + used % 60).slice(-2) + ' Min benötigt') + '</div></div></div><div class="list">' +
@@ -1240,6 +1304,7 @@
             return '<div class="drow"><i class="sw" style="background:var(--c-' + s.id + ')"></i><span class="nm">' + esc(s.name) + '</span><span class="ct">' + f.n + ' · ' + parts.join(' · ') + '</span></div>';
           }).join('') + '</div>';
       } else if (DB.log.length) h += '<p class="note" style="text-align:center">Tippe einen Balken an für Details.</p>';
+      h += badgesHTML();
       h += '<p class="note" style="text-align:center">Gezählt wird jede beantwortete Karte und Testfrage. Im Zeitraum: ' + rng + ' in ' + days + ' Tagen.</p>';
       view.innerHTML = h;
       $$('#vseg button').forEach(function (b) { b.onclick = function () { vRange = b.dataset.r; vSel = null; render(); }; });
@@ -1429,6 +1494,7 @@
   }
   function mergeInto(a, b) {
     Object.assign(a.progress, b.progress || {});
+    Object.keys(b.badges || {}).forEach(function (k) { if (!a.badges[k] || b.badges[k] < a.badges[k]) a.badges[k] = b.badges[k]; });
     Object.keys(b.tests || {}).forEach(function (k) {
       var x = a.tests[k] = a.tests[k] || { best: {}, wrong: [] }, y = b.tests[k]; x.best = x.best || {}; x.wrong = x.wrong || [];
       Object.keys(y.best || {}).forEach(function (m) { if (x.best[m] === undefined || y.best[m] > x.best[m]) x.best[m] = y.best[m]; });
@@ -1467,7 +1533,9 @@
       '<div class="setrow"><div class="l"><b>Heute fällig</b><small>Wiederholung nach 1, 3, 7 und 14 Tagen</small></div>' + segHTML('mDue', [[0, 'Aus'], [1, 'An']], st.mDue) + '</div>' +
       '<div class="setrow"><div class="l"><b>Tagesziel</b><small>Antworten pro Tag</small></div>' + segHTML('mGoal', [[0, 'Aus'], [10, '10'], [20, '20'], [30, '30'], [50, '50']], st.mGoal) + '</div>' +
       '<div class="setrow"><div class="l"><b>Lerntage-Kette</b><small>Ein Pausetag pro Woche reißt sie nicht</small></div>' + segHTML('mChain', [[0, 'Aus'], [1, 'An']], st.mChain) + '</div>' +
-      '<div class="setrow"><div class="l"><b>Klausur-Countdown</b></div>' + segHTML('mCount', [[0, 'Aus'], [1, 'An']], st.mCount) + '</div></div>' +
+      '<div class="setrow"><div class="l"><b>Klausur-Countdown</b></div>' + segHTML('mCount', [[0, 'Aus'], [1, 'An']], st.mCount) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Fragen-Übersicht</b><small>Mosaik im Kapitel</small></div>' + segHTML('mMosaic', [[0, 'Aus'], [1, 'An']], st.mMosaic) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Abzeichen</b><small>Im Verlauf</small></div>' + segHTML('mBadges', [[0, 'Aus'], [1, 'An']], st.mBadges) + '</div></div>' +
       '<div class="group"><h3>Daten und Backup</h3>' +
       '<div class="setrow"><div class="l"><b>Backup speichern</b><small>Lernstand, Verlauf, eigene Karten und Einstellungen als Datei</small></div><button class="actbtn" id="bShare">Datei</button></div>' +
       '<div class="setrow"><div class="l"><b>Backup als Text kopieren</b><small>Zum Einfügen auf einem anderen Gerät</small></div><button class="actbtn" id="bCopy">Kopieren</button></div>' +
