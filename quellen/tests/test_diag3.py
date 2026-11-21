@@ -13,7 +13,7 @@ with sync_playwright() as p:
     ovf = lambda t: ok(pg.evaluate("document.documentElement.scrollWidth") <= 390, 'kein Überlauf ' + t)
     pg.goto(B + '#/f/psy/u/diag'); pg.wait_for_selector('.tile')
     tiles = pg.locator('.tile').all_inner_texts()
-    ok(len(tiles) == 3 and 'Teil 3' in tiles[2], 'Teil 3 als drittes Kapitel in Diagnostik')
+    ok(len(tiles) >= 3 and 'Teil 3' in tiles[2], 'Teil 3 als drittes Kapitel in Diagnostik')
     ok(not any('Voraussichtlich' in t for t in tiles), 'kein Vermerk in Diagnostik')
     pg.screenshot(path='/tmp/d3_liste.png', full_page=True)
     k = 'd3'
