@@ -321,3 +321,8 @@ add(id='pp-gap-14', type='gap', text='Ideografische Forschung, die zwei oder meh
 from data_pers3 import CARDS3, ITEMS3
 CARDS.update(CARDS3)
 ITEMS += ITEMS3
+
+# Teil 4 (Kap. 4a und 4b) liegt in data_pers4.py
+from data_pers4 import CARDS4, ITEMS4
+CARDS.update(CARDS4)
+ITEMS += ITEMS4

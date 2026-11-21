@@ -90,7 +90,7 @@ a.tile:active, button.tile:active { transform:scale(.985); }
 .face ul, .face ol { margin:0 0 .7em; padding-left:1.2em; }
 .face li { margin-bottom:.35em; }
 .face table { border-collapse:collapse; font-size:.82rem; margin:0 0 .7em; width:100%; font-family:-apple-system, system-ui, sans-serif; }
-.face th, .face td { border-bottom:1px solid var(--line, rgba(128,128,128,.3)); padding:4px 3px; text-align:left; white-space:nowrap; }
+.face th, .face td { border-bottom:1px solid var(--line, rgba(128,128,128,.3)); padding:4px 3px; text-align:left; vertical-align:top; white-space:normal; overflow-wrap:break-word; hyphens:auto; }
 .q-title { font-size:1.2rem; font-weight:600; line-height:1.35; margin-bottom:.6em; }
 .tip { font-family:-apple-system, system-ui, Inter, sans-serif; font-size:.86rem; background:var(--green-soft); border-radius:10px; padding:9px 12px; margin-top:10px; }
 .tip.warn, .warn { background:var(--red-soft); }

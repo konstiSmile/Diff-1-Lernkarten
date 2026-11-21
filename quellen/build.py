@@ -127,6 +127,8 @@ CONTENT = dict(name=NAME, version=VERSION, subjects=[
         pers_chapter('k2', 'Kapitel 2 · Methoden', 2),
         pers_chapter('k3a', 'Kapitel 3a · Geschichte und Eigenschaftsparadigma', 3, '3a'),
         pers_chapter('k3b', 'Kapitel 3b · Behaviorismus, Evolution, Informationsverarbeitung, Neurowissenschaft', 3, '3b'),
+        pers_chapter('k4a', 'Kapitel 4a · Persönlichkeitserfassung', 4, '4a'),
+        pers_chapter('k4b', 'Kapitel 4b · Schülerpersönlichkeit', 4, '4b'),
         diag_chapter('d1', 'Teil 1 · Grundlagen, Beobachtung, Tests, Interviews', 1),
         diag_chapter('d2', 'Teil 2 · Strategien, Bezugsnormen, Messfehler, Gütekriterien', 2)]),
 ], search=search)
@@ -211,7 +213,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'q
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v37';
+const CACHE = 'lernkiste-v38';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{
