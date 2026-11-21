@@ -351,3 +351,19 @@ div.mopt { cursor:default; }
 .fb.mid { color:var(--ink); }
 .pvbody .fbtext { min-height:80px; margin:4px 0 8px; }
 .tools button:disabled { color:var(--muted); cursor:default; }
+
+/* Motivation (v36): Tagesziel, Heute fällig, Countdown */
+.today { padding:2px 16px; }
+.tdrow { display:flex; align-items:center; gap:10px; padding:11px 0; }
+.today > * + * { border-top:1px solid var(--line); }
+.tdtxt { flex:1; min-width:0; }
+.tdtxt b { display:block; font-weight:600; font-size:.95rem; }
+.tdtxt small { display:block; color:var(--muted); font-size:.8rem; margin-top:1px; }
+.ring { width:42px; height:42px; flex:none; }
+.ring circle { fill:none; stroke-width:5; }
+.ring .rb { stroke:var(--line); }
+.ring .rf { stroke:var(--accent); stroke-linecap:round; transform:rotate(-90deg); transform-origin:24px 24px; }
+.ring.done .rf { stroke:var(--green); }
+.tdrow a.actbtn { text-decoration:none; white-space:nowrap; }
+.tdcount { display:flex; flex-wrap:wrap; gap:4px 14px; padding:10px 0; font-size:.8rem; color:var(--muted); }
+.tdcount span { display:inline-flex; align-items:center; gap:6px; }

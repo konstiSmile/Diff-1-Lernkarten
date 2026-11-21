@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '' };
+  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1 };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -307,6 +307,7 @@
     else if (p[0] === 'neu') { tab = 'neu'; neuView(p[1], p[2]); }
     else if (p[0] === 'einstellungen') { tab = 'set'; settingsView(); }
     else if (p[0] === 'mix') mixView(p[1]);
+    else if (p[0] === 'faellig') dueView(p[1]);
     else if (p[0] === 'f' && p[1] && p[2] === 'u' && p[3]) fachView(p[1], p[3]);
     else if (p[0] === 'f' && p[1] && !p[2]) fachView(p[1]);
     else if (p[0] === 'f' && p[1] && p[2]) chapterView(p[1], p[2], r.q);
@@ -315,6 +316,94 @@
     statAsk(); backupNag();
     setTab(tab);
     if (!(p[0] === 'f' && p[2] && r.q.c)) window.scrollTo(0, 0);
+  }
+
+  // ====================================================================== Motivation (v36): Lernstand, Heute fällig, Tagesziel, Lerntage-Kette, Countdown
+  function dayNum(x) {
+    if (typeof x === 'string') { var p = x.split('-'); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 864e5); }
+    var d = new Date(x); return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5);
+  }
+  var LS_CACHE = null, LS_KEY = '';
+  // Lernstand je Karte/Frage aus dem Verlauf: n, letzte 5 Werte, Serie richtiger Tage seit dem letzten Fehler
+  function learnState() {
+    var last = DB.log[DB.log.length - 1], key = DB.log.length + '|' + (last ? last[0] : 0);
+    if (LS_CACHE && LS_KEY === key) return LS_CACHE;
+    var m = {};
+    DB.log.forEach(function (e) {
+      var r = m[e[2]] = m[e[2]] || { n: 0, last5: [], streak: 0, okDay: -1, day: 0, s: 0 }, day = dayNum(e[0]), ok = e[3] === 1;
+      r.n++; r.s = e[3]; r.day = day; r.last5.push(e[3]); if (r.last5.length > 5) r.last5.shift();
+      r.pts = typeof e[4] === 'number' ? e[4] : undefined;
+      if (!ok) { r.streak = 0; r.okDay = -1; } else if (day !== r.okDay) { r.streak++; r.okDay = day; }
+    });
+    LS_CACHE = m; LS_KEY = key; return m;
+  }
+  var DUE_GAP = [1, 1, 3, 7, 14];
+  function levelOf(r) { return !r ? 'neu' : r.streak >= 3 ? 'gemeistert' : r.s === 1 ? 'sicher' : 'gesehen'; }
+  function isDue(r, today) { return !!r && today - r.day >= DUE_GAP[Math.min(r.streak, 4)]; }
+  function dueLists() {
+    var ls = learnState(), today = dayNum(Date.now()), cards = [], items = [];
+    C.subjects.forEach(function (sx) {
+      if (isHidden(sx.id)) return;
+      sx.chapters.forEach(function (ch) {
+        if (ch.placeholder) return;
+        (ch.cards || []).forEach(function (c) { if (isDue(ls[c.id], today)) cards.push(Object.assign({}, c, { _s: sx.id })); });
+        (ch.items || []).forEach(function (it) { if (isDue(ls[it.id], today)) items.push(Object.assign({}, it, { _s: sx.id })); });
+      });
+    });
+    return { cards: cards, items: items };
+  }
+  function dueView(part) {
+    var d = dueLists(), S = { id: 'due', mix: true, due: true, name: 'Start', href: '#/', chapters: [] };
+    view.className = 's-mix';
+    if (part === 'karten' && d.cards.length) return cardsView(S, { id: 'due', kind: 'cards', title: 'Heute fällig: Karten', sub: d.cards.length + (d.cards.length === 1 ? ' Karte' : ' Karten') + ' zum Wiederholen', cards: shuffle(d.cards) }, {});
+    if (part === 'tests' && d.items.length) return testsView(S, { id: 'due', kind: 'tests', title: 'Heute fällig: Fragen', sub: d.items.length + (d.items.length === 1 ? ' Frage' : ' Fragen') + ' zum Wiederholen', items: d.items }, {});
+    location.replace('#/');
+  }
+  function todayCount() { var t = dayNum(Date.now()), n = 0; for (var i = DB.log.length - 1; i >= 0; i--) { if (dayNum(DB.log[i][0]) !== t) break; n++; } return n; }
+  // Lerntage-Kette: ein Pausetag pro Kalenderwoche reißt die Kette nicht; heute darf noch fehlen
+  function chainOf() {
+    var days = {}; DB.log.forEach(function (e) { days[dayNum(e[0])] = 1; });
+    var t = dayNum(Date.now()), n = 0, used = {};
+    for (var i = 0; i < 1000; i++) {
+      var d = t - i;
+      if (days[d]) { n++; continue; }
+      if (i === 0) continue;
+      var wk = weekKey(d * 864e5 + 432e5);
+      if (!used[wk]) { used[wk] = 1; continue; }
+      break;
+    }
+    return n;
+  }
+  function examDays() {
+    var t = dayNum(Date.now());
+    return C.subjects.filter(function (s) { return s.exam && !isHidden(s.id); }).map(function (s) { return { s: s, d: dayNum(s.exam) - t }; })
+      .filter(function (x) { return x.d >= 0; }).sort(function (a, b) { return a.d - b.d; });
+  }
+  function todayHTML() {
+    var st = DB.settings, rows = [];
+    if (st.mGoal || st.mChain) {
+      var n = todayCount(), g = st.mGoal, ring = '';
+      if (g) {
+        var f = Math.min(1, n / g), L = 2 * Math.PI * 20;
+        ring = '<svg class="ring' + (n >= g ? ' done' : '') + '" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" class="rb"/>' +
+          (f > 0 ? '<circle cx="24" cy="24" r="20" class="rf" stroke-dasharray="' + (L * f).toFixed(1) + ' ' + L.toFixed(1) + '"/>' : '') + '</svg>';
+      }
+      var head = g ? (n >= g ? 'Tagesziel erreicht · ' + n : 'Heute ' + n + ' von ' + g) : 'Heute ' + n + (n === 1 ? ' Antwort' : ' Antworten');
+      rows.push('<div class="tdrow" id="tdGoal">' + ring + '<div class="tdtxt"><b>' + head + '</b>' + (st.mChain ? '<small>Lerntage in Folge: ' + chainOf() + '</small>' : '') + '</div></div>');
+    }
+    if (st.mDue) {
+      var d = dueLists(), any = d.cards.length + d.items.length;
+      rows.push('<div class="tdrow" id="tdDue"><div class="tdtxt"><b>Heute fällig</b><small>' + (any ? 'Geübtes wiederholen' : 'Nichts fällig') + '</small></div>' +
+        (d.cards.length ? '<a class="actbtn" href="#/faellig/karten">Karten ' + d.cards.length + '</a>' : '') +
+        (d.items.length ? '<a class="actbtn" href="#/faellig/tests">Fragen ' + d.items.length + '</a>' : '') + '</div>');
+    }
+    if (st.mCount) {
+      var cs = examDays();
+      if (cs.length) rows.push('<div class="tdcount" id="tdCount">' + cs.map(function (x) {
+        return '<span><i class="sw" style="background:var(--c-' + x.s.id + ')"></i>' + esc(x.s.name) + ' ' + (x.d === 0 ? 'heute' : x.d === 1 ? 'morgen' : 'in ' + x.d + ' Tagen') + '</span>';
+      }).join('') + '</div>');
+    }
+    return rows.length ? '<div class="group today">' + rows.join('') + '</div>' : '';
   }
 
   // ====================================================================== Start / Fach
@@ -334,7 +423,7 @@
   function homeView() {
     var vis = C.subjects.filter(function (s) { return !isHidden(s.id); }), hid = C.subjects.filter(function (s) { return isHidden(s.id); });
     var h = '<h1>' + esc(appName()) + '</h1><p class="sub">Fach auswählen</p>' +
-      '<a class="fakesearch" href="#/suche"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Begriff oder Satz suchen …</a><div class="grid fach">';
+      '<a class="fakesearch" href="#/suche"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Begriff oder Satz suchen …</a>' + todayHTML() + '<div class="grid fach">';
     vis.forEach(function (s) {
       var st = subjStats(s);
       h += '<div class="tilewrap" data-sid="' + s.id + '"><div class="hidehint">Ausblenden</div><a class="tile s-' + s.id + '" href="#/f/' + s.id + '">' + (st.placeholder ? '<span class="badge">Gerüst</span>' : '') +
@@ -495,7 +584,7 @@
   // ====================================================================== Karteikarten
   function cardsView(s, ch, q) {
     var cards = ch.cards, byId = {}; cards.forEach(function (c) { byId[c.id] = c; });
-    var st = DB.settings, noRed = s.own || !cards.some(function (c) { return c.red; }), filter = (q.c || noRed) ? 'all' : st.cardFilter;
+    var st = DB.settings, noRed = s.own || !cards.some(function (c) { return c.red; }), filter = (q.c || noRed || s.due) ? 'all' : st.cardFilter;
     var order = cards.map(function (c) { return c.id; }); if (st.cardOrder === 'shuffle' && !s.mix) order = shuffle(order);
     var deck = [], pos = 0, flipped = false, confirmReset = false, reading = q.read === '1', rpos = 0;
     var terms = (q.hl || '').split(/\s+/).filter(function (t) { return t.length > 1; });
@@ -1133,7 +1222,7 @@
       var sel = bs.filter(function (x) { return x.key === vSel; })[0];
       var subLine = { w: 'Beantwortete Fragen und Karten der letzten 7 Tage', m: 'Beantwortete Fragen und Karten der letzten 30 Tage', j: 'Beantwortete Fragen und Karten der letzten 12 Wochen' }[vRange];
       var h = '<h1>Verlauf</h1><p class="sub">' + subLine + '</p>' +
-        '<div class="stats"><div class="stat"><b>' + tod + '</b><span>heute</span></div><div class="stat"><b>' + wk + '</b><span>7 Tage</span></div><div class="stat"><b>' + streakOf() + '</b><span>Tage in Folge</span></div></div>' +
+        '<div class="stats"><div class="stat"><b>' + tod + '</b><span>heute</span></div><div class="stat"><b>' + wk + '</b><span>7 Tage</span></div><div class="stat"><b>' + (DB.settings.mChain ? chainOf() : streakOf()) + '</b><span>' + (DB.settings.mChain ? 'Lerntage-Kette' : 'Tage in Folge') + '</span></div></div>' +
         '<div class="seg" id="vseg"><button data-r="w" class="' + (vRange === 'w' ? 'on' : '') + '">Woche</button><button data-r="m" class="' + (vRange === 'm' ? 'on' : '') + '">Monat</button><button data-r="j" class="' + (vRange === 'j' ? 'on' : '') + '">12 Wochen</button></div>';
       if (!DB.log.length) h += '<div class="note" style="text-align:center;padding:10px 6px 20px">Hier erscheint dein Verlauf, sobald du Karten oder Fragen beantwortest.</div>';
       h += '<div class="group" style="padding:12px 14px"><div class="chart' + (vRange === 'm' ? ' dense' : '') + '">' + bs.map(function (x) {
@@ -1374,6 +1463,11 @@
       '<div class="setrow"><div class="l"><b>Fragen pro Runde</b></div>' + segHTML('testN', [[5, '5'], [10, '10'], [0, 'Alle']], st.testN) + '</div>' +
       '<div class="setrow"><div class="l"><b>Klausur: Minuten</b></div>' + segHTML('examMin', [[10, '10'], [20, '20'], [30, '30']], st.examMin) + '</div>' +
       '<div class="setrow"><div class="l"><b>Klausur: Fragen</b></div>' + segHTML('examN', [[8, '8'], [12, '12'], [16, '16']], st.examN) + '</div></div>' +
+      '<div class="group"><h3>Motivation</h3>' +
+      '<div class="setrow"><div class="l"><b>Heute fällig</b><small>Wiederholung nach 1, 3, 7 und 14 Tagen</small></div>' + segHTML('mDue', [[0, 'Aus'], [1, 'An']], st.mDue) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Tagesziel</b><small>Antworten pro Tag</small></div>' + segHTML('mGoal', [[0, 'Aus'], [10, '10'], [20, '20'], [30, '30'], [50, '50']], st.mGoal) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Lerntage-Kette</b><small>Ein Pausetag pro Woche reißt sie nicht</small></div>' + segHTML('mChain', [[0, 'Aus'], [1, 'An']], st.mChain) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Klausur-Countdown</b></div>' + segHTML('mCount', [[0, 'Aus'], [1, 'An']], st.mCount) + '</div></div>' +
       '<div class="group"><h3>Daten und Backup</h3>' +
       '<div class="setrow"><div class="l"><b>Backup speichern</b><small>Lernstand, Verlauf, eigene Karten und Einstellungen als Datei</small></div><button class="actbtn" id="bShare">Datei</button></div>' +
       '<div class="setrow"><div class="l"><b>Backup als Text kopieren</b><small>Zum Einfügen auf einem anderen Gerät</small></div><button class="actbtn" id="bCopy">Kopieren</button></div>' +
