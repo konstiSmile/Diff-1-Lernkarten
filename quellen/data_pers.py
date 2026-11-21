@@ -326,3 +326,8 @@ ITEMS += ITEMS3
 from data_pers4 import CARDS4, ITEMS4
 CARDS.update(CARDS4)
 ITEMS += ITEMS4
+
+# Teil 5 (Kap. 5a und 5b) liegt in data_pers5.py
+from data_pers5 import CARDS5, ITEMS5
+CARDS.update(CARDS5)
+ITEMS += ITEMS5

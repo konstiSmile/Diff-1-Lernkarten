@@ -316,6 +316,8 @@ code { background:var(--line); border-radius:5px; padding:1px 5px; font-size:.85
 .actbtn:disabled { opacity:.45; }
 .hp { position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
 
+.cnote { color:var(--muted); font-size:.8rem; margin:6px 0 0; }
+.cnote.hub { margin:4px 0 12px; }
 .disclaimer { color:var(--muted); font-size:.84rem; line-height:1.45; margin:-6px 0 16px; }
 
 /* Kachel (Overlay), z. B. Datenschutz */

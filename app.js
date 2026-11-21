@@ -606,7 +606,7 @@
     else if (ch.cards) { parts.push(k ? k + ' von ' + ch.cards.length + ' gewusst' : ch.cards.length + ' Karten'); desc = 'Karteikarten'; }
     else { var b2 = tests(s.id, ch.id).best.exam; parts.push(ch.items.length + ' Fragen' + (b2 !== undefined ? ' · Klausur ' + b2 + ' %' : '')); desc = 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation'; }
     return '<a class="tile s-' + s.id + '" href="#/f/' + s.id + '/' + ch.id + '">' + (ch.placeholder ? '<span class="badge">Gerüst</span>' : '') +
-      '<div><h2 class="name">' + esc(ch.title) + '</h2><p class="desc">' + esc(desc) + '</p></div>' +
+      '<div><h2 class="name">' + esc(ch.title) + '</h2><p class="desc">' + esc(desc) + '</p>' + (ch.note ? '<p class="cnote">' + esc(ch.note) + '</p>' : '') + '</div>' +
       '<div class="foot"><span>' + esc(parts.join(' · ')) + '</span><div class="bar"><div style="width:' + pct + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
   }
   function fachView(sid, gid) {
@@ -686,7 +686,7 @@
       var nAgain = cards.filter(function (c) { return DB.progress[c.id] === 'again'; }).length;
       var known = deck.filter(function (id) { return DB.progress[id] === 'known'; }).length;
       var h = '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a></div>' +
-        '<h1 style="font-size:1.5rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">' + esc(ch.sub || '') + '</p>' +
+        '<h1 style="font-size:1.5rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">' + esc(ch.sub || '') + '</p>' + (ch.note ? '<p class="cnote hub">' + esc(ch.note) + '</p>' : '') +
         '<div class="seg" id="seg">' + (noRed ? '' : '<button data-f="red" class="' + (filter === 'red' ? 'on' : '') + '"><span class="dot"></span>Rot markiert (' + nRed + ')</button>') +
         '<button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + cards.length + ')</button>' +
         '<button data-f="again" class="' + (filter === 'again' ? 'on' : '') + '">Nochmal (' + nAgain + ')</button></div>' +
@@ -872,7 +872,7 @@
     function hub() {
       setImm(false);
       var counts = { mc: pool('mc').length, tf: pool('tf').length, gap: pool('gap').length }, total = ITEMS.length;
-      var h = nav() + '<h1 style="font-size:1.55rem">' + esc(ch.title) + '</h1><p class="sub">' + esc(ch.sub || '') + '</p>';
+      var h = nav() + '<h1 style="font-size:1.55rem">' + esc(ch.title) + '</h1><p class="sub">' + esc(ch.sub || '') + '</p>' + (ch.note ? '<p class="cnote hub">' + esc(ch.note) + '</p>' : '');
       if (ch.placeholder) h += '<div class="banner"><b>Gerüst:</b> Das sind nur Beispielfragen, damit du die Test-Funktionen ausprobieren kannst. Die echten Inhalte folgen.</div>';
       h += '<div class="chips"><span class="lbl">Fragen pro Runde</span>' + [5, 10, 0].map(function (n) { return '<button class="chip' + (st.testN === n ? ' on' : '') + '" data-n="' + n + '">' + (n || 'Alle') + '</button>'; }).join('') + '</div>';
       var cardsMode = '';
