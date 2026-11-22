@@ -141,7 +141,7 @@ CONTENT = dict(name=NAME, version=VERSION, subjects=[
         dict(id='dgl', name='Gewöhnliche Differentialgleichungen', desc='Kapitel 11 · erster Ordnung'),
         dict(id='allg', name='Allgemein', desc='Grundwissen aus Skripten und Übungen')], chapters=[
         quer10, quer11, quer_allg]),
-    dict(id='psy', name='Psycho 2', desc='Persönlichkeit, Entwicklung, Diagnostik', exam='2027-01-29', groups=[
+    dict(id='psy', name='Psycho 2', desc='Persönlichkeit, Entwicklung, Diagnostik', exam='2027-01-29', examTime='8–10 Uhr', groups=[
         dict(id='pers', name='Persönlichkeitspsychologie', desc='Eigenschaften, Methoden, Theorien'),
         dict(id='entw', name='Entwicklungspsychologie', desc='Kommt später'),
         dict(id='diag', name='Diagnostische Psychologie', desc='Beobachtung, Tests, Gütekriterien, Normen, Schulleistungstests')], chapters=[
@@ -166,26 +166,28 @@ print('content.js', len(js) // 1024, 'KB', len(search), 'Suchtreffer-Einträge')
 
 # ---------------------------------------------------------------- Shell
 shutil.copy('app.css', f'{OUT}/app.css'); shutil.copy('app.js', f'{OUT}/app.js')
+os.makedirs(f'{OUT}/font', exist_ok=True); shutil.copy('font/nunito.woff', f'{OUT}/font/nunito.woff'); shutil.copy('font/OFL.txt', f'{OUT}/font/OFL.txt')
 import hashlib, base64
-THEME_JS = "try{var s=JSON.parse(localStorage.getItem('lernkiste-v1')||'null'),t=s&&s.settings&&s.settings.theme;if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}"
+THEME_JS = "try{var s=JSON.parse(localStorage.getItem('lernkiste-v1')||'null'),g=s&&s.settings,t=g&&g.theme;if(!t||t==='auto'||(t==='dark'&&!g.ui44))t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}"
 CSP = ("default-src 'self'; script-src 'self' 'sha256-" + base64.b64encode(hashlib.sha256(THEME_JS.encode()).digest()).decode() + "'; "
        "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; "
        "object-src 'none'; base-uri 'none'; form-action 'none'")
 open(f'{OUT}/index.html', 'w', encoding='utf-8').write(f'''<!DOCTYPE html>
-<html lang="de" data-theme="dark">
+<html lang="de" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="{CSP}">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{NAME}</title>
-<meta name="theme-color" content="#1b1a18">
+<meta name="theme-color" content="#DFDDD4">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Lernkiste">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preload" href="font/nunito.woff" as="font" type="font/woff" crossorigin>
 <link rel="stylesheet" href="app.css">
 <script>{THEME_JS}</script>
 </head>
@@ -203,12 +205,12 @@ open(f'{OUT}/index.html', 'w', encoding='utf-8').write(f'''<!DOCTYPE html>
 ORDER = ['diff1-k1-' + x for x in CARD_IDS]
 def stub(fn, route, extra=''):
     open(f'{OUT}/{fn}', 'w', encoding='utf-8').write(f'''<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>{NAME}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#1b1a18">
+<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#DFDDD4">
 <script>
 var ids={json.dumps(ORDER)},h=location.hash.replace(/^#/,''),p={{}};h.split('&').forEach(function(x){{var k=x.split('=');if(k[0])p[k[0]]=k[1]||''}});
 var r='{route}',q=[];{extra}
 location.replace('index.html#'+r+(q.length?'?'+q.join('&'):''));
-</script></head><body style="background:#1b1a18;color:#eee;font-family:sans-serif;padding:20px"><a href="index.html" style="color:#8fb6dc">Weiter zu {NAME}</a></body></html>
+</script></head><body style="background:#DFDDD4;color:#1F261E;font-family:sans-serif;padding:20px"><a href="index.html" style="color:#3E4A3D">Weiter zu {NAME}</a></body></html>
 ''')
 stub('diff1.html', '/f/diff1/k1', "if(p.k!==undefined&&ids[+p.k]){q.push('c='+ids[+p.k]);if(p.hl)q.push('hl='+p.hl)}")
 stub('querschnitt.html', '/f/quer/k10', "if(p.q){q.push('q='+p.q);if(p.hl)q.push('hl='+p.hl)}")
@@ -217,29 +219,31 @@ stub('psycho2.html', '/f/psy', "if(p.q){q.push('q='+p.q);if(p.hl)q.push('hl='+p.
 # ---------------------------------------------------------------- Manifest, Icons, Service Worker
 open(f'{OUT}/manifest.webmanifest', 'w', encoding='utf-8').write(json.dumps(dict(
     name=NAME, short_name='Lernkiste', description='Karteikarten und Tests fürs Studium', lang='de', start_url='./', scope='./',
-    display='standalone', background_color='#1b1a18', theme_color='#1b1a18',
+    display='standalone', background_color='#DFDDD4', theme_color='#DFDDD4',
     icons=[dict(src='icon-192.png', sizes='192x192', type='image/png'), dict(src='icon-512.png', sizes='512x512', type='image/png')]),
     ensure_ascii=False, indent=2) + '\n')
 
 from PIL import Image, ImageDraw, ImageFont
 def icon(size, path):
-    S = size * 4; im = Image.new('RGB', (S, S), '#1b1a18'); d = ImageDraw.Draw(im)
-    m = int(S * .17); r = int(S * .09)
-    d.rounded_rectangle([m, int(S * .22), S - m, int(S * .78)], r, fill='#f1ece3')
-    d.rounded_rectangle([m, int(S * .22), S - m, int(S * .78)], r, outline='#d9a86c', width=int(S * .018))
-    f = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf', int(S * .38))
+    # v44: Design A1 – Schiefer-Fläche, helle Karte, K in Nunito, Salbei-Punkt
+    S = size * 4; im = Image.new('RGB', (S, S), '#3E4A3D'); d = ImageDraw.Draw(im)
+    m = int(S * .17); r = int(S * .11)
+    d.rounded_rectangle([m, int(S * .22), S - m, int(S * .78)], r, fill='#EFEEE7')
+    f = ImageFont.truetype('font/Nunito-wght.ttf', int(S * .40))
+    try: f.set_variation_by_axes([800])
+    except Exception: pass
     bb = d.textbbox((0, 0), 'K', font=f); w, h = bb[2] - bb[0], bb[3] - bb[1]
-    d.text(((S - w) / 2 - bb[0], S * .5 - h / 2 - bb[1]), 'K', font=f, fill='#1b1a18')
-    cx, cy, rr = S - m - int(S * .075), int(S * .22) + int(S * .075), int(S * .035)
-    d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill='#d9524a')
+    d.text(((S - w) / 2 - bb[0], S * .5 - h / 2 - bb[1]), 'K', font=f, fill='#3E4A3D')
+    cx, cy, rr = S - m - int(S * .075), int(S * .22) + int(S * .075), int(S * .04)
+    d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill='#9CBF8C')
     im.resize((size, size), Image.LANCZOS).save(path)
 icon(180, f'{OUT}/apple-touch-icon.png'); icon(192, f'{OUT}/icon-192.png'); icon(512, f'{OUT}/icon-512.png')
 
-FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'diff1.html', 'querschnitt.html', 'psycho2.html',
+FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'font/nunito.woff', 'diff1.html', 'querschnitt.html', 'psycho2.html',
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v43';
+const CACHE = 'lernkiste-v44';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{

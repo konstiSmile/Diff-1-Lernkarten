@@ -12,7 +12,11 @@ def tex2mml(tex, display=False):
     m = re.search(r'<math.*?</math>', out, re.S)
     if not m:
         raise SystemExit('Konvertierung fehlgeschlagen: ' + tex)
-    _cache[key] = m.group(0)
+    mml = m.group(0)
+    # v44: sin, cos, log … als Funktionsname (mi) + unsichtbare Funktionsanwendung statt Operator (mo);
+    # sonst setzt Safari Abstände wie bei „sin ( x + y )“. lim/max/min/sup/inf bleiben mo (Grenzen darunter).
+    mml = re.sub(r'<mo>(sin|cos|tan|cot|arcsin|arccos|arctan|sinh|cosh|tanh|log|ln|lg|exp|det|sgn)</mo>', r'<mi>\1</mi><mo>&#x2061;</mo>', mml)
+    _cache[key] = mml
     return _cache[key]
 
 def convert(s):

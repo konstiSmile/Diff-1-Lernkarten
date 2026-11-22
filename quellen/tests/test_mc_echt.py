@@ -62,7 +62,7 @@ with sync_playwright() as pw:
     ok('MC 2/4 Punkte' in note, 'Ergebnis in Punkten: ' + note)
     # R/F und Lücke: Melden-Knopf
     hub('psy'); pg.click('.mode[data-m=tf]')
-    pg.wait_for_selector('.tfrow .opt'); pg.click('.tfrow .opt >> nth=0')
+    pg.wait_for_selector('#tfrow button'); pg.click('#tfrow button >> nth=0')
     ok(pg.is_visible('#rep'), 'Melden auch bei R/F')
     hub('psy'); pg.click('.mode[data-m=gap]')
     pg.wait_for_selector('#reveal'); pg.click('#reveal')

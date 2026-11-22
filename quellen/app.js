@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'dark', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1 };
+  var DEFAULTS = { theme: 'auto', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1 };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -20,6 +20,18 @@
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function dayKey(ts) { var d = new Date(ts); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function fmt(x) { return (Math.round(x * 10) / 10).toString().replace('.', ','); }
+  // Strichsymbole (ersetzen Emojis/Sonderzeichen, v44)
+  var IC = {
+    x: '<path d="M6 6l12 12M18 6L6 18"/>', back: '<path d="M15 5l-7 7 7 7"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', half: '<circle cx="12" cy="12" r="8"/><path d="M12 4v16"/>',
+    left: '<path d="M14 6l-6 6 6 6"/>', right: '<path d="M10 6l6 6-6 6"/>', arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>', search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+    book: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/>',
+    cards: '<rect x="3" y="6" width="14" height="14" rx="3"/><path d="M7 3h11a3 3 0 0 1 3 3v11"/>', mc: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/>',
+    tf: '<path d="M4 8.5l2.5 2.5L11 6.5"/><path d="M14 14l6 6M20 14l-6 6"/>', gap: '<rect x="3" y="8" width="18" height="8" rx="2.5"/><path d="M7 12h4"/>',
+    clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5"/>', more: '<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>'
+  };
+  function ic(n, cls) { return '<svg class="' + (cls || 'i') + '" viewBox="0 0 24 24" aria-hidden="true"' + (n === 'more' ? ' style="fill:currentColor;stroke:none"' : '') + '>' + IC[n] + '</svg>'; }
+  var CHEV = '<svg class="chev" viewBox="0 0 8 14" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>';
+  function backLink(href, label) { return '<a href="' + href + '" style="gap:4px">' + ic('back') + esc(label) + '</a>'; }
   function appName() {
     var n = (DB.settings.name || '').trim().replace(/\s+/g, ' ');
     if (!n) return C.name;
@@ -112,7 +124,7 @@
     closeTile();
     var w = document.createElement('div'); w.className = 'pvwrap';
     w.innerHTML = '<div class="pvcard" role="dialog" aria-modal="true" aria-label="' + esc(title) + '">' +
-      '<div class="pvhead"><b>' + esc(title) + '</b><button type="button" class="pvx" aria-label="Schließen">✕</button></div>' +
+      '<div class="pvhead"><b>' + esc(title) + '</b><button type="button" class="pvx" aria-label="Schließen">' + ic('x') + '</button></div>' +
       '<div class="pvbody">' + html + '</div>' +
       (foot || '<button type="button" class="actbtn pvok">Schließen</button>') + '</div>';
     w.onclick = function (e) { if (e.target === w || e.target.closest('.pvx, .pvok')) closeTile(); };
@@ -127,13 +139,12 @@
   function statAsk() {
     if (statAskedNow || DB.settings.statsAsked) return;
     if (DB.settings.stats) { DB.settings.statsAsked = Date.now(); save(); return; }
+    if (DB.log.length < 5) return; // v44: erst nach der ersten Lernrunde fragen, nicht beim ersten Öffnen
     setTimeout(function () {
       if (statAskedNow || DB.settings.statsAsked || tileEl || document.body.classList.contains('immersive')) return;
       statAskedNow = true;
-      openTile('Kurze Frage', '<p>Darf die Lernkiste <b>anonym zählen</b>, wie oft sie geöffnet wird und welche Fächer genutzt werden? Das hilft, die App zu verbessern.</p>' +
-        '<div class="pvkey"><b>Ich kann damit niemanden zuordnen</b><p>Es werden keine personenbezogenen Daten erhoben. Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“ – nicht, wer die App geöffnet hat, mit welchem Gerät oder von wo. Auch zwei Einträge kann ich nicht derselben Person zuordnen.</p></div>' +
-        '<p>Gesendet werden nur „App-Start“ oder das geöffnete Fach und die App-Version. Kein Name, keine E-Mail, keine IP-Adresse, keine Geräte-ID, kein Standort, kein Lernstand.</p>' +
-        '<p class="note">Du kannst das jederzeit ändern: Einstellungen → App. Dort steht auch alles zum Datenschutz.</p>',
+      openTile('Kurze Frage', '<p>Darf die Lernkiste <b>anonym zählen</b>, wie oft sie geöffnet und welches Fach genutzt wird?</p>' +
+        '<p class="note">Kein Name, keine Geräte-ID, kein Lernstand – nur Zahlen, die niemandem zugeordnet werden können. Jederzeit änderbar unter Einstellungen → App, dort steht auch alles zum Datenschutz.</p>',
         '<div class="row"><button type="button" class="ghost" id="stNo">Nein</button><button type="button" class="primary" id="stYes">Ja, gern</button></div>');
       function answer(on) {
         DB.settings.stats = on ? 1 : 0; DB.settings.statsAsked = Date.now(); save(); closeTile(); if (!on) statForget();
@@ -192,6 +203,8 @@
     d = d || {};
     d.v = 1; d.recent = d.recent || []; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || []; d.custom = d.custom || {}; d.custom.folders = d.custom.folders || []; d.badges = (d.badges && typeof d.badges === 'object' && !Array.isArray(d.badges)) ? d.badges : {};
     d.settings = Object.assign({}, DEFAULTS, d.settings || {});
+    // v44: neues Design; der alte Standard „Dunkel“ wird einmalig zu „System“
+    if (!d.settings.ui44) { if (d.settings.theme === 'dark') d.settings.theme = 'auto'; d.settings.ui44 = 1; d._mig = 1; }
     // Psycho: früheres Test-Kapitel „tp“ (Kap. 1 und 2) ist auf k1/k2 verteilt; offene Fehler übernehmen. Alter Schlüssel bleibt.
     var tp = d.tests['psy/tp'];
     if (tp && !tp.moved) {
@@ -218,7 +231,8 @@
     d = normalizeDB(d);
     var moved = d.tests['psy/tp'] && d.tests['psy/tp'].moved === 1 && !d.tests['psy/tp'].saved;
     if (fresh) migrate(d);
-    if (fresh || moved) { if (moved) d.tests['psy/tp'].saved = 1; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+    var mig = d._mig; delete d._mig;
+    if (fresh || moved || mig) { if (moved) d.tests['psy/tp'].saved = 1; try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
     return d;
   })();
   function save() {
@@ -269,7 +283,7 @@
     document.documentElement.setAttribute('data-theme', t);
     document.documentElement.style.fontSize = (15 * DB.settings.font) + 'px';
     document.title = appName();
-    var m = $('meta[name="theme-color"]'); if (m) m.setAttribute('content', t === 'dark' ? '#1b1a18' : '#f6f3ee');
+    var m = $('meta[name="theme-color"]'); if (m) m.setAttribute('content', t === 'dark' ? '#14191B' : '#DFDDD4');
   }
   if (mq && mq.addEventListener) mq.addEventListener('change', applyPrefs);
 
@@ -284,33 +298,31 @@
     return { parts: path.split('/').filter(Boolean), q: q };
   }
   var TABS = [
-    { id: 'start', href: '#/', label: 'Start', svg: '<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>' },
-    { id: 'suche', href: '#/suche', label: 'Suche', svg: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>' },
-    { id: 'neu', href: '#/neu', label: 'Neu', plus: true, svg: '<path d="M12 5v14M5 12h14"/>' },
-    { id: 'verlauf', href: '#/verlauf', label: 'Verlauf', svg: '<path d="M5 20V10M12 20V4M19 20v-7"/>' },
-    { id: 'set', href: '#/einstellungen', label: 'Einstellungen', svg: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' }
+    { id: 'start', href: '#/', label: 'Start', svg: '<path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5H9v5H5a1 1 0 0 1-1-1z"/>' },
+    { id: 'faecher', href: '#/faecher', label: 'Fächer', svg: '<rect x="3" y="6" width="14" height="14" rx="3"/><path d="M7 3h11a3 3 0 0 1 3 3v11"/>' },
+    { id: 'verlauf', href: '#/verlauf', label: 'Statistik', svg: '<path d="M5 20V11M12 20V5M19 20v-6"/>' },
+    { id: 'set', href: '#/einstellungen', label: 'Einstellungen', svg: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>' }
   ];
-  $('#tabbar').innerHTML = '<nav>' + TABS.map(function (t) {
-    return '<a class="tab' + (t.plus ? ' plus' : '') + '" data-t="' + t.id + '" href="' + t.href + '">' +
-      (t.plus ? '<span class="pl"><svg viewBox="0 0 24 24">' + t.svg + '</svg></span>' : '<svg viewBox="0 0 24 24">' + t.svg + '</svg>') +
-      '<span class="t">' + t.label + '</span></a>';
+  $('#tabbar').innerHTML = '<nav aria-label="Hauptmenü">' + TABS.map(function (t) {
+    return '<a class="tab" data-t="' + t.id + '" href="' + t.href + '" aria-label="' + t.label + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + t.svg + '</svg><span class="t">' + t.label + '</span></a>';
   }).join('') + '</nav>';
-  function setTab(id) { $$('.tab').forEach(function (a) { a.classList.toggle('on', a.dataset.t === id); }); }
+  function setTab(id) { $$('.tab').forEach(function (a) { var on = a.dataset.t === id; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); }
 
   function route() {
     cleanups.splice(0).forEach(function (f) { try { f(); } catch (e) {} });
     setImm(false); view.className = ''; view.removeAttribute('style');
     var r = parseHash(), p = r.parts, tab = 'start';
     if (!p.length) homeView();
-    else if (p[0] === 'suche') { tab = 'suche'; searchView(r.q.q || ''); }
+    else if (p[0] === 'suche') { tab = ''; searchView(r.q.q || ''); }
+    else if (p[0] === 'faecher') { tab = 'faecher'; faecherView(); }
     else if (p[0] === 'verlauf') { tab = 'verlauf'; verlaufView(); }
-    else if (p[0] === 'neu') { tab = 'neu'; neuView(p[1], p[2]); }
+    else if (p[0] === 'neu') { tab = 'faecher'; neuView(p[1], p[2]); }
     else if (p[0] === 'einstellungen') { tab = 'set'; settingsView(); }
-    else if (p[0] === 'mix') mixView(p[1]);
+    else if (p[0] === 'mix') { tab = 'faecher'; mixView(p[1]); }
     else if (p[0] === 'faellig') dueView(p[1]);
-    else if (p[0] === 'f' && p[1] && p[2] === 'u' && p[3]) fachView(p[1], p[3]);
-    else if (p[0] === 'f' && p[1] && !p[2]) fachView(p[1]);
-    else if (p[0] === 'f' && p[1] && p[2]) chapterView(p[1], p[2], r.q);
+    else if (p[0] === 'f' && p[1] && p[2] === 'u' && p[3]) { tab = 'faecher'; fachView(p[1], p[3]); }
+    else if (p[0] === 'f' && p[1] && !p[2]) { tab = 'faecher'; fachView(p[1]); }
+    else if (p[0] === 'f' && p[1] && p[2]) { tab = 'faecher'; chapterView(p[1], p[2], r.q); }
     else homeView();
     if (p[0] === 'f' && p[1]) statFach(p[1]);
     statAsk(); backupNag(); badgeCheck();
@@ -391,18 +403,6 @@
       var head = g ? (n >= g ? 'Tagesziel erreicht · ' + n : 'Heute ' + n + ' von ' + g) : 'Heute ' + n + (n === 1 ? ' Antwort' : ' Antworten');
       rows.push('<div class="tdrow" id="tdGoal">' + ring + '<div class="tdtxt"><b>' + head + '</b>' + (st.mChain ? '<small>Lerntage in Folge: ' + chainOf() + '</small>' : '') + '</div></div>');
     }
-    if (st.mDue) {
-      var d = dueLists(), any = d.cards.length + d.items.length;
-      rows.push('<div class="tdrow" id="tdDue"><div class="tdtxt"><b>Heute fällig</b><small>' + (any ? 'Geübtes wiederholen' : 'Nichts fällig') + '</small></div>' +
-        (d.cards.length ? '<a class="actbtn" href="#/faellig/karten">Karten ' + d.cards.length + '</a>' : '') +
-        (d.items.length ? '<a class="actbtn" href="#/faellig/tests">Fragen ' + d.items.length + '</a>' : '') + '</div>');
-    }
-    if (st.mCount) {
-      var cs = examDays();
-      if (cs.length) rows.push('<div class="tdcount" id="tdCount">' + cs.map(function (x) {
-        return '<span><i class="sw" style="background:var(--c-' + x.s.id + ')"></i>' + esc(x.s.name) + ' ' + (x.d === 0 ? 'heute' : x.d === 1 ? 'morgen' : 'in ' + x.d + ' Tagen') + '</span>';
-      }).join('') + '</div>');
-    }
     return rows.length ? '<div class="group today">' + rows.join('') + '</div>' : '';
   }
 
@@ -482,19 +482,66 @@
     else txt = allPlaceholder ? 'Inhalte folgen' : items + ' Fragen';
     return { txt: txt, pct: pct, placeholder: allPlaceholder };
   }
+  // ---- Startseite „Klausuren im Blick“ (v44, Entwurf Home1)
+  var LAST_KEY = 'lernkiste-last', MON = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  function getLast() { var l = rd(LAST_KEY); return l && l.h && l.t ? l : null; }
+  function setLast(o) { o.ts = Date.now(); try { localStorage.setItem(LAST_KEY, JSON.stringify(o)); } catch (e) {} }
+  // Lernstand % = Anteil gewusster Karten (zuletzt „Gewusst“) und Fragen (zuletzt ganz richtig); ohne Gerüst und ohne „nicht klausurrelevant“
+  function subjPct(s) {
+    var ls = learnState(), seen = {}, n = 0, k = 0;
+    s.chapters.forEach(function (ch) {
+      if (ch.placeholder || /nicht klausurrelevant/i.test(ch.note || '')) return;
+      (ch.cards || []).forEach(function (c) { if (seen[c.id]) return; seen[c.id] = 1; n++; if (DB.progress[c.id] === 'known') k++; });
+      (ch.items || []).forEach(function (it) { if (seen[it.id]) return; seen[it.id] = 1; n++; var r = ls[it.id]; if (r && r.s === 1) k++; });
+    });
+    return n ? Math.round(k / n * 100) : 0;
+  }
   function homeView() {
+    var st = DB.settings, now = new Date(), hr = now.getHours(), nm = (st.name || '').trim();
+    var greet = (hr >= 5 && hr < 11 ? 'Guten Morgen' : hr >= 11 && hr < 18 ? 'Guten Tag' : 'Guten Abend') + (nm ? ', ' + nm : '') + '!';
+    var d = st.mDue ? dueLists() : { cards: [], items: [] }, nc = d.cards.length, ni = d.items.length, last = getLast();
+    var line = nc && ni ? nc + (nc === 1 ? ' Karte' : ' Karten') + ' und ' + ni + (ni === 1 ? ' Frage warten' : ' Fragen warten') + ' auf dich.'
+      : nc ? nc + (nc === 1 ? ' Karte wartet' : ' Karten warten') + ' auf dich.' : ni ? ni + (ni === 1 ? ' Frage wartet' : ' Fragen warten') + ' auf dich.'
+      : st.mDue ? 'Heute ist nichts fällig. ' + (last ? 'Mach weiter, wo du aufgehört hast.' : 'Such dir ein Fach aus.') : last ? 'Mach weiter, wo du aufgehört hast.' : 'Such dir ein Fach aus und leg los.';
+    var goHref = nc ? '#/faellig/karten' : ni ? '#/faellig/tests' : last ? last.h : '#/faecher';
+    var h = '<div class="hhead"><div class="who">' + (nm ? '<div class="avatar" aria-hidden="true">' + esc(nm.charAt(0).toUpperCase()) + '</div>' : '') +
+      '<div><div class="hdate">' + now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) + '</div><h1 class="htitle">Übersicht</h1></div></div>' +
+      '<a class="rbtn" href="#/suche" aria-label="Suche">' + ic('search') + '</a></div>';
+    h += '<div class="hello"><div class="stk a"></div><div class="stk b"></div><div class="stk c"><i></i><i></i><i></i></div>' +
+      '<div class="txt"><b>' + esc(greet) + '</b><span>' + line + '</span></div>' +
+      '<a class="go1" id="goLearn" href="' + goHref + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>Lernen starten</a></div>';
+    var ex = examDays();
+    if (ex.length) {
+      h += '<div class="sechead"><b>Deine Klausuren</b><a href="#/faecher">Alle Fächer</a></div><div class="exams">' + ex.map(function (x) {
+        var dt = new Date(x.s.exam + 'T12:00:00'), p = subjPct(x.s);
+        var when = x.d === 0 ? 'heute' : x.d === 1 ? 'morgen' : 'in ' + x.d + ' Tagen';
+        return '<a class="exrow" href="#/f/' + x.s.id + '"><div class="exdate"><b>' + dt.getDate() + '</b><span>' + MON[dt.getMonth()] + '</span></div>' +
+          '<div class="exmid"><div class="l1"><b>' + esc(x.s.name) + '</b><span>' + p + ' %</span></div>' +
+          '<div class="bar" role="img" aria-label="Lernstand ' + p + ' Prozent"><div style="width:' + p + '%"></div></div>' +
+          (st.mCount ? '<small>' + when + (x.s.examTime ? ' · ' + esc(x.s.examTime) : '') + '</small>' : '') + '</div>' + CHEV + '</a>';
+      }).join('') + '</div>';
+    } else h += '<div class="sechead"><b>Deine Fächer</b><a href="#/faecher">Alle Fächer</a></div>';
+    if (last) {
+      h += '<a class="next" href="' + esc(last.h) + '"><div class="nt"><span class="k">Als Nächstes</span><b>' + esc(last.t) + '</b><small>' + esc(last.sub) + '</small></div>' +
+        '<span class="arr">' + ic('arrow') + '</span></a>';
+    }
+    h += todayHTML();
+    view.innerHTML = h;
+  }
+  function faecherView() {
     var vis = C.subjects.filter(function (s) { return !isHidden(s.id); }), hid = C.subjects.filter(function (s) { return isHidden(s.id); });
-    var h = '<h1>' + esc(appName()) + '</h1><p class="sub">Fach auswählen</p>' +
-      '<a class="fakesearch" href="#/suche"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Begriff oder Satz suchen …</a>' + todayHTML() + '<div class="grid fach">';
+    var h = '<h1>Fächer</h1><p class="sub">' + esc(appName()) + '</p>' +
+      '<a class="fakesearch" href="#/suche"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Begriff oder Satz suchen …</a><div class="grid fach">';
     vis.forEach(function (s) {
       var st = subjStats(s);
       h += '<div class="tilewrap" data-sid="' + s.id + '"><div class="hidehint">Ausblenden</div><a class="tile s-' + s.id + '" href="#/f/' + s.id + '">' + (st.placeholder ? '<span class="badge">Gerüst</span>' : '') +
         '<div><h2 class="name">' + esc(s.name) + '</h2><p class="desc">' + esc(s.desc) + '</p></div>' +
-        '<div class="foot"><span>' + esc(st.txt) + '</span><div class="bar"><div style="width:' + st.pct + '%"></div></div><span class="go">Öffnen ›</span></div></a>' +
-        '<button type="button" class="tilemenu" aria-label="Mehr zu ' + esc(s.name) + '">⋯</button></div>';
+        '<div class="foot"><span>' + esc(st.txt) + '</span><div class="bar"><div style="width:' + st.pct + '%"></div></div><span class="go">Öffnen</span></div></a>' +
+        '<button type="button" class="tilemenu" aria-label="Mehr zu ' + esc(s.name) + '">' + ic('more') + '</button></div>';
     });
     h += '</div>';
-    if (eligible().length >= 2) h += '<a class="mixtile" href="#/mix"><span><b>Gemischt üben</b><small>Fächer kombinieren, Karten und Tests gemischt</small></span><span class="go">Öffnen ›</span></a>';
+    if (ownCount() || DB.custom.folders.length) h += '<a class="mixtile" href="#/neu"><span><b>Eigene Karten</b><small>' + ownCount() + (ownCount() === 1 ? ' Karte' : ' Karten') + ' in ' + DB.custom.folders.length + (DB.custom.folders.length === 1 ? ' Ordner' : ' Ordnern') + '</small></span><span class="go">Öffnen</span></a>';
+    if (eligible().length >= 2) h += '<a class="mixtile" href="#/mix"><span><b>Gemischt üben</b><small>Fächer kombinieren, Karten und Tests gemischt</small></span><span class="go">Öffnen</span></a>';
     if (!vis.length) h += '<p class="note" style="text-align:center;padding:26px 10px">Alle Themen sind ausgeblendet.</p>';
     if (hid.length) {
       h += '<button type="button" class="hiddenlink" id="hidLink">versteckte Themen (' + hid.length + ')</button><div class="hiddenlist" id="hidList" hidden>' +
@@ -504,8 +551,8 @@
     wireHome(!!hid.length);
   }
   function hideSubject(sid) {
-    setHidden(sid, true); homeView();
-    toast('„' + subj(sid).name + '“ ausgeblendet', 'Rückgängig', function () { setHidden(sid, false); if (!parseHash().parts.length) homeView(); });
+    setHidden(sid, true); faecherView();
+    toast('„' + subj(sid).name + '“ ausgeblendet', 'Rückgängig', function () { setHidden(sid, false); if (parseHash().parts[0] === 'faecher') faecherView(); });
   }
   function wireHome(hasHidden) {
     var openMenu = null;
@@ -539,7 +586,7 @@
     document.addEventListener('click', onDoc, true); cleanups.push(function () { document.removeEventListener('click', onDoc, true); });
     if (hasHidden) {
       $('#hidLink').onclick = function () { var l = $('#hidList'); l.hidden = !l.hidden; };
-      $$('[data-show]').forEach(function (b) { b.onclick = function () { var sid = b.dataset.show; setHidden(sid, false); homeView(); toast('„' + subj(sid).name + '“ wieder eingeblendet'); }; });
+      $$('[data-show]').forEach(function (b) { b.onclick = function () { var sid = b.dataset.show; setHidden(sid, false); faecherView(); toast('„' + subj(sid).name + '“ wieder eingeblendet'); }; });
     }
   }
   // ====================================================================== Gemischt
@@ -577,7 +624,7 @@
       return;
     }
     var el = eligible();
-    var h = '<div class="nav"><a href="#/">‹ Start</a></div><h1>Gemischt üben</h1><p class="sub">Wähle die Fächer, die gemischt werden sollen.</p><div class="group" style="padding:4px 16px">' +
+    var h = '<div class="nav">' + backLink('#/faecher', 'Fächer') + '</div><h1>Gemischt üben</h1><p class="sub">Wähle die Fächer, die gemischt werden sollen.</p><div class="group" style="padding:4px 16px">' +
       el.map(function (sx) {
         var c = subjContent(sx), on = sel.indexOf(sx) >= 0;
         return '<label class="mixrow"><input type="checkbox" data-s="' + sx.id + '"' + (on ? ' checked' : '') + '><i class="sw" style="background:var(--c-' + sx.id + ')"></i><span class="nm">' + esc(sx.name) + '</span><span class="ct">' +
@@ -607,7 +654,7 @@
     else { var b2 = tests(s.id, ch.id).best.exam; parts.push(ch.items.length + ' Fragen' + (b2 !== undefined ? ' · Klausur ' + b2 + ' %' : '')); desc = 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation'; }
     return '<a class="tile s-' + s.id + '" href="#/f/' + s.id + '/' + ch.id + '">' + (ch.placeholder ? '<span class="badge">Gerüst</span>' : '') +
       '<div><h2 class="name">' + esc(ch.title) + '</h2><p class="desc">' + esc(desc) + '</p>' + (ch.note ? '<p class="cnote">' + esc(ch.note) + '</p>' : '') + '</div>' +
-      '<div class="foot"><span>' + esc(parts.join(' · ')) + '</span><div class="bar"><div style="width:' + pct + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
+      '<div class="foot"><span>' + esc(parts.join(' · ')) + '</span><div class="bar"><div style="width:' + pct + '%"></div></div><span class="go">Öffnen</span></div></a>';
   }
   function fachView(sid, gid) {
     var s = subj(sid); if (!s) return homeView();
@@ -615,7 +662,7 @@
     if (gid && !grp) { location.hash = '#/f/' + sid; return; }
     var only = grp && s.chapters.filter(function (c) { return c.group === gid; });
     if (only && only.length === 1) { location.replace('#/f/' + sid + '/' + only[0].id); return; }
-    var h = '<div class="nav"><a href="#/' + (grp ? 'f/' + sid : '') + '">‹ ' + esc(grp ? s.name : 'Start') + '</a></div><h1>' + esc(grp ? grp.name : s.name) + '</h1><p class="sub">' + esc(grp ? s.name : s.desc) + '</p><div class="grid">';
+    var h = '<div class="nav">' + backLink(grp ? '#/f/' + sid : '#/faecher', grp ? s.name : 'Fächer') + '</div><h1>' + esc(grp ? grp.name : s.name) + '</h1><p class="sub">' + esc(grp ? s.name : s.desc) + '</p><div class="grid">';
     if (sid === 'psy' && !grp) h = h.replace(/<div class="grid">$/, '<p class="disclaimer">Alle Inhalte dieser App wurden nicht von der Dozentin bzw. dem Dozenten überprüft und sind ohne jede Gewähr zu verwenden. Es können sich Fehler eingeschlichen haben, und die Klausur kann andere Inhalte abfragen.</p><div class="grid">');
     if (s.groups && !grp) {
       s.groups.forEach(function (g) {
@@ -624,7 +671,7 @@
         var txt = !chs.length ? 'Inhalte folgen' : [chs.length + (chs.length === 1 ? ' Kapitel' : ' Kapitel'), cards ? cards + ' Karten' : '', items ? items + ' Fragen' : ''].filter(Boolean).join(' · ');
         h += '<a class="tile s-' + sid + '" href="#/f/' + sid + (chs.length === 1 ? '/' + chs[0].id : '/u/' + g.id) + '">' + (chs.length ? '' : '<span class="badge">Folgt</span>') +
           '<div><h2 class="name">' + esc(g.name) + '</h2><p class="desc">' + esc(g.desc) + '</p></div>' +
-          '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + (cards ? known / cards * 100 : 0) + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
+          '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + (cards ? known / cards * 100 : 0) + '%"></div></div><span class="go">Öffnen</span></div></a>';
       });
     } else {
       var list = grp ? s.chapters.filter(function (c) { return c.group === gid; }) : s.chapters;
@@ -645,6 +692,14 @@
     } else if (ch.kind === 'cards') cardsView(s, ch, q); else testsView(s, ch, q);
   }
 
+  // ====================================================================== Lernmodus-Kopf (v44): ✕ links, Titel mitte, Zähler rechts, Leiste darunter
+  function lhead(closeId, href, title, sub, cnt, frac) {
+    return '<div class="lhead">' + (href ? '<a class="rbtn" id="' + closeId + '" href="' + href + '" aria-label="Schließen">' + ic('x') + '</a>' : '<button type="button" class="rbtn" id="' + closeId + '" aria-label="Schließen">' + ic('x') + '</button>') +
+      '<div class="lt"><b>' + esc(title) + '</b>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + '</div>' +
+      '<div class="cnt" aria-label="' + esc(cnt.replace('/', ' von ')) + '">' + esc(cnt) + '</div></div>' +
+      '<div class="ltrack" aria-hidden="true"><div style="width:' + Math.round(Math.max(0, Math.min(1, frac)) * 100) + '%"></div></div>';
+  }
+
   // ====================================================================== Karteikarten
   function cardsView(s, ch, q) {
     var cards = ch.cards, byId = {}; cards.forEach(function (c) { byId[c.id] = c; });
@@ -661,19 +716,18 @@
     function readDraw() {
       var list = order.map(function (id) { return byId[id]; }), total = list.length;
       rpos = Math.max(0, Math.min(rpos, total - 1));
-      var h = '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a><button id="rEnd">Fertig</button></div>' +
-        '<h1 style="font-size:1.5rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">Lesen · ohne Wertung</p>';
+      setImm(true);
+      var h = lhead('rEnd', '', ch.title, 'Lesen · ohne Wertung', total ? (rpos + 1) + '/' + total : '0', total ? (rpos + 1) / total : 0);
       if (!total) h += '<div class="empty">Keine Karten vorhanden.</div>';
       else {
         var c = list[rpos];
-        h += '<div class="status"><span>Karte ' + (rpos + 1) + ' / ' + total + '</span><span>nichts wird gewertet</span></div>' +
-          '<div class="pbar"><div style="width:' + ((rpos + 1) / total * 100) + '%"></div></div>' +
+        h +=
           '<div class="card">' + (c.red ? '<span class="reddot"></span>' : '') + '<div class="meta"><span>' + esc(c.src) + '</span><span class="side">Frage</span></div>' +
           '<div class="face">' + c.q + '</div></div>' +
           '<div class="card" style="margin-top:10px"><div class="meta"><span></span><span class="side" style="color:var(--green)">Antwort</span></div><div class="face">' + c.a + '</div></div>' +
-          '<div class="row"><button class="ghost" id="rPrev"' + (rpos === 0 ? ' disabled' : '') + '>← Zurück</button><button class="ghost" id="rNext"' + (rpos === total - 1 ? ' disabled' : '') + '>Weiter →</button></div>';
+          '<div class="row"><button class="ghost" id="rPrev"' + (rpos === 0 ? ' disabled' : '') + '>' + ic('left') + 'Zurück</button><button class="ghost" id="rNext"' + (rpos === total - 1 ? ' disabled' : '') + '>Weiter' + ic('right') + '</button></div>';
       }
-      h += '<div class="tools"><button id="rShuf">Mischen</button><button id="rOrd">Skript-Reihenfolge</button></div><p class="foot-note">Pfeiltasten zum Blättern</p>';
+      h += '<div class="tools"><button id="rShuf">Mischen</button><button id="rOrd">Skript-Reihenfolge</button></div><p class="foot-note kbd">Pfeiltasten zum Blättern</p>';
       view.innerHTML = h;
       $('#rEnd').onclick = function () { reading = false; draw(); window.scrollTo(0, 0); };
       var rp = $('#rPrev'), rn = $('#rNext');
@@ -687,33 +741,34 @@
       var total = deck.length, nRed = cards.filter(function (c) { return c.red; }).length;
       var nAgain = cards.filter(function (c) { return DB.progress[c.id] === 'again'; }).length;
       var known = deck.filter(function (id) { return DB.progress[id] === 'known'; }).length;
-      var h = '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a></div>' +
-        '<h1 style="font-size:1.5rem">' + esc(ch.title) + '</h1><p class="sub" style="margin-bottom:0">' + esc(ch.sub || '') + '</p>' + (ch.note ? '<p class="cnote hub">' + esc(ch.note) + '</p>' : '') +
+      setImm(true);
+      var h = lhead('bClose', s.href || '#/f/' + s.id, ch.title, s.mix ? (ch.sub || '') : (subj(s.id) ? subj(s.id).name : s.name), total ? (pos + 1) + '/' + total : '0', total ? known / total : 0) +
+        (ch.note ? '<p class="cnote hub">' + esc(ch.note) + '</p>' : '') +
         '<div class="seg" id="seg">' + (noRed ? '' : '<button data-f="red" class="' + (filter === 'red' ? 'on' : '') + '"><span class="dot"></span>Rot markiert (' + nRed + ')</button>') +
         '<button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + cards.length + ')</button>' +
         '<button data-f="again" class="' + (filter === 'again' ? 'on' : '') + '">Nochmal (' + nAgain + ')</button></div>' +
-        '<div class="row" style="margin:10px 0 0"><button class="ghost" id="bRead">📖 Karten lesen · ohne Wertung</button></div>' +
-        '<div class="status"><span>' + (total ? 'Karte ' + (pos + 1) + ' / ' + total : '') + '</span><span>' + (total ? '✓ ' + known + ' von ' + total + ' gewusst' : '') + '</span></div>' +
-        '<div class="pbar"><div style="width:' + (total ? known / total * 100 : 0) + '%"></div></div>';
+        '<div class="status"><span>' + (total ? known + ' von ' + total + ' gewusst' : '') + '</span><button type="button" class="linkbtn" id="bRead" style="display:inline-flex;align-items:center;gap:6px;min-height:36px">' + ic('book') + 'Lesen</button></div>';
       if (!total) {
         h += '<div class="empty">' + (filter === 'again' ? 'Keine Karten im Nochmal-Stapel. Stark!' : 'Keine Karten in dieser Auswahl.') + '</div>';
       } else {
-        var c = byId[deck[pos]], mark = DB.progress[c.id] === 'known' ? ' · ✓' : DB.progress[c.id] === 'again' ? ' · ✗' : '';
-        h += '<div class="card flip ' + (flipped ? 'back' : 'front') + '" id="card">' + (c.red ? '<span class="reddot"></span>' : '') +
+        var c = byId[deck[pos]], mark = DB.progress[c.id] === 'known' ? ' · gewusst' : DB.progress[c.id] === 'again' ? ' · nochmal' : '';
+        h += '<div class="card flip ' + (flipped ? 'back' : 'front') + '" id="card" role="button" tabindex="0" aria-label="' + (flipped ? 'Zur Frage umdrehen' : 'Karte umdrehen') + '">' + (c.red ? '<span class="reddot" title="Rot markiert"></span>' : '') +
           '<div class="meta"><span>' + esc(c.src) + mark + '</span><span class="side">' + (flipped ? 'Antwort' : 'Frage') + '</span></div>' +
           '<div class="face">' + (flipped ? c.a : c.q) + '</div>' + (flipped ? '' : '<div class="hint">Antippen zum Umdrehen</div>') + '</div>';
-        if (flipped) h += '<div class="row"><button class="btn again" id="bAgain">✗ Nochmal</button><button class="btn known" id="bKnown">✓ Gewusst</button></div>';
-        h += '<div class="row"><button class="ghost" id="bPrev"' + (pos === 0 ? ' disabled' : '') + '>← Zurück</button><button class="ghost" id="bFlip">' + (flipped ? 'Zur Frage' : 'Umdrehen') +
-          '</button><button class="ghost" id="bNext"' + (pos === total - 1 ? ' disabled' : '') + '>Weiter →</button></div>';
+        if (flipped) h += '<div class="rate"><button class="btn again" id="bAgain">' + ic('x') + 'Nochmal</button><button class="btn known" id="bKnown">' + ic('check') + 'Gewusst</button></div>';
+        h += '<div class="small-nav"><button type="button" id="bPrev"' + (pos === 0 ? ' disabled' : '') + '>' + ic('left') + 'Zurück</button><button type="button" id="bNext"' + (pos === total - 1 ? ' disabled' : '') + '>Weiter' + ic('right') + '</button></div>';
+        if (!s.mix && !s.due && !s.own) {
+          var hp = parseHash().parts.join('/');
+          setLast({ h: '#/' + hp + '?mode=cards&at=' + encodeURIComponent(c.id), t: ch.title, sub: (subj(s.id) ? subj(s.id).name + ' · ' : '') + 'bei Karte ' + (pos + 1) + ' von ' + total + ' aufgehört' });
+        }
       }
       h += '<div class="tools"><button id="bShuf">Mischen</button><button id="bOrd">Skript-Reihenfolge</button><button id="bReset">' + (confirmReset ? 'Wirklich zurücksetzen?' : 'Fortschritt zurücksetzen') + '</button></div>' +
-        '<p class="foot-note">Karte antippen oder Leertaste zum Umdrehen · Pfeiltasten zum Blättern</p>';
+        '<p class="foot-note kbd">Karte antippen oder Leertaste zum Umdrehen · Pfeiltasten zum Blättern</p>';
       view.innerHTML = h;
       if (terms.length && total) highlight($('.face', view), terms);
       $$('#seg button').forEach(function (b) { b.onclick = function () { filter = b.dataset.f; build(false); draw(); }; });
       $('#bRead').onclick = function () { rpos = 0; reading = true; draw(); window.scrollTo(0, 0); };
       var card = $('#card'); if (card) card.onclick = flip;
-      var bf = $('#bFlip'); if (bf) bf.onclick = flip;
       var bp = $('#bPrev'); if (bp) bp.onclick = function () { go(-1); };
       var bn = $('#bNext'); if (bn) bn.onclick = function () { go(1); };
       var ba = $('#bAgain'); if (ba) ba.onclick = function () { rate('again'); };
@@ -743,6 +798,10 @@
 
     build(false);
     if (reading) { readDraw(); return; }
+    if (q.at && byId[q.at] && !q.c) {
+      if (deck.indexOf(q.at) < 0) { filter = 'all'; build(false); }
+      pos = Math.max(0, deck.indexOf(q.at));
+    }
     if (q.c && byId[q.c]) {
       pos = Math.max(0, deck.indexOf(q.c)); flipped = true;
       if (terms.length) {
@@ -756,10 +815,10 @@
   // ====================================================================== Tests
   var TYPES = { mc: 'Multiple Choice', tf: 'Richtig / Falsch', gap: 'Lückentext' };
   var MODES = [
-    { id: 'mc', name: 'Multiple Choice', desc: 'Vier Antworten, eine stimmt', ico: '◉' },
-    { id: 'tf', name: 'Richtig / Falsch', desc: 'Schnelle Aussagen mit Erklärung', ico: '±' },
-    { id: 'gap', name: 'Lückentext', desc: 'Begriffe selbst eintippen', ico: '▭' },
-    { id: 'exam', name: 'Zeit-Simulation', desc: 'Mini-Klausur mit Timer und Note', ico: '⏱' }
+    { id: 'mc', name: 'Multiple Choice', desc: 'Vier Antworten, eine stimmt', ico: 'mc' },
+    { id: 'tf', name: 'Richtig / Falsch', desc: 'Schnelle Aussagen mit Erklärung', ico: 'tf' },
+    { id: 'gap', name: 'Lückentext', desc: 'Begriffe selbst eintippen', ico: 'gap' },
+    { id: 'exam', name: 'Zeit-Simulation', desc: 'Mini-Klausur mit Timer und Note', ico: 'clock' }
   ];
   function gapParts(it) {
     var parts = [], re = /\{\{(.*?)\}\}/g, last = 0, m;
@@ -796,7 +855,7 @@
       else if (!on && !r) { cls = 'okn'; lab = 'Richtig weggelassen'; }
       else if (on) { cls = 'bad'; lab = 'Falsch angekreuzt'; }
       else { cls = 'miss'; lab = 'Vergessen · wäre richtig'; }
-      return '<div class="opt mopt ' + cls + '"><span class="box">' + (on || (!sel && r) ? '✓' : '') + '</span><span>' + it.options[oi] + (lab ? '<small class="mlab">' + lab + '</small>' : '') + '</span></div>';
+      return '<div class="opt mopt ' + cls + '"><span class="box">' + (on || (!sel && r) ? ic('check') : '') + '</span><span>' + it.options[oi] + (lab ? '<small class="mlab">' + lab + '</small>' : '') + '</span></div>';
     }).join('') + '</div>';
   }
   // Auswertung getrennt nach Art, z. B. „MC 22/32 Punkte · R/F 8/10 · Lücke 2,5/4“
@@ -862,7 +921,7 @@
     var T = tests(s.id, ch.id), st = DB.settings;
     var sh = s.mix ? function (l) { return mixShuffle(l, st.mixMode === 'even'); } : shuffle;
     function pool(type) { return ITEMS.filter(function (i) { return i.type === type; }); }
-    function nav(extra) { return '<div class="nav"><a href="' + (s.href || '#/f/' + s.id) + '">‹ ' + esc(s.name) + '</a>' + (extra || '') + '</div>'; }
+    function nav(extra) { return '<div class="nav">' + backLink(s.href || '#/f/' + s.id, s.name) + (extra || '') + '</div>'; }
     function prep(id) { var it = BYID[id]; return { it: it, order: it.type === 'mc' ? shuffle(it.options.map(function (_, i) { return i; })) : null, multi: isMulti(it, s.id) }; }
     function finishLog(r) {
       logAns(r.it._s || s.id, r.it.id, r.s, r.p);
@@ -880,14 +939,14 @@
       var cardsMode = '';
       if (ch.cards) {
         var kn = ch.cards.filter(function (c) { return DB.progress[c.id] === 'known'; }).length;
-        cardsMode = '<button class="mode" data-m="cards"><span class="ico">▤</span><span><span class="t">Karteikarten</span><br><span class="d">Umdrehen, gewusst oder nochmal</span></span><span class="r">' + ch.cards.length + ' Karten' + (kn ? '<b>' + kn + ' gewusst</b>' : '') + '</span></button>';
+        cardsMode = '<button class="mode" data-m="cards"><span class="ico">' + ic('cards') + '</span><span><span class="t">Karteikarten</span><br><span class="d">Umdrehen, gewusst oder nochmal</span></span><span class="r">' + ch.cards.length + ' Karten' + (kn ? '<b>' + kn + ' gewusst</b>' : '') + '</span></button>';
       }
       h += '<div class="modes">' + cardsMode + MODES.map(function (m) {
         var c = m.id === 'exam' ? total : counts[m.id], b = T.best[m.id];
-        return '<button class="mode" data-m="' + m.id + '"' + (c ? '' : ' disabled') + '><span class="ico">' + m.ico + '</span><span><span class="t">' + m.name + '</span><br><span class="d">' + (m.id === 'mc' && s.id === 'psy' ? 'Vier Antworten, 1 bis 4 richtig' : m.desc) + '</span></span>' +
+        return '<button class="mode" data-m="' + m.id + '"' + (c ? '' : ' disabled') + '><span class="ico">' + ic(m.ico) + '</span><span><span class="t">' + m.name + '</span><br><span class="d">' + (m.id === 'mc' && s.id === 'psy' ? 'Vier Antworten, 1 bis 4 richtig' : m.desc) + '</span></span>' +
           '<span class="r">' + c + ' Fragen' + (b !== undefined ? '<b>Bestwert ' + b + ' %</b>' : '') + '</span></button>';
       }).join('') + '</div>';
-      h += '<div class="row" style="margin-top:14px">' + (ch.cards ? '<button class="ghost" id="readC">📖 Karten lesen</button>' : '') + '<button class="ghost" id="readQ">📖 Fragen lesen</button></div>';
+      h += '<div class="row" style="margin-top:14px">' + (ch.cards ? '<button class="ghost" id="readC">' + ic('book') + 'Karten lesen</button>' : '') + '<button class="ghost" id="readQ">' + ic('book') + 'Fragen lesen</button></div>';
       if (st.mMosaic && !s.mix) h += mosaicHTML(ITEMS);
       var wr = T.wrong.filter(function (id) { return BYID[id]; });
       if (wr.length) h += '<div class="row" style="margin-top:14px"><button class="ghost" id="wrong">Falsche Fragen wiederholen (' + wr.length + ')</button></div>';
@@ -915,7 +974,7 @@
         '<div class="pbar"><div style="width:' + ((k + 1) / total * 100) + '%"></div></div>' +
         '<div class="card"><div class="meta"><span></span><span class="side">Frage</span></div><div class="face">' + qh + '</div></div>' +
         '<div class="card" style="margin-top:10px"><div class="meta"><span></span><span class="side" style="color:var(--green)">Antwort</span></div><div class="face">' + ah + '</div>' + (it.expl ? '<div class="tip' + (it.warn ? ' warn' : '') + '">' + it.expl + '</div>' : '') + '</div>' +
-        '<div class="row"><button class="ghost" id="rPrev"' + (k === 0 ? ' disabled' : '') + '>← Zurück</button><button class="ghost" id="rNext"' + (k === total - 1 ? ' disabled' : '') + '>Weiter →</button></div>';
+        '<div class="row"><button class="ghost" id="rPrev"' + (k === 0 ? ' disabled' : '') + '>' + ic('left') + 'Zurück</button><button class="ghost" id="rNext"' + (k === total - 1 ? ' disabled' : '') + '>Weiter' + ic('right') + '</button></div>';
       view.innerHTML = h; window.scrollTo(0, 0);
       $('#rEnd').onclick = hub;
       $('#rPrev').onclick = function () { readItems(k - 1); }; $('#rNext').onclick = function () { readItems(k + 1); };
@@ -935,25 +994,36 @@
     }
 
     function run(queue, mode, title) {
-      var i = 0, results = [];
+      var i = 0, results = [], skipped = 0;
       if (!queue.length) { view.innerHTML = nav() + '<div class="empty">Keine Fragen in dieser Auswahl.</div>'; return; }
       setImm(true);
+      var fachName = subj(s.id) ? subj(s.id).name : s.name;
       function show() {
         if (i >= queue.length) return finish();
-        var p = queue[i], it = p.it, done = false;
-        var h = nav('<button id="quit">Beenden</button>') +
-          '<div class="meta"><span>' + title + ' · ' + (i + 1) + ' / ' + queue.length + '</span><span>' + esc(it.src || '') + '</span></div>' +
-          '<div class="pbar"><div style="width:' + (i / queue.length * 100) + '%"></div></div><div class="card">' + questionBody(p) + '<div id="fb"></div></div>';
+        var p = queue[i], it = p.it, done = false, isTF = it.type === 'tf';
+        var where = s.mix ? (subj(it._s) ? subj(it._s).name : '') : fachName + ' · ' + ch.title.split(' · ')[0];
+        var h = lhead('quit', '', isTF ? 'Richtig oder falsch?' : title, where, (i + 1) + '/' + queue.length, i / queue.length);
+        if (isTF) {
+          var len = textOf(it.statement).length, sz = len > 150 ? ' l' : len > 70 ? ' m' : '';
+          h += '<div class="card rfcard"><div class="chips2">' + (s.mix && subj(it._s) ? '<span class="tchip acc">' + esc(subj(it._s).name) + '</span>' : '<span class="tchip acc">' + esc(ch.title.split(' · ')[0]) + '</span>') +
+            (it.src ? '<span class="tchip">' + esc(it.src) + '</span>' : '') + '</div><div class="stmt' + sz + '"><div>' + it.statement + '</div></div><div id="fb"></div></div>' +
+            '<div class="rfbtns" id="tfrow"><button class="yes" data-v="1">' + ic('check') + 'Richtig</button><button class="no" data-v="0">' + ic('x') + 'Falsch</button></div>' +
+            '<button type="button" class="skip" id="skip">Überspringen</button>';
+        } else h += '<div class="card">' + (it.src ? '<div class="meta"><span>' + esc(it.src) + '</span></div>' : '') + questionBody(p) + '<div id="fb"></div></div>';
+        if (!s.mix && !s.due) setLast({ h: '#/f/' + s.id + '/' + ch.id, t: ch.title, sub: fachName + ' · ' + title + ', bei Frage ' + (i + 1) + ' von ' + queue.length + ' aufgehört' });
         if (it.type === 'gap') h += '<div class="row" id="gaprow"><button class="ghost" id="reveal">Lösung zeigen</button><button class="primary" id="check">Prüfen</button></div>';
         if (p.multi) h += '<div class="row" id="mcrow"><button class="primary" id="mcheck" disabled>Prüfen</button></div>';
         view.innerHTML = h; window.scrollTo(0, 0);
         $('#quit').onclick = hub;
         function answered(score, pts) {
           if (done) return; done = true; results.push({ it: it, s: score, p: pts });
-          var head = pts !== undefined ? (pts === it.options.length ? '✓ ' : pts > 0 ? '◐ ' : '✗ ') + pts + ' / ' + it.options.length + ' Punkte' : score === 1 ? '✓ Richtig' : score > 0 ? '◐ Teilweise richtig' : '✗ Nicht ganz';
-          $('#fb').innerHTML = '<div class="fb ' + (score === 1 ? 'ok' : score > 0 && pts !== undefined ? 'mid' : 'bad') + '">' + head + '</div>' +
+          var sym = score === 1 ? ic('check') : score > 0 ? ic('half') : ic('x');
+          var head = pts !== undefined ? pts + ' / ' + it.options.length + ' Punkte' : score === 1 ? 'Richtig' : score > 0 ? 'Teilweise richtig' : 'Nicht ganz';
+          if (isTF) { var sk = $('#skip'); if (sk) sk.remove(); }
+          $('#fb').innerHTML = '<div class="fb ' + (score === 1 ? 'ok' : score > 0 && pts !== undefined ? 'mid' : 'bad') + '" role="status">' + sym + head + '</div>' +
+            (isTF ? '<div class="tip"><b>' + (it.answer ? 'Die Aussage ist richtig.' : 'Die Aussage ist falsch.') + '</b></div>' : '') +
             (it.expl ? '<div class="tip' + (it.warn ? ' warn' : '') + '">' + it.expl + '</div>' : '') +
-            '<div class="row"><button class="primary" id="next">' + (i === queue.length - 1 ? 'Ergebnis ›' : 'Weiter ›') + '</button></div>' +
+            '<div class="row"><button class="primary" id="next">' + (i === queue.length - 1 ? 'Ergebnis' : 'Weiter') + ic('right') + '</button></div>' +
             '<div class="tools"><button id="rep">Frage melden</button></div>';
           $('#next').onclick = function () { i++; show(); };
           $('#rep').onclick = function () { reportQ(it, s.id, $('#rep')); };
@@ -964,7 +1034,7 @@
             b.onclick = function () {
               var o = parseInt(b.dataset.o, 10), ix = sel.indexOf(o);
               if (ix >= 0) sel.splice(ix, 1); else sel.push(o);
-              var on = ix < 0; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); $('.box', b).textContent = on ? '✓' : '';
+              var on = ix < 0; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); $('.box', b).innerHTML = on ? ic('check') : '';
               mb.disabled = !sel.length;
             };
           });
@@ -982,14 +1052,16 @@
               if (o !== it.correct) b.classList.add('bad'); answered(grade(it, o));
             };
           });
-        } else if (it.type === 'tf') {
-          $$('.opt').forEach(function (b) {
+        } else if (isTF) {
+          $$('#tfrow button').forEach(function (b) {
             b.onclick = function () {
               var v = b.dataset.v === '1';
-              $$('.opt').forEach(function (x) { x.disabled = true; if ((x.dataset.v === '1') === it.answer) x.classList.add('ok'); });
-              if (v !== it.answer) b.classList.add('bad'); answered(grade(it, v));
+              $$('#tfrow button').forEach(function (x) { x.disabled = true; }); b.classList.add('pick');
+              answered(grade(it, v));
+              var fb = $('#fb'); if (fb) fb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             };
           });
+          $('#skip').onclick = function () { skipped++; i++; show(); };
         } else {
           var inputs = $$('input.gap'), parts = gapParts(it).filter(function (z) { return z.g; });
           if (inputs[0]) inputs[0].focus({ preventScroll: true });
@@ -1010,14 +1082,15 @@
       }
       function finish() {
         setImm(false);
-        var pts = results.reduce(function (a, r) { return a + r.s; }, 0), pct = Math.round(pts / queue.length * 100);
+        if (!results.length) return hub();
+        var pts = results.reduce(function (a, r) { return a + r.s; }, 0), pct = Math.round(pts / results.length * 100);
         results.forEach(finishLog);
         if (mode !== 'wrong' && (T.best[mode] === undefined || pct > T.best[mode])) T.best[mode] = pct;
         save(); badgeCheck();
         var bad = results.filter(function (r) { return r.s < 1; }), hasP = results.some(function (r) { return r.p !== undefined; });
-        var h = nav() + '<div class="card"><div class="score"><div class="big">' + pct + ' %</div><div class="note">' + (hasP ? breakdown(results) : fmt(pts) + ' von ' + queue.length + ' richtig') + ' · ' + title + '</div></div></div>';
+        var h = nav() + '<div class="card"><div class="score"><div class="big">' + pct + ' %</div><div class="note">' + (hasP ? breakdown(results) : fmt(pts) + ' von ' + results.length + ' richtig') + (skipped ? ' · ' + skipped + ' übersprungen' : '') + ' · ' + title + '</div></div></div>';
         if (bad.length) {
-          h += '<div class="list">' + bad.map(function (r) { return '<details class="it"><summary><span class="st ' + (r.s > 0 ? 'mid">◐' : 'bad">✗') + '</span><span>' + plainHTML(r.it) + '</span></summary><div class="body">' + solutionHTML(r.it, r.p !== undefined) + '</div></details>'; }).join('') + '</div>' +
+          h += '<div class="list">' + bad.map(function (r) { return '<details class="it"><summary><span class="st ' + (r.s > 0 ? 'mid" aria-label="teilweise">' + ic('half') : 'bad" aria-label="falsch">' + ic('x')) + '</span><span>' + plainHTML(r.it) + '</span></summary><div class="body">' + solutionHTML(r.it, r.p !== undefined) + '</div></details>'; }).join('') + '</div>' +
             '<div class="row" style="margin-top:14px"><button class="ghost" id="againWrong">Falsche wiederholen</button><button class="primary" id="again">Nochmal</button></div>';
         } else h += '<div class="tip" style="margin-top:12px">Alles richtig. Stark!</div><div class="row"><button class="primary" id="again">Nochmal</button></div>';
         h += '<div class="tools"><button id="menu">Zum Menü</button></div>';
@@ -1052,10 +1125,10 @@
       function answeredAt(i) { var a = ans[i]; if (a === null || a === undefined) return false; if (queue[i].multi) return a.length > 0; return Array.isArray(a) ? a.some(function (v) { return v.trim(); }) : true; }
       function show() {
         var p = queue[cur], it = p.it, c = clockText();
-        view.innerHTML = '<div class="nav"><span class="clock' + (c.left < 60 ? ' low' : '') + '" id="clock">⏱ ' + c.txt + '</span><button id="submit">Abgeben</button></div>' +
+        view.innerHTML = '<div class="nav"><span class="clock' + (c.left < 60 ? ' low' : '') + '">' + ic('clock') + '<span id="clock">' + c.txt + '</span></span><button id="submit">Abgeben</button></div>' +
           '<div class="dots">' + queue.map(function (_, i) { return '<button data-i="' + i + '" class="' + (i === cur ? 'cur ' : '') + (answeredAt(i) ? 'done' : '') + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
           '<div class="meta"><span>Frage ' + (cur + 1) + ' / ' + queue.length + '</span><span>' + TYPES[it.type] + '</span></div><div class="card">' + questionBody(p, Array.isArray(ans[cur]) ? ans[cur] : null) + '</div>' +
-          '<div class="row"><button class="ghost" id="prev"' + (cur === 0 ? ' disabled' : '') + '>‹ Zurück</button><button class="ghost" id="nxt"' + (cur === queue.length - 1 ? ' disabled' : '') + '>Weiter ›</button></div>';
+          '<div class="row"><button class="ghost" id="prev"' + (cur === 0 ? ' disabled' : '') + '>' + ic('left') + 'Zurück</button><button class="ghost" id="nxt"' + (cur === queue.length - 1 ? ' disabled' : '') + '>Weiter' + ic('right') + '</button></div>';
         if (p.multi) $$('.opt').forEach(function (b) { b.onclick = function () { var o = parseInt(b.dataset.o, 10), a = ans[cur] || [], ix = a.indexOf(o); if (ix >= 0) a.splice(ix, 1); else a.push(o); ans[cur] = a; show(); }; });
         else if (it.type === 'mc') $$('.opt').forEach(function (b) { if (ans[cur] === parseInt(b.dataset.o, 10)) b.classList.add('sel'); b.onclick = function () { ans[cur] = parseInt(b.dataset.o, 10); show(); }; });
         else if (it.type === 'tf') $$('.opt').forEach(function (b) { if (ans[cur] === (b.dataset.v === '1')) b.classList.add('sel'); b.onclick = function () { ans[cur] = b.dataset.v === '1'; show(); }; });
@@ -1073,7 +1146,7 @@
       }
       function tick() {
         var c = clockText(), el = $('#clock');
-        if (el) { el.textContent = '⏱ ' + c.txt; el.classList.toggle('low', c.left < 60); }
+        if (el) { el.textContent = c.txt; el.parentNode.classList.toggle('low', c.left < 60); }
         if (c.left <= 0 && !finished) { stash(); finish(true); }
       }
       function finish(timeout) {
@@ -1090,7 +1163,7 @@
         view.innerHTML = nav() + '<div class="card"><div class="score"><div class="big">' + (hasP ? pct + ' %' : fmt(pts) + ' / ' + queue.length) + '</div><div class="note">' + (hasP ? breakdown(rows) : pct + ' %') + ' · Note ' + noteFor(pct) + ' (Richtwert)' +
           (timeout ? ' · Zeit abgelaufen' : ' · ' + Math.floor(used / 60) + ':' + ('0' + used % 60).slice(-2) + ' Min benötigt') + '</div></div></div><div class="list">' +
           rows.map(function (r) {
-            var cls = r.s === 1 ? 'ok' : r.s > 0 ? 'mid' : 'bad', sym = r.s === 1 ? '✓' : r.s > 0 ? '◐' : '✗';
+            var cls = r.s === 1 ? 'ok' : r.s > 0 ? 'mid' : 'bad', sym = r.s === 1 ? ic('check') : r.s > 0 ? ic('half') : ic('x');
             return '<details class="it"><summary><span class="st ' + cls + '">' + sym + '</span><span>' + plainHTML(r.it) + '</span></summary><div class="body">' + solutionHTML(r.it, r.p !== undefined, r.a, r.o) + '<div class="tools"><button data-rep="' + r.it.id + '">Frage melden</button></div></div></details>';
           }).join('') + '</div><div class="row" style="margin-top:14px"><button class="ghost" id="menu">Zum Menü</button><button class="primary" id="again">Neue Klausur</button></div>';
         window.scrollTo(0, 0); $('#menu').onclick = hub; $('#again').onclick = examSetup;
@@ -1178,7 +1251,7 @@
     var filter = 'all';
     view.innerHTML = '<h1>Suche</h1><div class="searchbox" id="sbox"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>' +
       '<input id="q" type="search" placeholder="Begriff oder Satz suchen …" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Suche">' +
-      '<button class="clear" id="clear" aria-label="Suche löschen">✕</button></div><div id="res"></div>';
+      '<button class="clear" id="clear" aria-label="Suche löschen">' + ic('x') + '</button></div><div id="res"></div>';
     var input = $('#q'), box = $('#sbox'); input.value = q0;
     function setLast(word, replaceAll) {
       var parts = input.value.replace(/\s+$/, '').split(/\s+/); if (replaceAll) parts = [word]; else parts[parts.length - 1] = word;
@@ -1389,7 +1462,7 @@
       h += '<div class="grid">' + DB.custom.folders.map(function (f) {
         var k = f.cards.filter(function (c) { return DB.progress[c.id] === 'known'; }).length;
         return '<a class="tile s-own" href="#/neu/' + f.id + '"><div><h2 class="name">' + esc(f.name) + '</h2><p class="desc">Eigene Karten</p></div><div class="foot"><span>' + (f.cards.length ? (k ? k + ' von ' + f.cards.length + ' gewusst' : f.cards.length + ' Karten') : 'Noch leer') +
-          '</span><div class="bar"><div style="width:' + (f.cards.length ? k / f.cards.length * 100 : 0) + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
+          '</span><div class="bar"><div style="width:' + (f.cards.length ? k / f.cards.length * 100 : 0) + '%"></div></div><span class="go">Öffnen</span></div></a>';
       }).join('') + '</div>';
     } else h += '<div class="note" style="text-align:center;padding:8px 6px 18px">Noch keine eigenen Ordner. Lege einen an und schreib deine Karten selbst, mit Symbolen und Formeln.</div>';
     h += backupHint();
@@ -1406,7 +1479,7 @@
     function draw() {
       var ed = editId ? f.cards.filter(function (c) { return c.id === editId; })[0] : null;
       var tiles = TILES.filter(function (t) { return t.id === cat; })[0];
-      var h = '<div class="nav"><a href="#/neu">‹ Neu</a></div><h1 style="font-size:1.55rem">' + esc(f.name) + '</h1><p class="sub">' + f.cards.length + (f.cards.length === 1 ? ' Karte' : ' Karten') + '</p>';
+      var h = '<div class="nav">' + backLink('#/neu', 'Eigene Karten') + '</div><h1 style="font-size:1.55rem">' + esc(f.name) + '</h1><p class="sub">' + f.cards.length + (f.cards.length === 1 ? ' Karte' : ' Karten') + '</p>';
       if (f.cards.length) h += '<div class="row"><button class="primary" id="learn">Üben (' + f.cards.length + ')</button></div>';
       h += '<div class="group ed" style="padding:14px 16px;margin-top:14px"><b>' + (ed ? 'Karte bearbeiten' : 'Neue Karte') + '</b>' +
         '<label class="edl">Frage</label><textarea class="edt" id="qIn" rows="3" placeholder="Frage …">' + esc(ed ? ed.q : '') + '</textarea>' +
@@ -1524,7 +1597,7 @@
       '<div class="setrow"><div class="l"><b>Dein Name</b><small>Aus „Konstis Lernkiste“ wird z. B. „Annas Lernkiste“. Leer lassen für den Standardnamen.</small></div>' +
       '<input class="txt" id="uname" type="text" maxlength="20" value="' + esc(st.name || '') + '" placeholder="Name" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Dein Name"></div></div>' +
       '<div class="group"><h3>Darstellung</h3>' +
-      '<div class="setrow"><div class="l"><b>Design</b></div>' + segHTML('theme', [['dark', 'Dunkel'], ['light', 'Hell'], ['auto', 'System']], st.theme) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Design</b></div>' + segHTML('theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['auto', 'System']], st.theme) + '</div>' +
       '<div class="setrow"><div class="l"><b>Schriftgröße</b></div>' + segHTML('font', [[0.9, 'Klein'], [1, 'Mittel'], [1.15, 'Groß']], st.font) + '</div></div>' +
       '<div class="group"><h3>Karteikarten</h3>' +
       '<div class="setrow"><div class="l"><b>Standard-Filter</b><small>Welche Karten zuerst erscheinen</small></div>' + segHTML('cardFilter', [['red', 'Rot markiert'], ['all', 'Alle']], st.cardFilter) + '</div>' +
@@ -1653,7 +1726,7 @@
   // ---- Automatische Update-Prüfung (höchstens alle 20 Stunden) und Hinweis, nie mitten im Test
   var updReady = false, updDismissed = false, bar = document.createElement('div');
   bar.className = 'updbar'; bar.setAttribute('role', 'status');
-  bar.innerHTML = '<span>Update bereit</span><button id="updGo">Neu laden</button><button class="x" id="updX" aria-label="Später">✕</button>';
+  bar.innerHTML = '<span>Update bereit</span><button id="updGo">Neu laden</button><button class="x" id="updX" aria-label="Später">' + ic('x') + '</button>';
   document.body.appendChild(bar);
   $('#updGo').onclick = function () { location.reload(); };
   $('#updX').onclick = function () { updDismissed = true; updUI(); };

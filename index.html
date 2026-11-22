@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html lang="de" data-theme="dark">
+<html lang="de" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JaIHKgM4S2eD6b+N7NGMFKrdfBoUvd8P/PB01q1JUkE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xgWsCVX8IMLbb/av92JQ6u0Hvg6MQZf4W6I13Pc5uKg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Konstis Lernkiste</title>
-<meta name="theme-color" content="#1b1a18">
+<meta name="theme-color" content="#DFDDD4">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Lernkiste">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preload" href="font/nunito.woff" as="font" type="font/woff" crossorigin>
 <link rel="stylesheet" href="app.css">
-<script>try{var s=JSON.parse(localStorage.getItem('lernkiste-v1')||'null'),t=s&&s.settings&&s.settings.theme;if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var s=JSON.parse(localStorage.getItem('lernkiste-v1')||'null'),g=s&&s.settings,t=g&&g.theme;if(!t||t==='auto'||(t==='dark'&&!g.ui44))t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
 <main id="app"><div id="view"></div></main>

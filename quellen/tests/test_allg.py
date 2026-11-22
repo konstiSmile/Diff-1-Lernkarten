@@ -43,9 +43,9 @@ with sync_playwright() as p:
     # Heute fällig: geteilte Frage nur einmal
     old=int((time.time()-3*86400)*1000)
     pg.evaluate("t=>{var d=JSON.parse(localStorage.getItem('lernkiste-v1'));d.log=[[t,'quer','allg-mc-11',1],[t,'diff1','allg-mc-11',1],[t,'quer','allg-mc-01',1]];localStorage.setItem('lernkiste-v1',JSON.stringify(d))}",old)
-    pg.goto(B+'#/'); pg.reload(); pg.wait_for_selector('#tdDue')
-    td=pg.inner_text('#tdDue').replace('\n',' '); print('fällig:',td)
-    if not re.search(r'Fragen 2\b',td): errs.append('due '+td)
+    pg.goto(B+'#/'); pg.reload(); pg.wait_for_selector('.hello')
+    td=pg.inner_text('.hello span').replace('\n',' '); print('fällig:',td)
+    if not re.search(r'\b2 Fragen warten',td): errs.append('due '+td)
     # Suche: unter „Alle“ einmal, je Fach einmal
     pg.goto(B+'#/suche'); pg.wait_for_selector('input'); pg.fill('input','Additionstheoreme Sinus Cosinus Summe')
     time.sleep(0.4); fl=pg.inner_text('.filters'); print('Suche:',fl.replace('\n',' '))
