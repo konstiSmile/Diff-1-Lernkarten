@@ -613,6 +613,8 @@
     var s = subj(sid); if (!s) return homeView();
     var grp = gid ? (s.groups || []).filter(function (g) { return g.id === gid; })[0] : null;
     if (gid && !grp) { location.hash = '#/f/' + sid; return; }
+    var only = grp && s.chapters.filter(function (c) { return c.group === gid; });
+    if (only && only.length === 1) { location.replace('#/f/' + sid + '/' + only[0].id); return; }
     var h = '<div class="nav"><a href="#/' + (grp ? 'f/' + sid : '') + '">‹ ' + esc(grp ? s.name : 'Start') + '</a></div><h1>' + esc(grp ? grp.name : s.name) + '</h1><p class="sub">' + esc(grp ? s.name : s.desc) + '</p><div class="grid">';
     if (sid === 'psy' && !grp) h = h.replace(/<div class="grid">$/, '<p class="disclaimer">Alle Inhalte dieser App wurden nicht von der Dozentin bzw. dem Dozenten überprüft und sind ohne jede Gewähr zu verwenden. Es können sich Fehler eingeschlichen haben, und die Klausur kann andere Inhalte abfragen.</p><div class="grid">');
     if (s.groups && !grp) {
@@ -620,7 +622,7 @@
         var chs = s.chapters.filter(function (c) { return c.group === g.id; }), cards = 0, items = 0, known = 0;
         chs.forEach(function (c) { if (c.cards) { cards += c.cards.length; c.cards.forEach(function (x) { if (DB.progress[x.id] === 'known') known++; }); } if (c.items) items += c.items.length; });
         var txt = !chs.length ? 'Inhalte folgen' : [chs.length + (chs.length === 1 ? ' Kapitel' : ' Kapitel'), cards ? cards + ' Karten' : '', items ? items + ' Fragen' : ''].filter(Boolean).join(' · ');
-        h += '<a class="tile s-' + sid + '" href="#/f/' + sid + '/u/' + g.id + '">' + (chs.length ? '' : '<span class="badge">Folgt</span>') +
+        h += '<a class="tile s-' + sid + '" href="#/f/' + sid + (chs.length === 1 ? '/' + chs[0].id : '/u/' + g.id) + '">' + (chs.length ? '' : '<span class="badge">Folgt</span>') +
           '<div><h2 class="name">' + esc(g.name) + '</h2><p class="desc">' + esc(g.desc) + '</p></div>' +
           '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + (cards ? known / cards * 100 : 0) + '%"></div></div><span class="go">Öffnen ›</span></div></a>';
       });
@@ -636,7 +638,7 @@
     var s = subj(sid), ch = chap(sid, cid); if (!s || !ch) return homeView();
     view.className = 's-' + sid;
     var grp = ch.group && (s.groups || []).filter(function (g) { return g.id === ch.group; })[0];
-    if (grp) s = Object.assign({}, s, { href: '#/f/' + sid + '/u/' + grp.id, name: grp.name });
+    if (grp && s.chapters.filter(function (c) { return c.group === grp.id; }).length > 1) s = Object.assign({}, s, { href: '#/f/' + sid + '/u/' + grp.id, name: grp.name });
     if (ch.cards && ch.items) {
       if (q.c || q.mode === 'cards' || q.read) cardsView(Object.assign({}, s, { href: '#/f/' + sid + '/' + cid, name: ch.title.split(' · ')[0] }), Object.assign({}, ch, { kind: 'cards' }), q);
       else testsView(s, ch, q);

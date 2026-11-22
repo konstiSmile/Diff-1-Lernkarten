@@ -13,8 +13,8 @@ with sync_playwright() as p:
         if bad: errs.append(f'MATH {t} {bad}')
     pg.goto(B+'#/f/quer'); pg.reload(); pg.wait_for_selector('.tile')
     print('quer:', [t.replace('\n',' | ') for t in pg.locator('.tile').all_inner_texts()]); pg.screenshot(path='/tmp/q_fach.png')
-    pg.goto(B+'#/f/quer/u/dgl'); pg.reload(); pg.wait_for_selector('.tile'); print('dgl:', [t.replace('\n',' | ') for t in pg.locator('.tile').all_inner_texts()])
-    pg.goto(B+'#/f/quer/u/mv'); pg.reload(); pg.wait_for_selector('.tile'); print('mv:', [t.replace('\n',' | ') for t in pg.locator('.tile').all_inner_texts()])
+    for g,k in (('dgl','k11'),('mv','k10')):
+        pg.goto(B+'#/f/quer/u/'+g); pg.reload(); pg.wait_for_selector('.mode'); print(g, '->', pg.evaluate('location.hash'))
     pg.goto(B+'#/f/quer/k10'); pg.reload(); pg.wait_for_selector('.mode'); print('k10 back:', pg.get_attribute('.nav a','href'))
     pg.goto(B+'#/f/quer/k11'); pg.reload(); pg.wait_for_selector('.mode'); print('hub:', pg.inner_text('h1'), pg.get_attribute('.nav a','href'), [pg.inner_text(f'.mode >> nth={i}').replace('\n',' ') for i in range(5)])
     pg.click('.mode >> nth=0'); pg.wait_for_selector('#bRead'); pg.click('#bRead'); pg.wait_for_selector('#rNext')
