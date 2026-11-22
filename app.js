@@ -341,13 +341,13 @@
   function levelOf(r) { return !r ? 'neu' : r.streak >= 3 ? 'gemeistert' : r.s === 1 ? 'sicher' : 'gesehen'; }
   function isDue(r, today) { return !!r && today - r.day >= DUE_GAP[Math.min(r.streak, 4)]; }
   function dueLists() {
-    var ls = learnState(), today = dayNum(Date.now()), cards = [], items = [];
+    var ls = learnState(), today = dayNum(Date.now()), cards = [], items = [], seen = {};
     C.subjects.forEach(function (sx) {
       if (isHidden(sx.id)) return;
       sx.chapters.forEach(function (ch) {
         if (ch.placeholder) return;
-        (ch.cards || []).forEach(function (c) { if (isDue(ls[c.id], today)) cards.push(Object.assign({}, c, { _s: sx.id })); });
-        (ch.items || []).forEach(function (it) { if (isDue(ls[it.id], today)) items.push(Object.assign({}, it, { _s: sx.id })); });
+        (ch.cards || []).forEach(function (c) { if (!seen[c.id] && isDue(ls[c.id], today)) { seen[c.id] = 1; cards.push(Object.assign({}, c, { _s: sx.id })); } });
+        (ch.items || []).forEach(function (it) { if (!seen[it.id] && isDue(ls[it.id], today)) { seen[it.id] = 1; items.push(Object.assign({}, it, { _s: sx.id })); } });
       });
     });
     return { cards: cards, items: items };
@@ -559,12 +559,12 @@
   function eligible() { return C.subjects.filter(function (x) { var c = subjContent(x); return !isHidden(x.id) && (c.cards || c.items); }); }
   function mixSelected() { var el = eligible(), sel = DB.settings.mixSubs; return el.filter(function (x) { return !sel || sel.indexOf(x.id) >= 0; }); }
   function mixView(part) {
-    var sel = mixSelected(), even = DB.settings.mixMode === 'even', cards = [], items = [];
+    var sel = mixSelected(), even = DB.settings.mixMode === 'even', cards = [], items = [], seen = {};
     sel.forEach(function (sx) {
       sx.chapters.forEach(function (ch) {
         if (ch.placeholder) return;
-        if (ch.cards) ch.cards.forEach(function (c) { cards.push(Object.assign({}, c, { _s: sx.id })); });
-        if (ch.items) ch.items.forEach(function (it) { items.push(Object.assign({}, it, { _s: sx.id })); });
+        if (ch.cards) ch.cards.forEach(function (c) { if (seen[c.id]) return; seen[c.id] = 1; cards.push(Object.assign({}, c, { _s: sx.id })); });
+        if (ch.items) ch.items.forEach(function (it) { if (seen[it.id]) return; seen[it.id] = 1; items.push(Object.assign({}, it, { _s: sx.id })); });
       });
     });
     if (part === 'karten' || part === 'tests') {
@@ -1203,6 +1203,8 @@
         list.push({ e: e, score: score, n: n });
       });
       list.sort(function (a, b) { return b.score - a.score || a.n - b.n; });
+      // geteilte Einträge (Allgemein in mehreren Fächern) unter „Alle“ nur einmal
+      var uniq = {}, listAll = list.filter(function (x) { var u = x.e.u; if (!u) return true; if (uniq[u]) return false; uniq[u] = 1; return true; });
       // Vorschläge: Wortende ergänzen, sonst Tippfehler korrigieren
       var sug = '', last = toks[toks.length - 1], typing = !/\s$/.test(input.value);
       var ps = typing && last.length >= 2 ? prefixSug(last) : [];
@@ -1211,12 +1213,12 @@
         var bad = toks.filter(function (t) { return !SEARCH.some(function (e) { return e._h.indexOf(t) >= 0 || e._t.indexOf(t) >= 0; }); }), fz = bad.length ? fuzzySug(bad[bad.length - 1]) : [];
         if (fz.length) { sug = '<p class="sugnote">Meintest du:</p>' + chips(fz.map(function (v) { return v.w; }), 'ai'); sug = sug.replace(/class="sugchip ai"/g, 'class="sugchip ai" data-fix="' + esc(bad[bad.length - 1]) + '"'); }
       }
-      var counts = { all: list.length }; list.forEach(function (x) { counts[x.e.s] = (counts[x.e.s] || 0) + 1; });
+      var counts = { all: listAll.length }; list.forEach(function (x) { counts[x.e.s] = (counts[x.e.s] || 0) + 1; });
       var subs = C.subjects.filter(function (s) { return !isHidden(s.id) && SEARCH.some(function (e) { return e.s === s.id; }); });
       var f = '<div class="filters"><button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + counts.all + ')</button>' + subs.map(function (s) {
         return '<button data-f="' + s.id + '" class="' + (filter === s.id ? 'on' : '') + '"><span class="sw" style="background:var(--c-' + s.id + ')"></span>' + esc(s.name) + ' (' + (counts[s.id] || 0) + ')</button>';
       }).join('') + '</div>';
-      var shown = list.filter(function (x) { return filter === 'all' || x.e.s === filter; });
+      var shown = filter === 'all' ? listAll : list.filter(function (x) { return x.e.s === filter; });
       var hl = encodeURIComponent(q);
       res.innerHTML = sug + f + (shown.length ? '<div class="count">' + shown.length + ' Treffer</div>' + shown.slice(0, 40).map(function (x) {
         var e = x.e, sj = subj(e.s), sep = e.route.indexOf('?') >= 0 ? '&' : '?';
