@@ -14,6 +14,98 @@ def H(t):
 def C(key, subj, src, q, a, kw=''):
     return dict(key=key, subj=subj, src=src, q=q, a=a, kw=kw)
 
+# ------------------------------------------------ Zeichnungen (inline SVG, Farben über app.css .fig)
+from math import pi, sin, cos, tan, radians
+_PI = {0: '0', 1: 'π/6', 2: 'π/4', 3: 'π/3', 4: 'π/2'}
+def _lab(k, n):  # Winkel k·π/n als Text
+    from fractions import Fraction
+    f = Fraction(k, n)
+    if f == 0: return '0'
+    a, b = f.numerator, f.denominator
+    z = ('−' if a < 0 else '') + ('' if abs(a) == 1 else str(abs(a))) + 'π'
+    return z if b == 1 else z + '/' + str(b)
+STD = sorted({(k, 6) for k in range(12)} | {(k, 4) for k in range(8)}, key=lambda t: t[0] / t[1])
+STD = [t for i, t in enumerate(STD) if all(abs(t[0] / t[1] - u[0] / u[1]) > 1e-9 for u in STD[:i])]
+
+def graph(funcs, x0=-pi/2, x1=2*pi, mark=None, ymax=1.35, W=330, H=None, legend=True, label='Graph'):
+    """funcs: Liste (name, klasse); name in sin/cos/tan. mark: (x, y) Punkt."""
+    L, R, T = 16, 10, 8
+    B = 40 if legend else 24
+    H = H or (150 + B)
+    sx = (W - L - R) / (x1 - x0); sy = (H - T - B) / (2 * ymax)
+    X = lambda x: L + (x - x0) * sx; Y = lambda y: T + (ymax - y) * sy
+    o = []
+    for v in (1, -1):
+        o.append(f'<line class="gd" x1="{X(x0):.1f}" y1="{Y(v):.1f}" x2="{X(x1):.1f}" y2="{Y(v):.1f}"/>')
+    o.append(f'<line class="ax" x1="{X(x0):.1f}" y1="{Y(0):.1f}" x2="{X(x1)+4:.1f}" y2="{Y(0):.1f}"/>')
+    if x0 <= 0 <= x1:
+        o.append(f'<line class="ax" x1="{X(0):.1f}" y1="{Y(ymax):.1f}" x2="{X(0):.1f}" y2="{Y(-ymax):.1f}"/>')
+        for v, t in ((1, '1'), (-1, '−1')):
+            o.append(f'<text x="{X(0)-4:.1f}" y="{Y(v)-3:.1f}" text-anchor="end">{t}</text>')
+    k = round(x0 / (pi / 2))
+    while k * pi / 2 <= x1 + 1e-9:
+        x = k * pi / 2
+        if abs(x) > 1e-9:
+            o.append(f'<line class="ax" x1="{X(x):.1f}" y1="{Y(0)-3:.1f}" x2="{X(x):.1f}" y2="{Y(0)+3:.1f}"/>')
+            o.append(f'<text x="{X(x):.1f}" y="{Y(-ymax)+15:.1f}" text-anchor="middle">{_lab(k, 2)}</text>')
+        k += 1
+    F = {'sin': sin, 'cos': cos, 'tan': tan}
+    for name, cls in funcs:
+        f = F[name]; segs, cur = [], []
+        n = 400
+        for i in range(n + 1):
+            x = x0 + (x1 - x0) * i / n
+            if name == 'tan' and abs(cos(x)) < 1e-3: 
+                if cur: segs.append(cur); cur = []
+                continue
+            y = f(x)
+            if abs(y) > ymax:
+                if cur: cur.append((x, max(-ymax, min(ymax, y)))); segs.append(cur); cur = []
+                continue
+            cur.append((x, y))
+        if cur: segs.append(cur)
+        for sg in segs:
+            if len(sg) > 1:
+                o.append(f'<polyline class="{cls}" points="' + ' '.join(f'{X(a):.1f},{Y(b):.1f}' for a, b in sg) + '"/>')
+        if name == 'tan':
+            for kk in range(-3, 6):
+                xp = pi / 2 + kk * pi
+                if x0 < xp < x1: o.append(f'<line class="gd" x1="{X(xp):.1f}" y1="{Y(ymax):.1f}" x2="{X(xp):.1f}" y2="{Y(-ymax):.1f}"/>')
+    if legend:
+        for i, (name, cls) in enumerate(funcs):
+            lx = W / 2 - 40 * (len(funcs) - 1) + 80 * i
+            o.append(f'<line class="{cls}" x1="{lx-26:.1f}" y1="{H-9}" x2="{lx-8:.1f}" y2="{H-9}"/><text class="t-{name}" x="{lx-4:.1f}" y="{H-5}">{name}</text>')
+    if mark:
+        mx, my = mark
+        o.append(f'<line class="gd" x1="{X(mx):.1f}" y1="{Y(0):.1f}" x2="{X(mx):.1f}" y2="{Y(my):.1f}"/>')
+        o.append(f'<circle class="pm" cx="{X(mx):.1f}" cy="{Y(my):.1f}" r="5"/>')
+    return f'<div class="fig"><svg viewBox="0 0 {W} {H}" role="img" aria-label="{label}">' + ''.join(o) + '</svg></div>'
+
+def kreis(mark=None, alle=False, labels=False, extra=(), W=300, label='Einheitskreis'):
+    """mark: (k, n) für Winkel k·π/n; alle: Punkte aller Standardwinkel; labels: Winkel beschriften."""
+    c, Rr = W / 2, 105
+    P = lambda a, r=Rr: (c + r * cos(a), c - r * sin(a))
+    o = [f'<line class="ax" x1="{c-Rr-18}" y1="{c}" x2="{c+Rr+18}" y2="{c}"/>', f'<line class="ax" x1="{c}" y1="{c+Rr+18}" x2="{c}" y2="{c-Rr-18}"/>',
+         f'<circle class="ax" cx="{c}" cy="{c}" r="{Rr}"/>',
+         f'<text x="{c+Rr-4}" y="{c+15}" text-anchor="end">1</text>', f'<text x="{c-Rr+4}" y="{c+15}">−1</text>',
+         f'<text x="{c+5}" y="{c-Rr+15}">1</text>', f'<text x="{c+5}" y="{c+Rr-6}">−1</text>']
+    if alle:
+        for k, n in STD:
+            x, y = P(k * pi / n); o.append(f'<circle class="pt" cx="{x:.1f}" cy="{y:.1f}" r="3"/>')
+            if labels:
+                lx, ly = P(k * pi / n, Rr + 20)
+                o.append(f'<text x="{lx:.1f}" y="{ly+4:.1f}" text-anchor="middle" style="font-size:11px">{_lab(k, n)}</text>')
+    for (k, n) in list(extra) + ([mark] if mark else []):
+        a = k * pi / n; x, y = P(a); isM = (k, n) == mark
+        if isM:
+            o.append(f'<line class="gd" x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{c}"/>')
+            o.append(f'<line class="gd" x1="{x:.1f}" y1="{y:.1f}" x2="{c}" y2="{y:.1f}"/>')
+            o.append(f'<line class="ray" x1="{c}" y1="{c}" x2="{x:.1f}" y2="{y:.1f}"/>')
+            r0 = 24; large = 1 if a > pi else 0; ex, ey = P(a, r0)
+            o.append(f'<path class="ray" d="M{c+r0},{c} A{r0},{r0} 0 {large} 0 {ex:.1f},{ey:.1f}"/>')
+        o.append(f'<circle class="{"pm" if isM else "pt"}" cx="{x:.1f}" cy="{y:.1f}" r="{6 if isM else 4}"/>')
+    return f'<div class="fig"><svg viewBox="0 0 {W} {W}" role="img" aria-label="{label}">' + ''.join(o) + '</svg></div>'
+
 CARDS = [
     # ------------------------------------------------ 1 Weierstraß, kompakt
     C('kompakt', Q, 'Kap. 9, Def. 9.17 (5)',
@@ -103,20 +195,55 @@ CARDS = [
 <p>Also \(\sin(-x)=-\sin x\) und \(\cos(-x)=\cos x\). Beide sind stetig, und für alle \(x\) gilt \(\sin^2(x)+\cos^2(x)=1\).</p>''',
       'Sinus Cosinus Eigenschaften gerade ungerade Periode periodisch Nullstellen Maximum Minimum Wertebereich'),
 
-    C('sin-cos-werte', QD, 'Kap. 5, Bem. 5.9 (3b); Kap. 10, Bsp. 10.4 (4), 10.10 (2); Lösung Bl. 2, A7',
+    C('sin-cos-werte', QD, 'Kap. 5, Bem. 5.9 (3b), Satz 5.11; Kap. 10, Bsp. 10.4 (4), 10.10 (2); Lösung Bl. 2, A7',
       r"Wie lauten \(\sin\) und \(\cos\) an den Stellen \(0,\ \frac\pi6,\ \frac\pi4,\ \frac\pi3,\ \frac\pi2,\ \pi,\ \frac{3\pi}2,\ 2\pi\)?",
-      r'''<table><tr><th>\(x\)</th><th>\(\sin x\)</th><th>\(\cos x\)</th></tr>
-<tr><td>\(0\)</td><td>\(0\)</td><td>\(1\)</td></tr>
-<tr><td>\(\frac\pi6\)</td><td>\(\frac12\)</td><td>\(\frac12\sqrt3\)</td></tr>
-<tr><td>\(\frac\pi4\)</td><td>\(\frac12\sqrt2\)</td><td>\(\frac12\sqrt2\)</td></tr>
-<tr><td>\(\frac\pi3\)</td><td>\(\frac12\sqrt3\)</td><td>\(\frac12\)</td></tr>
-<tr><td>\(\frac\pi2\)</td><td>\(1\)</td><td>\(0\)</td></tr>
-<tr><td>\(\pi\)</td><td>\(0\)</td><td>\(-1\)</td></tr>
-<tr><td>\(\frac{3\pi}2\)</td><td>\(-1\)</td><td>\(0\)</td></tr>
-<tr><td>\(2\pi\)</td><td>\(0\)</td><td>\(1\)</td></tr></table>
-<p>\(\frac12\sqrt2=\frac1{\sqrt2}\). Die Werte bei \(\frac\pi3\) folgen aus denen bei \(\frac\pi6\) mit \(\sin(\frac\pi2-x)=\cos x\) und \(\cos(\frac\pi2-x)=\sin x\).</p>
-<div class="tip"><b>Merkhilfe am Einheitskreis:</b> Der Punkt zum Winkel \(\varphi\) ist \((\cos\varphi,\sin\varphi)\), z. B. \(\varphi=\frac\pi6\): \((\frac12\sqrt3,\frac12)\); \(\varphi=\frac\pi4\): \((\frac1{\sqrt2},\frac1{\sqrt2})\).</div>''',
-      'Sinus Cosinus Werte Tabelle pi/6 pi/4 pi/3 Wurzel 3 Wurzel 2 Einheitskreis spezielle Werte'),
+      r'''<table><tr><th>\(x\)</th><th>Grad</th><th>\(\sin x\)</th><th>\(\cos x\)</th><th>\(\tan x\)</th></tr>
+<tr><td>\(0\)</td><td>0°</td><td>\(0\)</td><td>\(1\)</td><td>\(0\)</td></tr>
+<tr><td>\(\frac\pi6\)</td><td>30°</td><td>\(\frac12\)</td><td>\(\frac12\sqrt3\)</td><td>\(\frac13\sqrt3\)</td></tr>
+<tr><td>\(\frac\pi4\)</td><td>45°</td><td>\(\frac12\sqrt2\)</td><td>\(\frac12\sqrt2\)</td><td>\(1\)</td></tr>
+<tr><td>\(\frac\pi3\)</td><td>60°</td><td>\(\frac12\sqrt3\)</td><td>\(\frac12\)</td><td>\(\sqrt3\)</td></tr>
+<tr><td>\(\frac\pi2\)</td><td>90°</td><td>\(1\)</td><td>\(0\)</td><td>–</td></tr>
+<tr><td>\(\pi\)</td><td>180°</td><td>\(0\)</td><td>\(-1\)</td><td>\(0\)</td></tr>
+<tr><td>\(\frac{3\pi}2\)</td><td>270°</td><td>\(-1\)</td><td>\(0\)</td><td>–</td></tr>
+<tr><td>\(2\pi\)</td><td>360°</td><td>\(0\)</td><td>\(1\)</td><td>\(0\)</td></tr></table>
+<p>„–“: \(\tan=\frac{\sin}{\cos}\) ist dort nicht definiert (Nullstellen von \(\cos\)). \(\frac12\sqrt2=\frac1{\sqrt2}\). Die Werte bei \(\frac\pi3\) folgen aus denen bei \(\frac\pi6\) mit \(\sin(\frac\pi2-x)=\cos x\) und \(\cos(\frac\pi2-x)=\sin x\).</p>'''
+      + H(r'Merkregel für \(0,\frac\pi6,\frac\pi4,\frac\pi3,\frac\pi2\): \(\sin\) ist der Reihe nach \(\frac12\sqrt0,\ \frac12\sqrt1,\ \frac12\sqrt2,\ \frac12\sqrt3,\ \frac12\sqrt4\); \(\cos\) dieselben Werte rückwärts. Gradzahlen nur zur Orientierung, im Skript wird im Bogenmaß gerechnet.')
+      + graph([('sin', 'k-sin'), ('cos', 'k-cos')], label='Graphen von sin und cos'),
+      'Sinus Cosinus Tangens Werte Tabelle pi/6 pi/4 pi/3 Wurzel 3 Wurzel 2 spezielle Werte Grad Merkregel 30 45 60'),
+
+    C('einheitskreis', QD, 'Kap. 9, Bsp. 9.6 (2); Kap. 10, Bsp. 10.4 (4), 10.10 (2); Kap. 5, Bem. 5.9',
+      r"Wie liest man \(\sin\varphi\) und \(\cos\varphi\) am <b>Einheitskreis</b> ab, und wie erhält man die Werte in allen vier Quadranten?",
+      kreis(alle=True, labels=True, label='Einheitskreis mit Standardwinkeln') +
+      r'''<p>Zum Winkel \(\varphi\) gehört der Punkt \(\bigl(\cos\varphi,\ \sin\varphi\bigr)\): <b>\(x\)-Koordinate = Cosinus</b>, <b>\(y\)-Koordinate = Sinus</b>.</p>
+<p>In den anderen Quadranten kommen dieselben Beträge wie im 1. Quadranten vor, nur die Vorzeichen wechseln:</p>
+<table><tr><th>Quadrant</th><th>Winkel</th><th>\(\cos\)</th><th>\(\sin\)</th></tr>
+<tr><td>1.</td><td>\(\varphi\)</td><td>+</td><td>+</td></tr>
+<tr><td>2.</td><td>\(\pi-\varphi\)</td><td>−</td><td>+</td></tr>
+<tr><td>3.</td><td>\(\pi+\varphi\)</td><td>−</td><td>−</td></tr>
+<tr><td>4.</td><td>\(2\pi-\varphi\)</td><td>+</td><td>−</td></tr></table>
+<p>Beispiele: \(\frac{2\pi}3=\pi-\frac\pi3\) ergibt \((-\frac12,\ \frac12\sqrt3)\); \(\frac{7\pi}6=\pi+\frac\pi6\) ergibt \((-\frac12\sqrt3,\ -\frac12)\); \(\frac{7\pi}4=2\pi-\frac\pi4\) ergibt \((\frac12\sqrt2,\ -\frac12\sqrt2)\).</p>'''
+      + H(r'Die Vorzeichenregeln folgen aus Bem. 5.9: \(\sin(x+\pi)=-\sin x\), \(\cos(x+\pi)=-\cos x\), \(\sin(-x)=-\sin x\), \(\cos(-x)=\cos x\) und der \(2\pi\)-Periode.'),
+      'Einheitskreis Quadrant Vorzeichen Koordinaten Standardwinkel 2pi/3 5pi/6 7pi/6 4pi/3 5pi/3 11pi/6 ablesen'),
+
+    C('sin-cos-graph', QD, 'Kap. 5, Satz 5.10',
+      r"Wie sehen die <b>Graphen</b> von \(\sin\) und \(\cos\) aus? Woran erkennt man, welcher welcher ist?",
+      graph([('sin', 'k-sin'), ('cos', 'k-cos')], label='Graphen von sin und cos') +
+      r'''<ul><li><b>\(\sin\)</b> geht durch den Ursprung (\(\sin 0=0\)), steigt bis \(1\) bei \(\frac\pi2\), Nullstellen bei \(0,\pi,2\pi\), Minimum \(-1\) bei \(\frac{3\pi}2\). Punktsymmetrisch zum Ursprung (ungerade).</li>
+<li><b>\(\cos\)</b> beginnt bei \(1\) (\(\cos0=1\)), Nullstellen bei \(\frac\pi2\) und \(\frac{3\pi}2\), Minimum \(-1\) bei \(\pi\). Achsensymmetrisch zur \(y\)-Achse (gerade).</li>
+<li>Der Cosinus ist der um \(\frac\pi2\) nach links verschobene Sinus: \(\cos x=\sin(x+\frac\pi2)\).</li></ul>'''
+      + H(r'\(\cos x=\sin(x+\frac\pi2)\) folgt aus \(\sin(\frac\pi2-x)=\cos x\) und \(\cos(-x)=\cos x\).'),
+      'Graph Sinus Cosinus Kurve Verlauf zeichnen erkennen Symmetrie'),
+
+    C('tan', QD, 'Kap. 5, Satz 5.11; Kap. 6, Bsp. 6.6 (3)',
+      r"Wie ist der <b>Tangens</b> definiert? Definitionsbereich, Periode, Nullstellen, Polstellen?",
+      r'''\[\tan(x)=\frac{\sin(x)}{\cos(x)}\quad\text{für } x\ne k\pi+\tfrac\pi2\]
+<ul><li>stetig, ungerade und <b>\(\pi\)-periodisch</b>,</li>
+<li>Nullstellen \(k\pi\) (die von \(\sin\)),</li>
+<li>nicht definiert bei \(k\pi+\frac\pi2\) (Nullstellen von \(\cos\)); dort \(\lim\tan(x)=\mp\infty\) von rechts bzw. links,</li>
+<li>auf jedem Intervall \(]k\pi-\frac\pi2,\ k\pi+\frac\pi2[\) streng monoton wachsend, Wertebereich \(\mathbb R\),</li>
+<li>Ableitung \(\tan'(x)=1+\tan^2(x)=\frac1{\cos^2(x)}\).</li></ul>'''
+      + graph([('tan', 'k-tan')], ymax=3, label='Graph von tan'),
+      'Tangens tan Definition Polstellen Periode Nullstellen Graph'),
 
     C('sin-cos-verschieben', QD, 'Kap. 5, Bem. 5.9 (1), (3b); Lösung Bl. 2, A7',
       r"Welche Verschiebungsformeln gelten für \(\sin\) und \(\cos\) (um \(\frac\pi2\), \(\pi\), \(2\pi\))? Welcher Punkt der Einheitskreislinie gehört zu \(\varphi=\frac{3\pi}4\) und \(\varphi=\frac{7\pi}4\)?",
@@ -452,6 +579,112 @@ gap('allg-gap-11', Q, r'Eine Funktion, bei der verschiedene Stellen stets versch
     r'Injektive Funktionen sind umkehrbar.', 'Def. 4.16', 'injektiv surjektiv Begriffe')
 gap('allg-gap-12', Q, r'Hat \(f\) keine {{kritischen Punkte|kritischen Stellen|kritische Punkte}} im Innern, liegen die globalen Extremstellen auf dem {{Rand}}.',
     r'Vorausgesetzt, \(f\) ist stetig, partiell differenzierbar und \(D\) kompakt.', 'Lösung Bl. 4, A14b', 'kritische Punkte Rand')
+
+# ------------------------------------------------------------ Einheitskreis und Graphen (mit Zeichnung)
+def _pt(k, n):
+    return r'\(\left(%s,\ %s\right)\)' % (_val('cos', k, n), _val('sin', k, n))
+def _val(f, k, n):
+    from fractions import Fraction
+    a = Fraction(k, n) % 2  # in Vielfachen von pi
+    base = {Fraction(0): (0, 1), Fraction(1, 6): (r'\frac12', r'\frac12\sqrt3'), Fraction(1, 4): (r'\frac12\sqrt2', r'\frac12\sqrt2'),
+            Fraction(1, 3): (r'\frac12\sqrt3', r'\frac12'), Fraction(1, 2): (1, 0)}
+    # Referenzwinkel und Vorzeichen
+    if a <= Fraction(1, 2): r, sc, ss = a, 1, 1
+    elif a <= 1: r, sc, ss = 1 - a, -1, 1
+    elif a <= Fraction(3, 2): r, sc, ss = a - 1, -1, -1
+    else: r, sc, ss = 2 - a, 1, -1
+    sv, cv = base[r]
+    v, sg = (sv, ss) if f == 'sin' else (cv, sc)
+    if v == 0: return '0'
+    v = str(v)
+    return ('-' if sg < 0 else '') + v
+
+KQ = [((2, 3), 'zweiten'), ((5, 6), 'zweiten'), ((5, 4), 'dritten'), ((4, 3), 'dritten'), ((7, 6), 'dritten'), ((5, 3), 'vierten'), ((11, 6), 'vierten')]
+def _neg(v): return v[1:] if v.startswith('-') else ('0' if v == '0' else '-' + v)
+def _fr(k, n):  # Winkel als TeX-Bruch
+    a = _lab(k, n).replace('π', r'\pi').split('/')
+    return a[0] if len(a) == 1 else r'\frac{%s}{%s}' % (a[0], a[1])
+def _ref(k, n):  # Referenzwinkel im 1. Quadranten
+    from fractions import Fraction
+    a = Fraction(k, n) % 1
+    a = min(a, 1 - a)
+    return _fr(a.numerator, a.denominator)
+for i, ((k, n), qd) in enumerate(KQ):
+    c_, s_ = _val('cos', k, n), _val('sin', k, n)
+    P2 = lambda x, y: r'\(\left(%s,\ %s\right)\)' % (x, y)
+    other = {(2, 3): (3, 4), (5, 6): (2, 3), (5, 4): (4, 3), (4, 3): (5, 4), (7, 6): (5, 4), (5, 3): (7, 4), (11, 6): (7, 4)}[(k, n)]
+    opts = []
+    for o in (P2(c_, s_), P2(s_, c_), P2(_neg(c_), s_), P2(c_, _neg(s_)), _pt(*other)):
+        if o not in opts: opts.append(o)
+    opts = opts[:4]; assert len(opts) == 4
+    mc('allg-mc-%02d' % (35 + i), QD, r'Am Einheitskreis ist der Punkt zum Winkel \(\varphi=%s\) markiert. Welche Koordinaten hat er?' % _fr(k, n) + kreis(mark=(k, n), label='Einheitskreis, Punkt markiert'),
+       opts, 0,
+       r'Der Punkt ist \((\cos\varphi,\ \sin\varphi)\) und liegt im %s Quadranten: Beträge wie beim Referenzwinkel \(%s\), Vorzeichen nach Quadrant.' % (qd, _ref(k, n)),
+       'Bem. 5.9; Einheitskreis', 'Einheitskreis Koordinaten ' + _lab(k, n) + ' Quadrant')
+
+# Winkel ablesen
+for i, ((k, n), wrong) in enumerate([((3, 4), [(2, 3), (5, 6), (5, 4)]), ((5, 3), [(11, 6), (4, 3), (7, 4)]), ((7, 6), [(5, 6), (4, 3), (11, 6)])]):
+    fr = lambda kk, nn: r'\(%s\)' % _fr(kk, nn)
+    mc('allg-mc-%02d' % (42 + i), QD, r'Der markierte Punkt hat die Koordinaten %s. Zu welchem Winkel \(\varphi\in[0,2\pi[\) gehört er?' % _pt(k, n) + kreis(mark=(k, n), label='Einheitskreis, Punkt markiert'),
+       [fr(k, n)] + [fr(*w) for w in wrong], 0,
+       r'Am Vorzeichen der Koordinaten liest man den Quadranten ab, an den Beträgen den Referenzwinkel. Probe: \(\cos\varphi\) und \(\sin\varphi\) ergeben genau die Koordinaten.',
+       'Bem. 5.9; Einheitskreis', 'Winkel ablesen Einheitskreis Koordinaten')
+
+# Werte in anderen Quadranten
+for i, (f, k, n) in enumerate([('sin', 5, 6), ('cos', 2, 3), ('sin', 4, 3), ('cos', 7, 4), ('sin', 11, 6), ('cos', 5, 4), ('sin', 3, 2)]):
+    r = _val(f, k, n)
+    pool = ['0', '1', '-1', r'\frac12', r'-\frac12', r'\frac12\sqrt2', r'-\frac12\sqrt2', r'\frac12\sqrt3', r'-\frac12\sqrt3']
+    neg = r[1:] if r.startswith('-') else ('-' + r if r != '0' else '1')
+    other = _val('cos' if f == 'sin' else 'sin', k, n)
+    cand = [r, neg, other] + [p for p in pool if p not in (r, neg, other)]
+    opts = []
+    for c in cand:
+        if c not in opts: opts.append(c)
+    opts = opts[:4]
+    mc('allg-mc-%02d' % (45 + i), QD, r'Welchen Wert hat \(\%s\!\left(%s\right)\)?' % (f, _fr(k, n)),
+       [r'\(%s\)' % o for o in opts], 0,
+       r'Am Einheitskreis gehört zum Winkel \(%s\) der Punkt %s; \(\cos\) ist die \(x\)-, \(\sin\) die \(y\)-Koordinate.' % (_fr(k, n), _pt(k, n)),
+       'Bem. 5.9; Einheitskreis', '%s Wert %s Einheitskreis' % (f, _lab(k, n)))
+
+# Graphen erkennen
+_opts4 = [r'\(\cos x\)', r'\(\sin x\)', r'\(-\cos x\)', r'\(-\sin x\)']
+mc('allg-mc-52', QD, r'Welche Funktion ist hier auf \([-\frac\pi2,\,2\pi]\) dargestellt?' + graph([('cos', 'k-q')], legend=False, label='Graph einer Funktion'),
+   _opts4, 0,
+   r'Der Graph beginnt bei \(x=0\) mit dem Wert \(1\), hat Nullstellen bei \(\pm\frac\pi2\) und \(\frac{3\pi}2\) und das Minimum \(-1\) bei \(\pi\): das ist \(\cos\).',
+   'Satz 5.10', 'Graph erkennen Cosinus Kurve')
+mc('allg-mc-53', QD, r'Welche Funktion ist hier auf \([-\frac\pi2,\,2\pi]\) dargestellt?' + graph([('sin', 'k-q')], legend=False, label='Graph einer Funktion'),
+   [_opts4[1], _opts4[0], _opts4[3], _opts4[2]], 0,
+   r'Der Graph geht durch den Ursprung und steigt dort, Maximum \(1\) bei \(\frac\pi2\), Minimum \(-1\) bei \(\frac{3\pi}2\): das ist \(\sin\).',
+   'Satz 5.10', 'Graph erkennen Sinus Kurve')
+mc('allg-mc-54', QD, r'Abgebildet ist \(\cos\) auf \([0,2\pi]\). Wo liegen seine Nullstellen in diesem Bereich?' + graph([('cos', 'k-cos')], x0=0, legend=False, label='Graph von cos'),
+   [r'\(\frac\pi2\) und \(\frac{3\pi}2\)', r'\(0\), \(\pi\) und \(2\pi\)', r'\(\pi\)', r'\(\frac\pi4\) und \(\frac{5\pi}4\)'], 0,
+   r'Nullstellen von \(\cos\): \(k\pi+\frac\pi2\). \(0,\pi,2\pi\) sind die Nullstellen von \(\sin\).',
+   'Satz 5.10 (2)', 'Nullstellen Cosinus Graph')
+mc('allg-mc-55', QD, r'Abgebildet ist \(\sin\). An welcher Stelle liegt der markierte Punkt (Minimum)?' + graph([('sin', 'k-sin')], x0=0, mark=(3 * pi / 2, -1), legend=False, label='Graph von sin mit markiertem Minimum'),
+   [r'\(x=\frac{3\pi}2\)', r'\(x=\pi\)', r'\(x=\frac{5\pi}4\)', r'\(x=2\pi\)'], 0,
+   r'\(\sin\) hat das Minimum \(-1\) bei \(2k\pi-\frac\pi2\), im Bereich \([0,2\pi]\) also bei \(\frac{3\pi}2\).',
+   'Satz 5.10 (1)', 'Minimum Sinus Graph')
+mc('allg-mc-56', QD, r'Abgebildet ist \(\cos\). Welchen Wert hat die Funktion am markierten Punkt bei \(x=\frac\pi3\)?' + graph([('cos', 'k-cos')], x0=0, mark=(pi / 3, 0.5), legend=False, label='Graph von cos mit markiertem Punkt'),
+   [r'\(\frac12\)', r'\(\frac12\sqrt3\)', r'\(\frac12\sqrt2\)', r'\(\frac13\)'], 0,
+   r'\(\cos(\frac\pi3)=\frac12\); der Punkt liegt genau auf halber Höhe zwischen \(0\) und \(1\).',
+   'Bem. 5.9 (3b)', 'cos pi/3 Graph Wert')
+
+tf('allg-tf-20', QD, r'Die abgebildete Funktion ist ungerade.' + graph([('cos', 'k-q')], legend=False, label='Graph einer Funktion'), False,
+   r'Abgebildet ist \(\cos\). Der Graph ist achsensymmetrisch zur \(y\)-Achse, also ist die Funktion <b>gerade</b>: \(\cos(-x)=\cos x\).',
+   'Bem. 5.9 (1)', 'gerade ungerade Graph Cosinus Symmetrie')
+tf('allg-tf-21', QD, r'Der abgebildete Graph ist punktsymmetrisch zum Ursprung.' + graph([('sin', 'k-q')], legend=False, label='Graph einer Funktion'), True,
+   r'Abgebildet ist \(\sin\); wegen \(\sin(-x)=-\sin x\) ist der Graph punktsymmetrisch zum Ursprung.',
+   'Bem. 5.9 (1)', 'punktsymmetrisch Sinus Graph ungerade')
+tf('allg-tf-22', QD, r'Die beiden markierten Punkte zu \(\varphi=\frac\pi6\) und \(\varphi=\frac{5\pi}6\) haben denselben Sinuswert.' + kreis(extra=[(1, 6), (5, 6)], label='Einheitskreis mit zwei Punkten'), True,
+   r'Sie liegen spiegelbildlich zur \(y\)-Achse, also gleiche \(y\)-Koordinate \(\frac12\); die \(x\)-Koordinaten \(\pm\frac12\sqrt3\) unterscheiden sich im Vorzeichen.',
+   'Bem. 5.9; Einheitskreis', 'Einheitskreis Symmetrie Sinus gleich pi minus phi')
+tf('allg-tf-23', QD, r'Für jeden Winkel \(\varphi\) im dritten Quadranten sind \(\sin\varphi\) und \(\cos\varphi\) beide negativ.', True,
+   r'Im dritten Quadranten (\(\pi<\varphi<\frac{3\pi}2\)) liegt der Punkt \((\cos\varphi,\sin\varphi)\) links unten.',
+   'Einheitskreis', 'Quadrant Vorzeichen negativ')
+gap('allg-gap-13', QD, r'Am Einheitskreis ist die \(x\)-Koordinate des Punktes zum Winkel \(\varphi\) der {{Cosinus|cos|Kosinus}} von \(\varphi\), die \(y\)-Koordinate der {{Sinus|sin}}.',
+    r'Punkt \((\cos\varphi,\ \sin\varphi)\).', 'Bsp. 9.6 (2), 10.4 (4)', 'Einheitskreis Koordinaten Sinus Cosinus')
+gap('allg-gap-14', QD, r'Der Graph des Cosinus ist {{achsensymmetrisch|spiegelsymmetrisch|symmetrisch}} zur \(y\)-Achse, der Graph des Sinus ist {{punktsymmetrisch}} zum Ursprung.',
+    r'\(\cos\) ist gerade, \(\sin\) ist ungerade.', 'Bem. 5.9 (1)', 'Symmetrie Graph Sinus Cosinus')
 
 assert len({c['key'] for c in CARDS}) == len(CARDS)
 assert len({i['id'] for i in ITEMS}) == len(ITEMS)
