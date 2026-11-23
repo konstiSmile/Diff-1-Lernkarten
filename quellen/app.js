@@ -685,6 +685,10 @@
   }
   function chapterView(sid, cid, q) {
     if (sid === 'psy' && cid === 'tp') { location.replace('#/f/psy/u/pers'); return; }
+    if (cid === 'allg' && subj(sid)) { // v48: „Allgemein“ ist jetzt eine Gruppe mit Unterbereichen – alte Links weiterleiten
+      var t = q.c || q.q, hit = t && subj(sid).chapters.filter(function (c) { return c.group === 'allg' && (c.cards || []).concat(c.items || []).some(function (x) { return x.id === t; }); })[0];
+      location.replace('#/f/' + sid + '/' + (hit ? hit.id + (q.c ? '?c=' : '?q=') + encodeURIComponent(t) : 'u/allg')); return;
+    }
     var s = subj(sid), ch = chap(sid, cid); if (!s || !ch) return homeView();
     view.className = 's-' + sid;
     var grp = ch.group && (s.groups || []).filter(function (g) { return g.id === ch.group; })[0];

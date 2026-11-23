@@ -1,6 +1,7 @@
 import re, html, subprocess
 
 _cache = {}
+_F = 'sin|cos|tan|cot|arcsin|arccos|arctan|sinh|cosh|tanh|log|ln|lg|exp|det|sgn'
 
 def tex2mml(tex, display=False):
     key = (tex, display)
@@ -16,6 +17,14 @@ def tex2mml(tex, display=False):
     # v44: sin, cos, log … als Funktionsname (mi) + unsichtbare Funktionsanwendung statt Operator (mo);
     # sonst setzt Safari Abstände wie bei „sin ( x + y )“. lim/max/min/sup/inf bleiben mo (Grenzen darunter).
     mml = re.sub(r'<mo>(sin|cos|tan|cot|arcsin|arccos|arctan|sinh|cosh|tanh|log|ln|lg|exp|det|sgn)</mo>', r'<mi>\1</mi><mo>&#x2061;</mo>', mml)
+    # v48: Hochzahl/Index am Funktionsnamen (sin², log_a): Funktionsanwendung gehört HINTER msup/msub,
+    # sonst hat msup drei Kinder und Safari/Chrome setzen „sin2“ falsch.
+    mml = re.sub(r'<(msup|msub)><mi>(' + _F + r')</mi><mo>&#x2061;</mo>(<(m[a-z]+)[^>]*>(?:(?!<\4[ >]).)*?</\4>)</\1>',
+                 r'<\1><mi>\2</mi>\3</\1><mo>&#x2061;</mo>', mml, flags=re.S)
+    # v48: kleiner Abstand vor dem Funktionsnamen, wenn direkt etwas davor steht (r cos φ statt „rcos φ“)
+    mml = re.sub(r'(</mi>|</mn>|</msup>|</msub>)((?:<msup>|<msub>)?<mi>(?:' + _F + r')</mi>)', r'\1<mspace width="0.167em"></mspace>\2', mml)
+    # v48: ohne Klammer (sin φ) wie in TeX ein kleiner Abstand nach dem Funktionsnamen
+    mml = re.sub(r'(<mo>&#x2061;</mo>)(?=<mi>|<mn>|<msub>|<msup>)', r'\1<mspace width="0.167em"></mspace>', mml)
     _cache[key] = mml
     return _cache[key]
 

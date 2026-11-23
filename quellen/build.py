@@ -103,22 +103,25 @@ quer10['group'] = 'mv'
 # ---------------------------------------------------------------- Allgemein (Mathe): ein Pool für Querschnitt und Diff 1
 # Gleiche IDs in beiden Fächern → Lernstand zählt einmal; Suche/Heute fällig/Gemischt fassen über 'u' bzw. die ID zusammen.
 import data_allg
-def allg_chapter(sid):
-    cs = [c for c in data_allg.CARDS if sid in c['subj']]
-    its = [dict((k, v) for k, v in i.items() if k != 'subj') for i in data_allg.ITEMS if sid in i['subj']]
-    if not cs and not its: return None
-    ch = dict(id='allg', title='Allgemein · Grundwissen aus Skripten und Übungen',
-              sub='Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', kind='tests', placeholder=False,
-              items=[conv_item(i) for i in its], cards=[])
-    for c in cs:
-        cid = f"allg-{c['key']}"
-        ch['cards'].append(dict(id=cid, red=False, src=c['src'], q=tex.convert(c['q']), a=tex.convert(c['a'])))
-        search.append(dict(s=sid, u=cid, title=c['src'], label='Karteikarte · Allgemein', route=f'/f/{sid}/allg?c={cid}', kw=c['kw'], text=tex.plain(c['q']) + ' — ' + tex.plain(c['a'])))
-    for it in its:
-        search.append(dict(s=sid, u=it['id'], title=it['src'], label=TYPES[it['type']] + ' · Allgemein', route=f"/f/{sid}/allg?q={it['id']}", kw=it.get('kw', ''), text=test_text(it)))
-    return ch
-quer_allg = allg_chapter('quer'); quer_allg['group'] = 'allg'
-diff1_allg = allg_chapter('diff1')
+def allg_chapters(sid):
+    """v48: „Allgemein“ als Gruppe mit Unterbereichen; jede Karte/Frage steht in genau einem Bereich (data_allg.AREA)."""
+    out = []
+    for aid, title in data_allg.AREAS:
+        cs = [c for c in data_allg.CARDS if sid in c['subj'] and data_allg.AREA[c['key']] == aid]
+        its = [dict((k, v) for k, v in i.items() if k != 'subj') for i in data_allg.ITEMS if sid in i['subj'] and data_allg.AREA[i['id']] == aid]
+        if not cs and not its: continue
+        ch = dict(id=aid, group='allg', title=title, sub='Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', kind='tests', placeholder=False,
+                  items=[conv_item(i) for i in its], cards=[])
+        for c in cs:
+            cid = f"allg-{c['key']}"
+            ch['cards'].append(dict(id=cid, red=False, src=c['src'], q=tex.convert(c['q']), a=tex.convert(c['a'])))
+            search.append(dict(s=sid, u=cid, title=c['src'], label='Karteikarte · ' + title, route=f'/f/{sid}/{aid}?c={cid}', kw=c['kw'], text=tex.plain(c['q']) + ' — ' + tex.plain(c['a'])))
+        for it in its:
+            search.append(dict(s=sid, u=it['id'], title=it['src'], label=TYPES[it['type']] + ' · ' + title, route=f"/f/{sid}/{aid}?q={it['id']}", kw=it.get('kw', ''), text=test_text(it)))
+        out.append(ch)
+    return out
+quer_allg = allg_chapters('quer')
+diff1_allg = allg_chapters('diff1')
 
 diff1_chapter = tests_chapter('data_diff1', 'diff1', 'k1', 'Kapitel 1 · Folgen und Grenzwerte', 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation', False)
 diff1_chapter['cards'] = cards
@@ -133,14 +136,19 @@ for c in data_diff1_k2.CARDS:
 assert len({c['key'] for c in data_diff1_k2.CARDS}) == len(data_diff1_k2.CARDS)
 assert len({i['id'] for i in data_diff1_k2.ITEMS}) == len(data_diff1_k2.ITEMS)
 
+ALLG_GROUP = dict(id='allg', name='Allgemein', desc='Formeln, Begriffe, Beweistechniken und Rechenwege aus Skripten und Übungen')
+
 CONTENT = dict(name=NAME, version=VERSION, subjects=[
-    dict(id='diff1', name='Diff 1', desc='Differential- und Integralrechnung 1', exam='2027-02-19', chapters=[
-        diff1_chapter, diff1_k2] + ([diff1_allg] if diff1_allg else [])),
+    dict(id='diff1', name='Diff 1', desc='Differential- und Integralrechnung 1', exam='2027-02-19', groups=[
+        dict(id='k1', name='Folgen und Grenzwerte', desc='Kapitel 1'),
+        dict(id='k2', name='Vollständigkeit und Konvergenz', desc='Kapitel 2'),
+        ALLG_GROUP], chapters=[
+        dict(diff1_chapter, group='k1'), dict(diff1_k2, group='k2')] + diff1_allg),
     dict(id='quer', name='Querschnitt', desc='Mehrere Veränderliche, Differentialgleichungen', exam='2027-02-05', groups=[
         dict(id='mv', name='Funktionen mehrerer Veränderlicher', desc='Kapitel 10'),
         dict(id='dgl', name='Gewöhnliche Differentialgleichungen', desc='Kapitel 11 · erster Ordnung'),
-        dict(id='allg', name='Allgemein', desc='Grundwissen aus Skripten und Übungen')], chapters=[
-        quer10, quer11, quer_allg]),
+        ALLG_GROUP], chapters=[
+        quer10, quer11] + quer_allg),
     dict(id='psy', name='Psycho 2', desc='Persönlichkeit, Entwicklung, Diagnostik', exam='2027-01-29', examTime='8–10 Uhr', groups=[
         dict(id='pers', name='Persönlichkeitspsychologie', desc='Eigenschaften, Methoden, Theorien'),
         dict(id='entw', name='Entwicklungspsychologie', desc='Kommt später'),
@@ -243,7 +251,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'font/nunito.wof
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v47';
+const CACHE = 'lernkiste-v48';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{

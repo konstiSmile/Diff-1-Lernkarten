@@ -1,10 +1,17 @@
-# v43: „Allgemein“ (Mathe) – gemeinsamer Pool für Querschnitt und Diff 1
+# v48: „Allgemein“ als Gruppe mit vier Unterbereichen (v43: gemeinsamer Pool) (Mathe) – gemeinsamer Pool für Querschnitt und Diff 1
 import json, re, time
 from playwright.sync_api import sync_playwright
 errs=[]; B='http://localhost:8765/index.html'
 C=json.loads(re.sub(r'^window\.CONTENT = |;\s*$','',open('../../content.js',encoding='utf-8').read()))
 S={s['id']:s for s in C['subjects']}
-qa=[c for c in S['quer']['chapters'] if c['id']=='allg'][0]; da=[c for c in S['diff1']['chapters'] if c['id']=='allg'][0]
+def pool(sid):
+    chs=[c for c in S[sid]['chapters'] if c.get('group')=='allg']
+    return chs, dict(cards=[x for c in chs for x in c['cards']], items=[x for c in chs for x in c['items']], group='allg')
+qchs,qa=pool('quer'); dchs,da=pool('diff1')
+print('Bereiche quer:',[(c['title'],len(c['cards']),len(c['items'])) for c in qchs]); print('Bereiche diff1:',[(c['title'],len(c['cards']),len(c['items'])) for c in dchs])
+if [c['id'] for c in qchs]!=['allg-f','allg-s','allg-b','allg-r'] or [c['id'] for c in dchs]!=['allg-f','allg-s','allg-b','allg-r']: errs.append('bereiche')
+ids=[x['id'] for c in qchs for x in c['cards']+c['items']]
+if len(ids)!=len(set(ids)): errs.append('doppelt in Bereichen')
 print('quer allg:',len(qa['cards']),'Karten',len(qa['items']),'Fragen · diff1 allg:',len(da['cards']),'Karten',len(da['items']),'Fragen')
 qids={x['id'] for x in qa['cards']+qa['items']}; dids={x['id'] for x in da['cards']+da['items']}
 # ab v47 gibt es auch reine Diff-1-Inhalte (subj D); geteilt = Schnittmenge
@@ -24,18 +31,27 @@ with sync_playwright() as p:
     pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(B+'#/f/quer'); pg.reload(); pg.wait_for_selector('.tile')
     hrefs=pg.eval_on_selector_all('.tile','els=>els.map(e=>e.getAttribute("href"))'); print('quer:',hrefs)
-    if hrefs!=['#/f/quer/k10','#/f/quer/k11','#/f/quer/allg']: errs.append('quer tiles '+str(hrefs))
+    if hrefs!=['#/f/quer/k10','#/f/quer/k11','#/f/quer/u/allg']: errs.append('quer tiles '+str(hrefs))
     pg.screenshot(path='/tmp/allg_quer.png')
-    pg.click('.tile[href="#/f/quer/allg"]'); pg.wait_for_selector('.mode')
-    if pg.get_attribute('.nav a','href')!='#/f/quer': errs.append('zurück quer')
-    pg.screenshot(path='/tmp/allg_kapitel.png')
-    pg.goto(B+'#/f/quer/u/allg'); pg.wait_for_selector('.mode')
-    if pg.evaluate('location.hash')!='#/f/quer/allg': errs.append('redirect allg')
-    pg.goto(B+'#/f/diff1'); pg.wait_for_selector('.tile')
+    pg.click('.tile[href="#/f/quer/u/allg"]'); pg.wait_for_selector('.tile')
+    uh=pg.eval_on_selector_all('.tile','els=>els.map(e=>e.getAttribute("href"))'); print('quer/allg:',uh)
+    if uh!=['#/f/quer/allg-f','#/f/quer/allg-s','#/f/quer/allg-b','#/f/quer/allg-r']: errs.append('unterbereiche '+str(uh))
+    pg.screenshot(path='/tmp/allg_bereiche.png')
+    pg.click('.tile[href="#/f/quer/allg-r"]'); pg.wait_for_selector('.mode')
+    if pg.get_attribute('.nav a','href')!='#/f/quer/u/allg': errs.append('zurück quer '+str(pg.get_attribute('.nav a','href')))
+    # alte Links auf „allg“ leiten weiter
+    pg.goto(B+'#/f/quer/allg'); time.sleep(0.4)
+    if pg.evaluate('location.hash')!='#/f/quer/u/allg': errs.append('redirect allg '+pg.evaluate('location.hash'))
+    pg.goto(B+'#/f/diff1/allg?c=allg-induktion'); time.sleep(0.4)
+    if pg.evaluate('location.hash')!='#/f/diff1/allg-b?c=allg-induktion': errs.append('redirect karte '+pg.evaluate('location.hash'))
+    pg.goto(B+'#/f/diff1/allg?q=allg-mc-68'); time.sleep(0.4)
+    if pg.evaluate('location.hash')!='#/f/diff1/allg-r?q=allg-mc-68': errs.append('redirect frage '+pg.evaluate('location.hash'))
+    pg.goto(B+'#/f/diff1'); pg.reload(); pg.wait_for_selector('.tile')
     dh=pg.eval_on_selector_all('.tile','els=>els.map(e=>e.getAttribute("href"))'); print('diff1:',dh)
-    if '#/f/diff1/allg' not in dh: errs.append('diff1 tile')
+    if dh!=['#/f/diff1/k1','#/f/diff1/k2','#/f/diff1/u/allg']: errs.append('diff1 tiles '+str(dh))
+    pg.screenshot(path='/tmp/allg_diff1.png')
     # Karte mit Tabelle öffnen
-    pg.goto(B+'#/f/quer/allg?c=allg-sin-cos-werte'); pg.wait_for_selector('.card'); pg.click('.card')
+    pg.goto(B+'#/f/quer/allg-f?c=allg-sin-cos-werte'); pg.wait_for_selector('.card'); pg.click('.card')
     time.sleep(0.3); pg.screenshot(path='/tmp/allg_karte.png')
     # Gemischt: beide Fächer gewählt → geteilte Inhalte nur einmal
     pg.evaluate("()=>{var d=JSON.parse(localStorage.getItem('lernkiste-v1'));d.settings.mixSubs=['quer','diff1'];localStorage.setItem('lernkiste-v1',JSON.stringify(d))}")

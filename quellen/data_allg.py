@@ -16,6 +16,7 @@ def C(key, subj, src, q, a, kw=''):
 
 # ------------------------------------------------ Zeichnungen (inline SVG, Farben über app.css .fig)
 from math import pi, sin, cos, tan, radians
+import re
 _PI = {0: '0', 1: 'π/6', 2: 'π/4', 3: 'π/3', 4: 'π/2'}
 def _lab(k, n):  # Winkel k·π/n als Text
     from fractions import Fraction
@@ -1010,3 +1011,113 @@ assert len({c['key'] for c in CARDS}) == len(CARDS)
 assert len({i['id'] for i in ITEMS}) == len(ITEMS)
 for x in CARDS + ITEMS:
     assert x['subj'] and set(x['subj']) <= {'quer', 'diff1'}, x
+
+# ============================================================ v48: Formelkarten zu den Rechenwegen
+CARDS += [
+    C('polar-umrechnung', Q, 'Kap. 10, Bsp. 10.4 (4); Kap. 5, Satz 5.10',
+      r"Wie hängen <b>Polarkoordinaten</b> \((r,\varphi)\) und kartesische Koordinaten \((x,y)\) zusammen?",
+      r'''\[x=r\cos(\varphi),\qquad y=r\sin(\varphi).\]
+<p>Wegen \(\sin^2(\varphi)+\cos^2(\varphi)=1\) gilt</p>
+\[x^2+y^2=r^2,\]
+<p>d. h. \(r\) ist der <b>Abstand vom Ursprung</b>, \(\varphi\) der Winkel zur positiven \(x\)-Achse.</p>
+<p>Daher: Kreislinie \(x^2+y^2=R^2\) ⇔ \(r=R\) fest; Kreisscheibe \(x^2+y^2\le R^2\) ⇔ \(r\in[0,R]\). In beiden Fällen \(\varphi\in[0,2\pi]\).</p>''',
+      'Polarkoordinaten Umrechnung x y r phi Abstand Ursprung Radius Formel'),
+
+    C('standard-grenzwerte', D, 'Diff 1 Kurzskript, Bem. 1.0.7, 2.0.3, 2.0.4',
+      r"Welche <b>Standard-Grenzwerte</b> braucht man beim Berechnen von Folgengrenzwerten?",
+      r'''<table><tr><th>Folge</th><th>Grenzwert</th></tr>
+<tr><td>\(\frac1{n^k}\), \(k\in\mathbb N\)</td><td>\(0\)</td></tr>
+<tr><td>\(\bigl(1+\frac1n\bigr)^n\)</td><td>\(e\)</td></tr>
+<tr><td>\(\bigl(1+\frac zn\bigr)^n\), \(z\in\mathbb Z\)</td><td>\(e^z\)</td></tr>
+<tr><td>\(\sqrt[n]{x}\), \(x>0\)</td><td>\(1\)</td></tr>
+<tr><td>\(\sqrt[n]{n}\)</td><td>\(1\)</td></tr></table>
+<p>Mit den Grenzwertsätzen lassen sich daraus viele Grenzwerte zusammensetzen, z. B. \(\frac{2+\frac1n}{1+\frac2n}\to2\).</p>''' + H(r'Bei einem Bruch zweier Polynome in \(n\) mit <b>gleichem</b> Grad ist der Grenzwert der Quotient der Vorfaktoren der höchsten Potenzen, z. B. \(\frac{3n^2}{n^2+n-1}\to3\).'),
+      'Standard Grenzwerte 1/n^k e Eulersche Zahl n-te Wurzel Leitkoeffizient Formel'),
+
+    C('partialbruch', QD, 'Kap. 3, Bem. 3.1; Diff 1, Bl. 5, A3a',
+      r"Wie zerlegt man \(\frac1{k(k+1)}\) in eine <b>Differenz</b>, und wozu?",
+      r'''\[\frac1{k(k+1)}=\frac1k-\frac1{k+1}.\]
+<p>Probe: \(\frac1k-\frac1{k+1}=\frac{(k+1)-k}{k(k+1)}\).</p>
+<p>So wird die Summe zur <b>Teleskopsumme</b>: \(\sum_{k=1}^{n}\frac1{k(k+1)}=1-\frac1{n+1}=\frac n{n+1}\to1\).</p>
+<p>Ähnlich auf Blatt 5, A3a: \(\frac{2}{k(k+1)(k+2)}=\frac1k-\frac2{k+1}+\frac1{k+2}\).</p>''' + H(r'Die Zerlegung steht so nicht im Skript; dort wird \(s_n=\frac n{n+1}\) per Induktion gezeigt.'),
+      'Partialbruch Zerlegung 1/(k(k+1)) Differenz Teleskopsumme Formel'),
+
+    C('mitternachtsformel', D, 'Diff 1, Lösung Bl. 3, A3, A4 (Anwendung)',
+      r"Wie löst man eine <b>quadratische Gleichung</b> \(ax^2+bx+c=0\) (\(a\neq0\))?",
+      r'''<p><b>Mitternachtsformel</b> (abc-Formel):</p>
+\[x_{1/2}=\frac{-b\pm\sqrt{b^2-4ac}}{2a}.\]
+<p>Ist \(b^2-4ac<0\), gibt es keine reelle Lösung.</p>
+<p><b>Beispiel</b> (Lösung Bl. 3, A3): \(a^2-8a+14=0\):</p>
+\[a=\frac{8\pm\sqrt{64-56}}2=4\pm\sqrt2.\]
+<p><b>Faktorisieren</b> geht oft schneller (Lösung Bl. 3, A4): \(a^2-4a+3=(a-1)(a-3)\), also \(a=1\) oder \(a=3\).</p>''' + H('Die allgemeine Formel steht nicht im Skript; die Lösungen wenden sie an.'),
+      'Mitternachtsformel abc-Formel quadratische Gleichung Faktorisieren Nullstellen Formel'),
+
+    C('binomische-formeln', D, 'Diff 1, Lösung Bl. 3, A1a (Anwendung)',
+      r"Wie lauten die <b>binomischen Formeln</b>, auch für \((a+b)^3\)?",
+      r'''\[(a\pm b)^2=a^2\pm2ab+b^2,\]
+\[(a+b)(a-b)=a^2-b^2,\]
+\[(a+b)^3=a^3+3a^2b+3ab^2+b^3.\]
+<p><b>Beispiel</b> (Lösung Bl. 3, A1a):</p>
+\[\begin{aligned}(2n^2+3)^3&=8n^6+36n^4\\&\quad+54n^2+27.\end{aligned}\]''' + H('Die allgemeinen Formeln stehen nicht im Skript; die Lösungen wenden sie an.'),
+      'binomische Formeln Quadrat hoch drei ausmultiplizieren Formel'),
+]
+
+mc('allg-mc-84', Q, r'Welcher Zusammenhang gilt für \(x=r\cos(\varphi)\), \(y=r\sin(\varphi)\)?',
+   [r'\(x^2+y^2=r^2\)', r'\(x+y=r\)', r'\(x^2-y^2=r^2\)', r'\(x\cdot y=r^2\)'], 0,
+   r'\(x^2+y^2=r^2\bigl(\cos^2(\varphi)+\sin^2(\varphi)\bigr)=r^2\). \(r\) ist also der Abstand vom Ursprung.',
+   'Kap. 10, Bsp. 10.4 (4); Kap. 5, Satz 5.10', 'Polarkoordinaten Umrechnung Radius')
+mc('allg-mc-85', D, r'Wogegen konvergiert \(\bigl(1+\frac2n\bigr)^n\)?',
+   [r'\(e^2\)', r'\(2e\)', r'\(e\)', r'\(1\)'], 0,
+   r'\(\bigl(1+\frac zn\bigr)^n\to e^z\) für \(z\in\mathbb Z\), hier \(z=2\).',
+   'Diff 1 Kurzskript, Bem. 2.0.3', 'Standard Grenzwert e hoch z')
+mc('allg-mc-86', QD, r'Wie lässt sich \(\frac1{k(k+1)}\) schreiben?',
+   [r'\(\frac1k-\frac1{k+1}\)', r'\(\frac1k+\frac1{k+1}\)', r'\(\frac1{k+1}-\frac1k\)', r'\(\frac1{k^2}-\frac1k\)'], 0,
+   r'\(\frac1k-\frac1{k+1}=\frac{(k+1)-k}{k(k+1)}=\frac1{k(k+1)}\). Die Reihenfolge entscheidet über das Vorzeichen.',
+   'Kap. 3, Bem. 3.1', 'Partialbruch Zerlegung Teleskop', warn=True)
+mc('allg-mc-87', D, r'Welche Lösungen hat \(a^2-8a+14=0\)?',
+   [r'\(a=4\pm\sqrt2\)', r'\(a=8\pm\sqrt2\)', r'\(a=4\pm\sqrt{14}\)', r'\(a=-4\pm\sqrt2\)'], 0,
+   r'Mitternachtsformel: \(a=\frac{8\pm\sqrt{64-56}}2=\frac{8\pm2\sqrt2}2=4\pm\sqrt2\).',
+   'Diff 1, Lösung Bl. 3, A3', 'Mitternachtsformel quadratische Gleichung')
+mc('allg-mc-88', D, r'Was ergibt \((a+b)^3\)?',
+   [r'\(a^3+3a^2b+3ab^2+b^3\)', r'\(a^3+b^3\)', r'\(a^3+3ab+b^3\)', r'\(a^3+2a^2b+2ab^2+b^3\)'], 0,
+   r'Die Vorfaktoren sind \(1,3,3,1\).',
+   'Diff 1, Lösung Bl. 3, A1a', 'binomische Formel hoch drei')
+tf('allg-tf-41', D, r'Für alle \(a,b\) gilt \((a+b)^2=a^2+b^2\).', False,
+   r'Es fehlt der Mischterm: \((a+b)^2=a^2+2ab+b^2\).', 'Diff 1, Lösung Bl. 3, A1a', 'binomische Formel Mischterm', warn=True)
+tf('allg-tf-42', D, r'Es gilt \(a^2-4a+3=(a-1)(a-3)\).', True,
+   r'Ausmultipliziert: \(a^2-3a-a+3\). Die Nullstellen sind \(1\) und \(3\).', 'Diff 1, Lösung Bl. 3, A4', 'faktorisieren quadratische Gleichung')
+tf('allg-tf-43', D, r'\(\sqrt[n]{n}\) konvergiert gegen \(1\).', True,
+   r'Standard-Grenzwert, ebenso \(\sqrt[n]{x}\to1\) für \(x>0\).', 'Diff 1 Kurzskript, Bem. 2.0.4', 'Standard Grenzwert n-te Wurzel')
+gap('allg-gap-25', D, r'Die Lösungsformel für quadratische Gleichungen \(ax^2+bx+c=0\) heißt {{Mitternachtsformel|abc-Formel|Lösungsformel}}.',
+    r'\(x_{1/2}=\frac{-b\pm\sqrt{b^2-4ac}}{2a}\).', 'Diff 1, Lösung Bl. 3, A3', 'Mitternachtsformel Name')
+
+# ============================================================ v48: Unterbereiche (jede Karte/Frage genau einmal)
+AREAS = [('allg-f', 'Formeln und Werte'), ('allg-s', 'Begriffe und Sätze'),
+         ('allg-b', 'Beweis- und Begründungstechniken'), ('allg-r', 'Rechenwege')]
+_A = dict(
+    F='''sin-cos-eigenschaften sin-cos-werte einheitskreis sin-cos-graph tan sin-cos-verschieben additionstheoreme doppelwinkel
+         ableitungsregeln ableitungen-grund allg-potenz dreiecksungleichung geometrische-summe strecke
+         polar-umrechnung standard-grenzwerte partialbruch mitternachtsformel binomische-formeln
+         mc-07 mc-08 mc-11-27 mc-35-56 mc-66 mc-78-80 mc-84-88
+         tf-07-14 tf-19-23 tf-29 tf-30 tf-40-43 gap-05-08 gap-13 gap-14 gap-18 gap-25''',
+    S='''kompakt weierstrass hospital nullstellensatz-zws injektiv-surjektiv harmonische-reihe
+         mc-01 mc-28-31 mc-33 mc-81 tf-01-05 tf-15 tf-16 tf-37-39 gap-01 gap-09-11 gap-22 gap-23''',
+    B='''weierstrass-anwenden kreislinie-weder-noch induktion induktion-produkt ungleichungen epsilon-n0 rekursiv-divergenz
+         mc-02 mc-32 mc-57-65 mc-73 tf-17 tf-24-28 gap-15-17''',
+    R='''polar-scheibe polar-linie hilfsfunktion rand-polygon kandidaten hoechste-potenz euler-anwenden rekursiv-grenzwert
+         monotonie-nachweis beschraenktheit-zeigen teleskopsumme
+         mc-03-06 mc-09 mc-10 mc-34 mc-67-72 mc-74-77 mc-82 mc-83 tf-06 tf-18 tf-31-36 gap-02-04 gap-12 gap-19-21 gap-24''')
+AREA = {}
+for a, txt in _A.items():
+    cid = {'F': 'allg-f', 'S': 'allg-s', 'B': 'allg-b', 'R': 'allg-r'}[a]
+    for t in txt.split():
+        m = re.fullmatch(r'(mc|tf|gap)-(\d+)(?:-(\d+))?', t)
+        keys = [f'allg-{m[1]}-{n:02d}' for n in range(int(m[2]), int(m[3] or m[2]) + 1)] if m else [t]
+        for k in keys:
+            assert k not in AREA, ('doppelt', k)
+            AREA[k] = cid
+for c in CARDS: assert c['key'] in AREA, ('ohne Bereich', c['key'])
+for i in ITEMS: assert i['id'] in AREA, ('ohne Bereich', i['id'])
+assert len(AREA) == len(CARDS) + len(ITEMS), 'unbekannter Schlüssel in AREA'
+assert len({c['key'] for c in CARDS}) == len(CARDS)
+assert len({i['id'] for i in ITEMS}) == len(ITEMS)
