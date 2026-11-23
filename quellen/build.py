@@ -178,7 +178,7 @@ os.makedirs(f'{OUT}/font', exist_ok=True); shutil.copy('font/nunito.woff', f'{OU
 import hashlib, base64
 THEME_JS = "try{var s=JSON.parse(localStorage.getItem('lernkiste-v1')||'null'),g=s&&s.settings,t=g&&g.theme;if(!t||t==='auto'||(t==='dark'&&!g.ui44))t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}"
 CSP = ("default-src 'self'; script-src 'self' 'sha256-" + base64.b64encode(hashlib.sha256(THEME_JS.encode()).digest()).decode() + "'; "
-       "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; "
+       "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://qbdpzamygonpruaafcrt.supabase.co; "
        "object-src 'none'; base-uri 'none'; form-action 'none'")
 open(f'{OUT}/index.html', 'w', encoding='utf-8').write(f'''<!DOCTYPE html>
 <html lang="de" data-theme="light">
@@ -251,7 +251,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'font/nunito.wof
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v48';
+const CACHE = 'lernkiste-v49';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{

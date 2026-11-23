@@ -156,8 +156,8 @@
     }, 1500);
   }
   function privacyHTML() {
-    return '<div class="pvkey"><b>Das Wichtigste zuerst</b><p>Ich erhebe keine personenbezogenen Daten. Ich bekomme weder deinen Namen noch deine E-Mail-Adresse, IP-Adresse, eine Geräte-Kennung oder deinen Lernstand. Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“. Ich kann nicht erkennen, wer die App nutzt, mit welchem Gerät oder von wo, und bei der Statistik auch nicht, ob zwei Einträge von derselben Person stammen.</p></div>' +
-      '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst, eine Frage meldest oder die Nutzungsstatistik einschaltest.</p>' +
+    return '<div class="pvkey"><b>Das Wichtigste zuerst</b><p>Ich erhebe keine personenbezogenen Daten. Ich bekomme weder deinen Namen noch deine E-Mail-Adresse, IP-Adresse, eine Geräte-Kennung oder deinen Lernstand (außer du richtest den Sync ein, siehe unten). Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“. Ich kann nicht erkennen, wer die App nutzt, mit welchem Gerät oder von wo, und bei der Statistik auch nicht, ob zwei Einträge von derselben Person stammen.</p></div>' +
+      '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst, eine Frage meldest, die Nutzungsstatistik einschaltest oder den Sync einrichtest.</p>' +
       '<h4>Auf deinem Gerät</h4>' +
       '<p>Lernstand, Verlauf, eigene Karten und Einstellungen (auch dein Name) liegen nur im Speicher deines Browsers. Sie verlassen das Gerät nicht, außer du speicherst selbst ein Backup. Damit die App offline läuft, speichert der Browser außerdem die App-Dateien.</p>' +
       '<h4>Beim Laden der App</h4>' +
@@ -167,6 +167,8 @@
       '<h4>Nutzungsstatistik (nur wenn eingeschaltet)</h4>' +
       '<p><b>Die Statistik ist vollständig anonym.</b> Sie zählt nur, <i>wie oft</i> die App und die Fächer geöffnet werden, nicht <i>wer</i> sie öffnet. Kein Eintrag enthält etwas, das auf dich oder dein Gerät schließen lässt.</p>' +
       '<p>Nur mit deiner Zustimmung: Die App fragt einmal, und du kannst es jederzeit ändern. Wenn sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Beim Öffnen kommt dazu nur, ob es der erste Start heute, in dieser Woche oder überhaupt auf diesem Gerät ist (ja/nein). So lässt sich zählen, wie viele Geräte die App nutzen, ohne sie zu unterscheiden. Dafür merkt sich die App auf deinem Gerät das Datum der letzten Meldung; das wird nicht gesendet und beim Ausschalten gelöscht. Den Zeitpunkt notiert die Tabelle. Nicht gesendet werden: Name, E-Mail, IP-Adresse, Geräte-ID, Gerätetyp, Standort, Antworten oder Lernstände. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
+      '<h4>Geräte synchronisieren (nur wenn eingerichtet)</h4>' +
+      '<p>Dann wird dein Lernstand an eine Datenbank bei Supabase gesendet: bewertete Karten, Testergebnisse, Verlauf und Einstellungen, aber nicht dein Name und keine eigenen Karten. Es gibt kein Konto und keine E-Mail-Adresse. Gespeichert wird der Stand unter einer verschlüsselten Form deines Codes (Hash), der Code selbst bleibt auf deinen Geräten. Supabase verarbeitet dabei technisch deine IP-Adresse. Den Lernstand könnte ich in der Datenbank technisch sehen, aber keiner Person zuordnen. Mit „Online-Kopie löschen“ entfernst du ihn jederzeit.</p>' +
       '<h4>Wie lange</h4>' +
       '<p>Einträge in der Tabelle werden nach spätestens 12 Monaten automatisch gelöscht.</p>' +
       '<h4>Keine Rückschlüsse auf dich</h4>' +
@@ -177,6 +179,7 @@
     var i = DB.hidden.indexOf(sid);
     if (on && i < 0) DB.hidden.push(sid);
     if (!on && i >= 0) DB.hidden.splice(i, 1);
+    DB.hiddenTs = Date.now();
     save();
   }
 
@@ -237,7 +240,7 @@
   })();
   function save() {
     if (DB.log.length > 20000) DB.log.splice(0, DB.log.length - 20000);
-    try { localStorage.setItem(KEY, JSON.stringify(DB)); saveWarned = false; }
+    try { localStorage.setItem(KEY, JSON.stringify(DB)); saveWarned = false; if (!syncApplying) syncMark(); }
     catch (e) {
       if (saveWarned) return; saveWarned = true;
       setTimeout(function () { toast('Achtung: Speichern hat nicht geklappt (Speicher voll oder gesperrt). Bitte mach ein Backup.', 'Backup', shareFile); }, 50);
@@ -276,6 +279,7 @@
       (d ? '<button type="button" class="actbtn" id="bkNow">Backup</button>' : '') + '</div>';
   }
   function bindBackupHint() { var b = $('#bkNow'); if (b) b.onclick = shareFile; }
+  function ptouch(id) { (DB.ptime = DB.ptime || {})[id] = Date.now(); }
   function logAns(fach, id, score, pts) { var e = [Date.now(), fach, id, Math.round(score * 100) / 100]; if (typeof pts === 'number') e.push(pts); DB.log.push(e); }
   function tests(sid, cid) { var k = sid + '/' + cid, t = DB.tests[k] = DB.tests[k] || {}; t.best = t.best || {}; t.wrong = t.wrong || []; return t; }
 
@@ -784,13 +788,13 @@
       $('#bOrd').onclick = function () { order = cards.map(function (c) { return c.id; }); build(false); draw(); };
       $('#bReset').onclick = function () {
         if (!confirmReset) { confirmReset = true; draw(); return; }
-        cards.forEach(function (c) { delete DB.progress[c.id]; }); save(); confirmReset = false; build(false); draw();
+        cards.forEach(function (c) { delete DB.progress[c.id]; ptouch(c.id); }); save(); confirmReset = false; build(false); draw();
       };
     }
     function flip() { if (!deck.length) return; flipped = !flipped; draw(); }
     function go(d) { var np = pos + d; if (np < 0 || np >= deck.length) return; pos = np; flipped = false; draw(); window.scrollTo(0, 0); }
     function rate(val) {
-      var id = deck[pos]; DB.progress[id] = val; logAns(byId[id]._s || s.id, id, val === 'known' ? 1 : 0); save();
+      var id = deck[pos]; DB.progress[id] = val; ptouch(id); logAns(byId[id]._s || s.id, id, val === 'known' ? 1 : 0); save();
       if (filter === 'again' && val === 'known') { deck.splice(pos, 1); if (pos >= deck.length) pos = Math.max(0, deck.length - 1); flipped = false; draw(); return; }
       if (pos < deck.length - 1) pos++;
       flipped = false; draw(); window.scrollTo(0, 0);
@@ -931,7 +935,7 @@
     function nav(extra) { return '<div class="nav">' + backLink(s.href || '#/f/' + s.id, s.name) + (extra || '') + '</div>'; }
     function prep(id) { var it = BYID[id]; return { it: it, order: it.type === 'mc' ? shuffle(it.options.map(function (_, i) { return i; })) : null, multi: isMulti(it, s.id) }; }
     function finishLog(r) {
-      logAns(r.it._s || s.id, r.it.id, r.s, r.p);
+      logAns(r.it._s || s.id, r.it.id, r.s, r.p); T.ts = Date.now();
       var ix = T.wrong.indexOf(r.it.id);
       if (r.s === 1 && ix >= 0) T.wrong.splice(ix, 1);
       if (r.s < 1 && ix < 0) T.wrong.push(r.it.id);
@@ -967,7 +971,7 @@
       var wb = $('#wrong'); if (wb) wb.onclick = function () { run(shuffle(wr).map(prep), 'wrong', 'Falsche Fragen'); };
       $('#reset').onclick = function () {
         var b = $('#reset');
-        if (b.dataset.sure) { T.best = {}; T.wrong = []; save(); hub(); } else { b.textContent = 'Wirklich zurücksetzen?'; b.dataset.sure = 1; }
+        if (b.dataset.sure) { T.best = {}; T.wrong = []; T.ts = Date.now(); save(); hub(); } else { b.textContent = 'Wirklich zurücksetzen?'; b.dataset.sure = 1; }
       };
     }
     function readItems(k) {
@@ -1092,7 +1096,7 @@
         if (!results.length) return hub();
         var pts = results.reduce(function (a, r) { return a + r.s; }, 0), pct = Math.round(pts / results.length * 100);
         results.forEach(finishLog);
-        if (mode !== 'wrong' && (T.best[mode] === undefined || pct > T.best[mode])) T.best[mode] = pct;
+        if (mode !== 'wrong' && (T.best[mode] === undefined || pct > T.best[mode])) T.best[mode] = pct; T.ts = Date.now();
         save(); badgeCheck();
         var bad = results.filter(function (r) { return r.s < 1; }), hasP = results.some(function (r) { return r.p !== undefined; });
         var h = nav() + '<div class="card"><div class="score"><div class="big">' + pct + ' %</div><div class="note">' + (hasP ? breakdown(results) : fmt(pts) + ' von ' + results.length + ' richtig') + (skipped ? ' · ' + skipped + ' übersprungen' : '') + ' · ' + title + '</div></div></div>';
@@ -1596,8 +1600,115 @@
     });
     if (b.settings) a.settings = Object.assign(a.settings, b.settings);
   }
+  // Fremde Backups säubern: Namen, IDs, Einstellungen ohne HTML-Zeichen; Kartentexte werden beim Anzeigen ohnehin maskiert (rich).
+  function cleanImport(o, qa) {
+    if (typeof o === 'string') return qa ? o.slice(0, 5000) : o.replace(/[<>"'`]/g, '').slice(0, 300);
+    if (typeof o === 'number') return isFinite(o) ? o : 0;
+    if (typeof o === 'boolean' || o === null) return o;
+    if (Array.isArray(o)) return o.slice(0, 50000).map(function (x) { return cleanImport(x, qa); });
+    if (typeof o === 'object') { var r = {}; Object.keys(o).forEach(function (k) { if (k === '__proto__' || k === 'constructor' || k === 'prototype') return; r[k.replace(/[<>"'`]/g, '')] = cleanImport(o[k], k === 'q' || k === 'a'); }); return r; }
+    return null;
+  }
+  // ====================================================================== Sync (v49): Sync-Code ohne Konto, Supabase-Tabelle lernkiste_sync
+  var SB_URL = 'https://qbdpzamygonpruaafcrt.supabase.co', SB_KEY = 'sb_publishable_A7zukzk82Suux8jteQvLGA_WmXnZb14', SYNC_KEY = 'lernkiste-sync';
+  // bleibt auf dem Gerät: Name (personenbezogen), Statistik-Zustimmung, Backup-Merker
+  var SYNC_LOCAL = { name: 1, stats: 1, statsAsked: 1, lastBackup: 1, ownDirty: 1, ownTip: 1, nagDay: 1, ui44: 1 };
+  var SYNC_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  var syncApplying = false, syncBusy = false, syncAgain = false, syncTimer = 0, syncErr = false;
+  function syncCfg() { var o = rd(SYNC_KEY); return o && typeof o.code === 'string' && o.code.length === 20 ? o : null; }
+  function syncSetCfg(o) { try { if (o) localStorage.setItem(SYNC_KEY, JSON.stringify(o)); else localStorage.removeItem(SYNC_KEY); } catch (e) {} }
+  function syncNewCode() { var b = new Uint8Array(20), c = ''; crypto.getRandomValues(b); for (var i = 0; i < 20; i++) c += SYNC_ABC[b[i] % SYNC_ABC.length]; return c; }
+  function syncFmt(c) { return c.replace(/(.{4})(?=.)/g, '$1-'); }
+  function syncNorm(t) { return String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+  function sbRpc(fn, body) {
+    return fetch(SB_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.text(); })
+      .then(function (t) { return t ? JSON.parse(t) : null; });
+  }
+  function syncMark() {
+    var c = syncCfg(); if (!c) return;
+    if (!c.dirty) { c.dirty = Date.now(); syncSetCfg(c); }
+    clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 15000);
+  }
+  function syncPayload() {
+    var o = {}; Object.keys(DB).forEach(function (k) { if (k !== 'custom' && k !== 'recent') o[k] = DB[k]; });
+    var st = {}; Object.keys(DB.settings).forEach(function (k) { if (!SYNC_LOCAL[k]) st[k] = DB.settings[k]; }); o.settings = st;
+    return o;
+  }
+  // Abgleich: pro Karte gewinnt die neuere Bewertung, pro Test der neuere Stand, Verlauf wird vereinigt. Zurücksetzen/Löschen gilt überall.
+  function syncMerge(a, raw) {
+    var b = normalizeDB(cleanImport(raw)), R = Math.max(a.resetAt || 0, b.resetAt || 0), L = Math.max(a.logClr || 0, b.logClr || 0);
+    var at = a.ptime = a.ptime || {}, bt = b.ptime || {}, ids = {};
+    [a.progress, at, b.progress, bt].forEach(function (o) { Object.keys(o).forEach(function (k) { ids[k] = 1; }); });
+    Object.keys(ids).forEach(function (id) {
+      var ta = at[id] || 0, tb = bt[id] || 0, v = tb > ta ? b.progress[id] : ta > tb ? a.progress[id] : (a.progress[id] || b.progress[id]), t = Math.max(ta, tb);
+      if (R && t < R) { v = undefined; t = 0; }
+      if (v === 'known' || v === 'again') a.progress[id] = v; else delete a.progress[id];
+      if (t) at[id] = t; else delete at[id];
+    });
+    var tk = {}; Object.keys(a.tests).concat(Object.keys(b.tests)).forEach(function (k) { tk[k] = 1; });
+    Object.keys(tk).forEach(function (k) {
+      var x = a.tests[k], y = b.tests[k];
+      if (y && (!x || (y.ts || 0) > (x.ts || 0))) a.tests[k] = x = { best: y.best || {}, wrong: (y.wrong || []).slice(), ts: y.ts || 0, moved: y.moved, saved: y.saved };
+      else if (x && y && !x.ts && !y.ts) {
+        x.best = x.best || {}; x.wrong = x.wrong || [];
+        Object.keys(y.best || {}).forEach(function (m) { if (x.best[m] === undefined || y.best[m] > x.best[m]) x.best[m] = y.best[m]; });
+        (y.wrong || []).forEach(function (w) { if (x.wrong.indexOf(w) < 0) x.wrong.push(w); });
+      }
+      if (R && (x.ts || 0) < R && !x.moved) delete a.tests[k];
+    });
+    var seen = {}, log = [];
+    a.log.concat(b.log).forEach(function (e) { if (!Array.isArray(e) || e[0] < L) return; var key = e[0] + '|' + e[2]; if (seen[key]) return; seen[key] = 1; log.push(e); });
+    log.sort(function (p, q) { return p[0] - q[0]; }); if (log.length > 20000) log.splice(0, log.length - 20000); a.log = log;
+    Object.keys(b.badges).forEach(function (k) { if (!a.badges[k] || b.badges[k] < a.badges[k]) a.badges[k] = b.badges[k]; });
+    if ((b.hiddenTs || 0) > (a.hiddenTs || 0)) { a.hidden = b.hidden.slice(); a.hiddenTs = b.hiddenTs; }
+    if (raw.settings && (raw.settings._ts || 0) > (a.settings._ts || 0)) Object.keys(raw.settings).forEach(function (k) { if (!SYNC_LOCAL[k] && DEFAULTS.hasOwnProperty(k) || k === '_ts') a.settings[k] = b.settings[k]; });
+    if (R) a.resetAt = R; if (L) a.logClr = L;
+  }
+  function syncNow() {
+    var c = syncCfg(); clearTimeout(syncTimer);
+    if (!c || navigator.onLine === false) return Promise.resolve(false);
+    if (syncBusy) { syncAgain = true; return Promise.resolve(false); }
+    syncBusy = true;
+    var stamp = c.dirty || 0, changed = false;
+    return sbRpc('lk_get', { p_code: c.code }).then(function (r) {
+      var remote = r && r.data;
+      if (remote && typeof remote === 'object' && !Array.isArray(remote)) {
+        var before = JSON.stringify(DB); syncMerge(DB, remote); changed = JSON.stringify(DB) !== before;
+        if (changed) { syncApplying = true; save(); syncApplying = false; }
+      }
+      if (remote && !stamp) return null;
+      return sbRpc('lk_put', { p_code: c.code, p_data: syncPayload() });
+    }).then(function () {
+      var n = syncCfg(); if (n && n.code === c.code) { if ((n.dirty || 0) === stamp) n.dirty = 0; n.last = Date.now(); syncSetCfg(n); }
+      syncErr = false; if (changed) syncRefresh(); else syncStatusUI(); return true;
+    }).catch(function () { syncErr = true; syncStatusUI(); return false; })
+      .then(function (ok) { syncBusy = false; if (syncAgain) { syncAgain = false; setTimeout(syncNow, 500); } return ok; });
+  }
+  function syncRefresh() {
+    if (document.body.classList.contains('immersive') || tileEl) return;
+    var a = document.activeElement; if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) { syncStatusUI(); return; }
+    var y = window.scrollY; route(); window.scrollTo(0, y);
+  }
+  function syncWhen(t) {
+    if (!t) return 'Noch nicht abgeglichen';
+    var d = new Date(t), hm = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    return 'Zuletzt abgeglichen ' + (dayKey(t) === dayKey(Date.now()) ? 'heute, ' + hm : d.toLocaleDateString('de-DE') + ', ' + hm);
+  }
+  function syncStatusText() { var c = syncCfg(); if (!c) return ''; return syncErr ? 'Gerade keine Verbindung · wird später erneut versucht' : syncWhen(c.last); }
+  function syncStatusUI() { var e = $('#syncStat'); if (e) e.textContent = syncStatusText(); }
   var openSec = {};
   function settingsView() {
+    function syncHTML() {
+      var c = syncCfg();
+      if (!c) return '<div class="setrow"><div class="l"><b>Sync einrichten</b><small>Erzeugt einen Code. Gib ihn auf deinem anderen Gerät ein, dann gleichen beide ihren Lernstand ab.</small></div><button class="actbtn" id="sNew">Code erzeugen</button></div>' +
+        '<div class="setrow"><div class="l"><b>Code eingeben</b><small>Du hast schon einen Code von einem anderen Gerät</small></div><button class="actbtn" id="sJoin">Eingeben</button></div><div id="sbox"></div>';
+      return '<div class="setrow"><div class="l"><b>Dein Sync-Code</b><small class="synccode">' + esc(syncFmt(c.code)) + '</small></div><button class="actbtn" id="sCopy">Kopieren</button></div>' +
+        '<div class="setrow"><div class="l"><b>Status</b><small id="syncStat">' + esc(syncStatusText()) + '</small></div><button class="actbtn" id="sNow">Jetzt abgleichen</button></div>' +
+        '<p class="note" style="margin:4px 0 8px">Wer den Code kennt, sieht deinen Lernstand. Gib ihn nur auf deinen eigenen Geräten ein.</p>' +
+        '<div class="setrow"><div class="l"><b>Sync beenden</b><small>Nur auf diesem Gerät. Der Lernstand hier bleibt.</small></div><button class="actbtn" id="sEnd">Beenden</button></div>' +
+        '<div class="setrow"><div class="l"><b>Online-Kopie löschen</b><small>Löscht den Stand auf dem Server und beendet den Sync hier. Andere Geräte laden ihn beim nächsten Abgleich wieder hoch, bis du dort auch beendest.</small></div><button class="actbtn danger" id="sDel">Löschen</button></div>';
+    }
     var st = DB.settings;
     var h = '<h1>Einstellungen</h1><p class="sub" style="margin-bottom:12px">' + esc(appName()) + '</p>' +
       '<div class="group"><h3>Persönlich</h3>' +
@@ -1620,6 +1731,7 @@
       '<div class="setrow"><div class="l"><b>Klausur-Countdown</b></div>' + segHTML('mCount', [[0, 'Aus'], [1, 'An']], st.mCount) + '</div>' +
       '<div class="setrow"><div class="l"><b>Fragen-Übersicht</b><small>Mosaik im Kapitel</small></div>' + segHTML('mMosaic', [[0, 'Aus'], [1, 'An']], st.mMosaic) + '</div>' +
       '<div class="setrow"><div class="l"><b>Abzeichen</b><small>Im Verlauf</small></div>' + segHTML('mBadges', [[0, 'Aus'], [1, 'An']], st.mBadges) + '</div></div>' +
+      '<div class="group"><h3>Geräte synchronisieren</h3>' + syncHTML() + '</div>' +
       '<div class="group"><h3>Daten und Backup</h3>' +
       '<div class="setrow"><div class="l"><b>Backup speichern</b><small>Lernstand, Verlauf, eigene Karten und Einstellungen als Datei</small></div><button class="actbtn" id="bShare">Datei</button></div>' +
       '<div class="setrow"><div class="l"><b>Backup als Text kopieren</b><small>Zum Einfügen auf einem anderen Gerät</small></div><button class="actbtn" id="bCopy">Kopieren</button></div>' +
@@ -1637,7 +1749,7 @@
       '<div class="setrow"><div class="l"><b>Offline</b><small>Nach dem ersten Öffnen mit Internet funktioniert die App ohne Netz.</small></div></div>' +
       '<div class="setrow"><div class="l"><b>Anonyme Nutzungsstatistik</b><small>Ohne personenbezogene Daten: zählt nur App-Starts und geöffnete Fächer. Kein Name, keine IP-Adresse, keine Geräte-ID, kein Lernstand. Niemand ist daran erkennbar, auch nicht für mich.</small></div>' + segHTML('stats', [[0, 'Aus'], [1, 'An']], st.stats ? 1 : 0) + '</div>' +
       '<div class="setrow tap" id="privRow" role="button" tabindex="0"><div class="l"><b>Datenschutz</b><small>Was die App speichert und sendet</small></div><button class="actbtn" id="bPriv" type="button">Lesen</button></div></div>' +
-      '<p class="note" style="text-align:center">Dein Lernstand liegt nur auf diesem Gerät. Mit dem Backup sicherst du ihn.</p>';
+      '<p class="note" style="text-align:center">' + (syncCfg() ? 'Dein Lernstand wird über deinen Sync-Code mit deinen anderen Geräten abgeglichen.' : 'Dein Lernstand liegt nur auf diesem Gerät. Mit dem Backup oder dem Sync sicherst du ihn.') + '</p>';
     view.innerHTML = h;
     $$('#view .group').forEach(function (g) {
       var t = $('h3', g); if (!t || t.textContent === 'Persönlich') return;
@@ -1650,7 +1762,7 @@
     });
     $$('.seg[data-k] button').forEach(function (b) {
       b.onclick = function () {
-        var k = b.parentNode.dataset.k, v = b.dataset.v; DB.settings[k] = isNaN(v) ? v : +v; save(); applyPrefs(); if (k === 'stats' && !DB.settings.stats) statForget();
+        var k = b.parentNode.dataset.k, v = b.dataset.v; DB.settings[k] = isNaN(v) ? v : +v; DB.settings._ts = Date.now(); save(); applyPrefs(); if (k === 'stats' && !DB.settings.stats) statForget();
         var y = window.scrollY; settingsView(); window.scrollTo(0, y);
       };
     });
@@ -1675,15 +1787,6 @@
         toast(ok ? 'Danke für dein Feedback!' : 'Gerade keine Verbindung · wird später gesendet');
       });
     };
-    // Fremde Backups säubern: Namen, IDs, Einstellungen ohne HTML-Zeichen; Kartentexte werden beim Anzeigen ohnehin maskiert (rich).
-    function cleanImport(o, qa) {
-      if (typeof o === 'string') return qa ? o.slice(0, 5000) : o.replace(/[<>"'`]/g, '').slice(0, 300);
-      if (typeof o === 'number') return isFinite(o) ? o : 0;
-      if (typeof o === 'boolean' || o === null) return o;
-      if (Array.isArray(o)) return o.slice(0, 50000).map(function (x) { return cleanImport(x, qa); });
-      if (typeof o === 'object') { var r = {}; Object.keys(o).forEach(function (k) { if (k === '__proto__' || k === 'constructor' || k === 'prototype') return; r[k.replace(/[<>"'`]/g, '')] = cleanImport(o[k], k === 'q' || k === 'a'); }); return r; }
-      return null;
-    }
     function importFrom(text) {
       var o; try { o = JSON.parse(text); } catch (e) { toast('Das ist keine gültige Backup-Datei'); return; }
       if (!o || o.app !== 'lernkiste' || !o.data) { toast('Das ist kein Lernkiste-Backup'); return; }
@@ -1704,8 +1807,48 @@
     function twoStep(id, label, fn) {
       var b = $(id); b.onclick = function () { if (b.dataset.sure) fn(); else { b.dataset.sure = 1; b.textContent = 'Wirklich?'; setTimeout(function () { if (b.isConnected) { b.textContent = label; delete b.dataset.sure; } }, 3000); } };
     }
-    twoStep('#bLog', 'Löschen', function () { DB.log = []; save(); toast('Verlauf gelöscht'); settingsView(); });
-    twoStep('#bProg', 'Zurücksetzen', function () { DB.progress = {}; DB.tests = {}; save(); toast('Lernstand zurückgesetzt'); settingsView(); });
+    twoStep('#bLog', 'Löschen', function () { DB.log = []; DB.logClr = Date.now(); save(); toast('Verlauf gelöscht'); settingsView(); });
+    twoStep('#bProg', 'Zurücksetzen', function () { DB.progress = {}; DB.tests = {}; DB.ptime = {}; DB.resetAt = Date.now(); save(); toast('Lernstand zurückgesetzt'); settingsView(); });
+    function rerender() { var y = window.scrollY; settingsView(); window.scrollTo(0, y); }
+    if ($('#sNew')) {
+      $('#sNew').onclick = function () {
+        if (navigator.onLine === false) { toast('Dafür brauchst du Internet'); return; }
+        syncSetCfg({ code: syncNewCode(), dirty: Date.now(), last: 0 }); syncErr = false;
+        toast('Code erzeugt · wird hochgeladen …'); rerender();
+        syncNow().then(function (ok) { toast(ok ? 'Sync eingerichtet' : 'Hochladen hat nicht geklappt · wird später erneut versucht'); });
+      };
+      $('#sJoin').onclick = function () {
+        $('#sbox').innerHTML = '<input class="txt synin" id="sIn" type="text" maxlength="30" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Sync-Code">' +
+          '<div class="row" style="margin:8px 0 10px"><button class="ghost" id="sGo">Verbinden</button><button class="ghost" id="sCancel">Abbrechen</button></div>';
+        $('#sIn').focus();
+        $('#sCancel').onclick = function () { $('#sbox').innerHTML = ''; };
+        $('#sGo').onclick = function () {
+          var code = syncNorm($('#sIn').value), b = $('#sGo');
+          if (code.length !== 20) { toast('Der Code hat 20 Zeichen'); return; }
+          if (navigator.onLine === false) { toast('Dafür brauchst du Internet'); return; }
+          b.disabled = true; b.textContent = 'Prüfe …';
+          sbRpc('lk_get', { p_code: code }).then(function (r) {
+            if (!r || !r.data) { toast('Code nicht gefunden · bitte prüfen'); b.disabled = false; b.textContent = 'Verbinden'; return; }
+            syncSetCfg({ code: code, dirty: Date.now(), last: 0 }); syncErr = false;
+            return syncNow().then(function (ok) { toast(ok ? 'Verbunden · Lernstand zusammengeführt' : 'Verbunden · Abgleich folgt'); if ($('#sNow') || $('#sJoin')) rerender(); });
+          }).catch(function () { toast('Keine Verbindung'); if (b.isConnected) { b.disabled = false; b.textContent = 'Verbinden'; } });
+        };
+      };
+    } else {
+      $('#sCopy').onclick = function () {
+        var t = syncFmt(syncCfg().code);
+        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast('Code kopiert'); }, function () { toast(t); });
+      };
+      $('#sNow').onclick = function () {
+        var b = $('#sNow'); b.disabled = true; b.textContent = 'Gleiche ab …';
+        syncNow().then(function (ok) { toast(ok ? 'Abgeglichen' : 'Gerade keine Verbindung'); if (b.isConnected) { b.disabled = false; b.textContent = 'Jetzt abgleichen'; } });
+      };
+      twoStep('#sEnd', 'Beenden', function () { syncSetCfg(null); syncErr = false; toast('Sync beendet'); rerender(); });
+      twoStep('#sDel', 'Löschen', function () {
+        var c = syncCfg(); if (!c) return;
+        sbRpc('lk_delete', { p_code: c.code }).then(function () { syncSetCfg(null); toast('Online-Kopie gelöscht · Sync beendet'); rerender(); }, function () { toast('Keine Verbindung · nichts gelöscht'); });
+      });
+    }
     $('#bUpd').onclick = function () {
       if (!('serviceWorker' in navigator)) { toast('Offline-Modus nicht verfügbar'); return; }
       navigator.serviceWorker.getRegistration().then(function (r) {
@@ -1722,7 +1865,9 @@
   off.innerHTML = '<svg viewBox="0 0 24 24"><path d="M2 8.8a15 15 0 0 1 4-2.4M22 8.8a15 15 0 0 0-9.5-3.7M5 12.9a10 10 0 0 1 3.3-2M19 12.9a10 10 0 0 0-4.5-2.6M8.5 16.4a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"/></svg>Offline';
   document.body.appendChild(off);
   function netState() { off.classList.toggle('on', navigator.onLine === false); }
-  window.addEventListener('online', function () { netState(); toast('Wieder online'); fbFlush(); });
+  window.addEventListener('online', function () { netState(); toast('Wieder online'); fbFlush(); syncNow(); });
+  setTimeout(syncNow, 1500);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') syncNow(); else { var c = syncCfg(); if (c && c.dirty) syncNow(); } });
   setTimeout(function () { fbFlush(); }, 3000);
   window.addEventListener('offline', netState);
   netState();

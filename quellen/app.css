@@ -529,3 +529,6 @@ div.mopt { cursor:default; }
 .fig .pm { fill:var(--accent); }
 .fig text { fill:var(--muted); font:600 12px "Nunito", system-ui, sans-serif; }
 .fig text.t-sin { fill:#4a90d9; font-weight:800; } .fig text.t-cos { fill:#3fa66b; font-weight:800; } .fig text.t-tan { fill:#d98a3a; font-weight:800; }
+/* v49 Sync */
+.setrow .l small.synccode { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9rem; letter-spacing:.02em; color:var(--ink); user-select:all; -webkit-user-select:all; }
+.txt.synin { width:100%; box-sizing:border-box; margin-top:8px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; text-transform:uppercase; letter-spacing:.04em; }
