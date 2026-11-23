@@ -246,7 +246,9 @@
   var saveWarned = false;
   // ---- Eigene Karten: Merker für Änderungen seit dem letzten Backup und Erinnerung
   function ownTouch() { if (!DB.settings.ownDirty) DB.settings.ownDirty = Date.now(); }
-  function ownCount() { return DB.custom.folders.reduce(function (n, f) { return n + f.cards.length; }, 0); }
+  // v46: eigene Karten vorerst ausgeblendet (Nutzerwunsch). Daten bleiben gespeichert und im Backup; zum Zurückholen OWN_ON = true.
+  var OWN_ON = false;
+  function ownCount() { if (!OWN_ON) return 0; return DB.custom.folders.reduce(function (n, f) { return n + f.cards.length; }, 0); }
   function backupMarked() { DB.settings.lastBackup = Date.now(); DB.settings.ownDirty = 0; save(); }
   function ownFirstTip() {
     if (DB.settings.ownTip) return; DB.settings.ownTip = Date.now(); save();
@@ -316,7 +318,8 @@
     else if (p[0] === 'suche') { tab = ''; searchView(r.q.q || ''); }
     else if (p[0] === 'faecher') { tab = 'faecher'; faecherView(); }
     else if (p[0] === 'verlauf') { tab = 'verlauf'; verlaufView(); }
-    else if (p[0] === 'neu') { tab = 'faecher'; neuView(p[1], p[2]); }
+    else if (p[0] === 'neu' && OWN_ON) { tab = 'faecher'; neuView(p[1], p[2]); }
+    else if (p[0] === 'neu') { location.replace('#/faecher'); return; }
     else if (p[0] === 'einstellungen') { tab = 'set'; settingsView(); }
     else if (p[0] === 'mix') { tab = 'faecher'; mixView(p[1]); }
     else if (p[0] === 'faellig') dueView(p[1]);
@@ -540,7 +543,7 @@
         '<button type="button" class="tilemenu" aria-label="Mehr zu ' + esc(s.name) + '">' + ic('more') + '</button></div>';
     });
     h += '</div>';
-    if (ownCount() || DB.custom.folders.length) h += '<a class="mixtile" href="#/neu"><span><b>Eigene Karten</b><small>' + ownCount() + (ownCount() === 1 ? ' Karte' : ' Karten') + ' in ' + DB.custom.folders.length + (DB.custom.folders.length === 1 ? ' Ordner' : ' Ordnern') + '</small></span><span class="go">Öffnen</span></a>';
+    if (OWN_ON && (ownCount() || DB.custom.folders.length)) h += '<a class="mixtile" href="#/neu"><span><b>Eigene Karten</b><small>' + ownCount() + (ownCount() === 1 ? ' Karte' : ' Karten') + ' in ' + DB.custom.folders.length + (DB.custom.folders.length === 1 ? ' Ordner' : ' Ordnern') + '</small></span><span class="go">Öffnen</span></a>';
     if (eligible().length >= 2) h += '<a class="mixtile" href="#/mix"><span><b>Gemischt üben</b><small>Fächer kombinieren, Karten und Tests gemischt</small></span><span class="go">Öffnen</span></a>';
     if (!vis.length) h += '<p class="note" style="text-align:center;padding:26px 10px">Alle Themen sind ausgeblendet.</p>';
     if (hid.length) {
@@ -1320,7 +1323,7 @@
 
   // ====================================================================== Verlauf
   var vRange = 'w', vSel = null;
-  function allSubj() { return C.subjects.concat(DB.log.some(function (e) { return e[1] === 'own'; }) ? [{ id: 'own', name: 'Eigene Karten' }] : []); }
+  function allSubj() { return C.subjects.concat(OWN_ON && DB.log.some(function (e) { return e[1] === 'own'; }) ? [{ id: 'own', name: 'Eigene Karten' }] : []); }
   function verlaufView() {
     var now = new Date(), i, MON = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.'];
     var WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], WDL = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
