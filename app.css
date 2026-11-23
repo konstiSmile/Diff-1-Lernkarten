@@ -3,7 +3,7 @@
 @font-face { font-family:"Nunito"; src:url("font/nunito.woff") format("woff"); font-weight:500 800; font-style:normal; font-display:swap; }
 
 :root {
-  --bg:#DFDDD4; --paper:#EFEEE7; --paper2:#E6E4DB; --paper3:#F7F6F1; --chartbg:#E8E6DE; --track:#CCCABF; --line:#DEDCD2;
+  --bg:#DFDDD4; --bg0:rgba(223,221,212,0); --paper:#EFEEE7; --paper2:#E6E4DB; --paper3:#F7F6F1; --chartbg:#E8E6DE; --track:#CCCABF; --line:#DEDCD2;
   --dark:#3E4A3D; --ondark:#D2D8CC; --ondark-h:#FFFFFF; --tab-on:#EFEEE7; --tab-on-ink:#1F261E;
   --ink:#1F261E; --muted:#525A4E; --chev:#6F7A69; --accent:#3E4A3D;
   --sage:#B7D3A8; --peach:#F2C3A1; --peach-d:#E0A57F; --onaccent:#1F261E;
@@ -23,7 +23,7 @@
   color-scheme:light;
 }
 [data-theme="dark"] {
-  --bg:#14191B; --paper:#1F2629; --paper2:#192023; --paper3:#242C30; --chartbg:#1F2629; --track:#2A3337; --line:#2A3337;
+  --bg:#14191B; --bg0:rgba(20,25,27,0); --paper:#1F2629; --paper2:#192023; --paper3:#242C30; --chartbg:#1F2629; --track:#2A3337; --line:#2A3337;
   --dark:#2C3B3A; --ondark:#C7D4D1; --ondark-h:#FFFFFF; --tab-on:#A3CCB0; --tab-on-ink:#12181A;
   --ink:#E8EEEC; --muted:#A3B0AE; --chev:#A3B0AE; --accent:#C7D4D1;
   --sage:#A3CCB0; --peach:#F2B79B; --peach-d:#F2B79B; --onaccent:#12181A;
@@ -69,6 +69,9 @@ h2 { font-weight:800; font-size:1.15rem; margin:0; }
 
 /* ---------- Schwebende Tab-Leiste ---------- */
 .tabbar { position:fixed; left:0; right:0; bottom:0; z-index:20; padding:0 18px calc(14px + env(safe-area-inset-bottom)); pointer-events:none; }
+/* Inhalt verschwindet unter der Tab-Leiste (wie iOS): Verlauf in Hintergrundfarbe */
+.tabbar::before { content:""; position:absolute; left:0; right:0; bottom:0; height:calc(124px + env(safe-area-inset-bottom)); z-index:-1; pointer-events:none;
+  background:linear-gradient(to bottom, var(--bg0) 0%, var(--bg) 62%, var(--bg) 100%); }
 .tabbar nav { pointer-events:auto; max-width:440px; margin:0 auto; height:68px; border-radius:34px; background:var(--dark); display:flex; align-items:center; padding:0 8px; box-shadow:var(--shadow-bar); }
 .tab { all:unset; flex:1 1 0; min-width:0; transition:flex-grow .2s; cursor:pointer; height:52px; margin:0 4px; border-radius:26px; display:flex; align-items:center; justify-content:center; gap:6px; color:var(--ondark); font-size:.87rem; font-weight:800; -webkit-tap-highlight-color:transparent; }
 .tab svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
