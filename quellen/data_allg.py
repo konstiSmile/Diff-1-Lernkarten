@@ -686,6 +686,326 @@ gap('allg-gap-13', QD, r'Am Einheitskreis ist die \(x\)-Koordinate des Punktes z
 gap('allg-gap-14', QD, r'Der Graph des Cosinus ist {{achsensymmetrisch|spiegelsymmetrisch|symmetrisch}} zur \(y\)-Achse, der Graph des Sinus ist {{punktsymmetrisch}} zum Ursprung.',
     r'\(\cos\) ist gerade, \(\sin\) ist ungerade.', 'Bem. 5.9 (1)', 'Symmetrie Graph Sinus Cosinus')
 
+# ============================================================ Diff 1: Punkte 12–24 (Übungs-Know-how, v47)
+# Quellen: Kurzskript Diff 1 (Kap. 1–2), Übungsblätter Diff 1 (Bl. 1–6) mit Lösungen 1–3; für 15/24 auch Kap. 1 und 3 (Vorjahr).
+# Grunddefinitionen (Grenzwert, Hauptsatz monotone Folgen, e, Beschränktheit) stehen schon in Diff 1 Kap. 1/2 – hier nur Techniken.
+
+CARDS += [
+    # ------------------------------------------------ 12 Vollständige Induktion
+    C('induktion', D, 'Diff 1, Lösung Bl. 1, A1, A3',
+      r"Wie ist ein Beweis durch <b>vollständige Induktion</b> aufgebaut?",
+      r'''<ol><li><b>Induktionsanfang:</b> Aussage für den kleinsten Index prüfen (z. B. \(n=0\) oder \(n=1\)).</li>
+<li><b>Induktionsvoraussetzung:</b> Die Aussage gelte für ein \(n\).</li>
+<li><b>Induktionsschluss</b> „\(n\to n+1\)“: Aus der Voraussetzung die Aussage für \(n+1\) folgern.</li></ol>
+<p><b>Beispiel</b> (Lösung Bl. 1, A1): \(a_0=3\), \(a_{n+1}=\frac{a_n^2+4}{2a_n}\). Behauptung \(a_n\ge2\).</p>
+<p>Anfang: \(a_0=3\ge2\). Schluss: Aus \(a_n\ge2\) folgt \(a_n>0\) und</p>
+\[\begin{aligned}a_{n+1}-2&=\dfrac{a_n^2-4a_n+4}{2a_n}\\&=\dfrac{(a_n-2)^2}{2a_n}\ge0.\end{aligned}\]''',
+      'vollständige Induktion Induktionsanfang Induktionsvoraussetzung Induktionsschluss Beweis rekursiv'),
+
+    C('induktion-produkt', D, 'Diff 1, Lösung Bl. 2, A3',
+      r"Wie führt man bei einem <b>Produkt</b> oder einer <b>Summe</b> den Induktionsschluss von \(n\) auf \(n+1\) durch?",
+      r'''<p>Den <b>letzten Faktor</b> (bzw. Summanden) abspalten, dann die Induktionsvoraussetzung einsetzen und vereinfachen.</p>
+<p><b>Beispiel</b> (Lösung Bl. 2, A3): Behauptung \(\prod_{k=2}^{n}\bigl(1-\frac{2}{k(k+1)}\bigr)=\frac13\bigl(1+\frac2n\bigr)\).</p>
+<p>Abspalten: Produkt bis \(n+1\) = (Produkt bis \(n\)) \(\cdot\bigl(1-\frac{2}{(n+1)(n+2)}\bigr)\).</p>
+<p>Voraussetzung einsetzen und vereinfachen:</p>
+\[\begin{aligned}&\tfrac13\bigl(1+\tfrac2n\bigr)\bigl(1-\tfrac{2}{(n+1)(n+2)}\bigr)\\&=\tfrac13\bigl(1+\tfrac{2}{n+1}\bigr).\end{aligned}\]
+<p>Danach: \(x_n\to\frac13(1+0)=\frac13\).</p>''',
+      'Induktion Produkt Summe letzter Faktor abspalten Induktionsschluss'),
+
+    # ------------------------------------------------ 13 Ungleichungen
+    C('ungleichungen', D, 'Diff 1, Lösung Bl. 1, A3; Lösung Bl. 2, A1; Lösung Bl. 3, A4',
+      r"Welche Regeln gelten beim <b>Rechnen mit Ungleichungen</b>?",
+      r'''<ul><li><b>Addition</b> einer Zahl: Zeichen bleibt.</li>
+<li><b>Multiplikation</b> mit einer <b>positiven</b> Zahl: Zeichen bleibt; mit einer <b>negativen</b> Zahl: Zeichen <b>dreht sich um</b>.</li>
+<li><b>Wurzel</b> ziehen bei \(0\le x\le y\): \(\sqrt x\le\sqrt y\).</li>
+<li><b>Quadrieren</b> nur bei positiven Zahlen: \(0<x<y\Rightarrow x^2<y^2\).</li>
+<li><b>Kehrwert</b> bei positiven Zahlen dreht um: \(n+2<n+3\Rightarrow\frac3{n+2}>\frac3{n+3}\).</li></ul>
+<p><b>Beispiel</b> (Lösung Bl. 1, A3a), Schluss von \(1\le a_n\le5\) auf \(a_{n+1}=5-\sqrt{11-2a_n}\):</p>
+\[\begin{aligned}&1\le a_n\le5\\&\Rightarrow-2\ge-2a_n\ge-10\\&\Rightarrow9\ge11-2a_n\ge1\\&\Rightarrow3\ge\sqrt{11-2a_n}\ge1\\&\Rightarrow-3\le-\sqrt{11-2a_n}\le-1\\&\Rightarrow2\le a_{n+1}\le4.\end{aligned}\]''',
+      'Ungleichungen Rechenregeln negativ umdrehen Wurzel Quadrieren Kehrwert monoton Abschätzung'),
+
+    # ------------------------------------------------ 14 epsilon-n0
+    C('epsilon-n0', D, 'Diff 1, Lösung Bl. 1, A2; Lösung Bl. 2, A2',
+      r"Wie zeigt man Konvergenz <b>direkt mit der Definition</b> (\(\varepsilon\)-\(n_0\)-Nachweis)?",
+      r'''<ol><li>\(|x_n-a|\) auf einen Bruch bringen und vereinfachen.</li>
+<li>Nach oben abschätzen bis \(\le\frac Cn\): <b>Zähler vergrößern, Nenner verkleinern</b> (Nenner bleibt positiv).</li>
+<li>\(n_0>\frac C\varepsilon\) wählen; so ein \(n_0\) gibt es nach dem <b>Archimedischen Axiom</b>.</li>
+<li>Für \(n\ge n_0\): \(|x_n-a|\le\frac Cn\le\frac C{n_0}<\varepsilon\).</li></ol>
+<p>Die Wahl von \(n_0\) ergibt sich erst aus der Abschätzung; im Aufschrieb steht sie trotzdem am Anfang.</p>
+<p><b>Beispiel</b> (Lösung Bl. 1, A2): \(x_n=\frac{6n+1}{2n-1}\), \(a=3\):</p>
+\[\begin{aligned}|x_n-3|&=\dfrac{4}{2n-1}\le\dfrac{4}{2n-n}\\&=\dfrac4n\le\dfrac4{n_0}<\varepsilon\end{aligned}\]
+<p>mit \(n_0>\frac4\varepsilon\).</p>''',
+      'epsilon n0 Nachweis Definition Konvergenz Abschätzung Archimedisches Axiom Zähler Nenner'),
+
+    # ------------------------------------------------ 15 Dreiecksungleichung (beide Fächer)
+    C('dreiecksungleichung', QD, 'Kap. 1, Bem. 1.1 d), e); Diff 1 Kurzskript, Bem. 1.0.8; Diff 1, Lösung Bl. 1, A4; Lösung Bl. 2, A1',
+      r"Wie lauten die <b>Dreiecksungleichung</b> und die <b>umgekehrte</b> Dreiecksungleichung, und wofür braucht man sie?",
+      r'''<p>Für alle \(x,y\in\mathbb R\):</p>
+\[|x+y|\le|x|+|y|,\]\[\bigl||x|-|y|\bigr|\le|x\pm y|.\]
+<p><b>Beschränktheit</b> zeigen (Lösung Bl. 2, A1):</p>
+\[\left|1+\tfrac{(-1)^n}{n}+\tfrac1{n^2}\right|\le1+\tfrac1n+\tfrac1{n^2}\le3.\]
+<p><b>Summen</b> beschränkter Folgen (Lösung Bl. 1, A4a): \(|x_n+y_n|\le|x_n|+|y_n|\le C_1+C_2\).</p>
+<p><b>Betrag einer Folge</b> (Kurzskript Bem. 1.0.8): Aus \(0\le\bigl||a_n|-|a|\bigr|\le|a_n-a|\) folgt \(a_n\to a\Rightarrow|a_n|\to|a|\). Die Umkehrung gilt nur für \(a=0\); Gegenbeispiel \(a_n=(-1)^n\).</p>''',
+      'Dreiecksungleichung umgekehrte Betrag Abschätzung beschränkt Summe'),
+
+    # ------------------------------------------------ 16 Höchste Potenz ausklammern
+    C('hoechste-potenz', D, 'Diff 1, Lösung Bl. 2, A1; Lösung Bl. 3, A1a; Kurzskript Satz 1.0.4',
+      r"Wie bestimmt man den Grenzwert eines <b>Bruchs aus Polynomen in \(n\)</b>?",
+      r'''<ol><li>In Zähler und Nenner die <b>höchste Potenz</b> von \(n\) ausklammern und kürzen.</li>
+<li>\(\frac1{n^k}\to0\) und die <b>Grenzwertsätze</b> anwenden (Grenzwert des Nenners \(\neq0\)).</li></ol>
+<p><b>Beispiel</b> (Lösung Bl. 2, A1): \(\frac{2n+1}{n+2}=\frac{2+\frac1n}{1+\frac2n}\to\frac{2+0}{1+0}=2\).</p>
+<p><b>Beispiel</b> (Lösung Bl. 3, A1a): ausmultipliziert</p>
+\[\frac{(2n^2+3)^3}{(3n^3+2)^2}=\frac{8+\frac{36}{n^2}+\frac{54}{n^4}+\frac{27}{n^6}}{9+\frac{12}{n^3}+\frac4{n^6}}\to\frac89.\]''' + H(r'Ohne Ausmultiplizieren geht es schneller: \((2n^2+3)^3=n^6\bigl(2+\frac3{n^2}\bigr)^3\) und \((3n^3+2)^2=n^6\bigl(3+\frac2{n^3}\bigr)^2\), also Grenzwert \(\frac{2^3}{3^2}=\frac89\).'),
+      'höchste Potenz ausklammern Grenzwertsätze Polynom Bruch Grenzwert berechnen'),
+
+    # ------------------------------------------------ 18 (1+1/n)^n
+    C('euler-anwenden', D, 'Diff 1, Lösung Bl. 3, A1b; Kurzskript Bem. 2.0.3',
+      r"Wie nutzt man \(\bigl(1+\frac1n\bigr)^n\to e\) beim Berechnen von Grenzwerten?",
+      r'''<p>Den Ausdruck so umformen, dass \(\bigl(1+\frac1n\bigr)^n\) als <b>Faktor</b> auftaucht; den Rest mit den Grenzwertsätzen behandeln. Nützlich: \(\frac{(n+1)^n}{n^n}=\bigl(\frac{n+1}n\bigr)^n=\bigl(1+\frac1n\bigr)^n\) und \(n^{n+1}=n\cdot n^n\).</p>
+<p><b>Beispiel</b> (Lösung Bl. 3, A1b):</p>
+\[\begin{aligned}y_n&=\frac{(2n^2+1)(n+1)^n}{(3n+1)\,n^{n+1}}\\&=\frac{2+\frac1{n^2}}{3+\frac1n}\cdot\left(1+\frac1n\right)^n\to\frac23\,e.\end{aligned}\]
+<p>Die Folge \(\bigl(1+\frac1n\bigr)^n\) ist monoton wachsend und nach oben beschränkt.</p>''',
+      'Eulersche Zahl e Grenzwert umformen Faktor (1+1/n)^n Produkt'),
+
+    # ------------------------------------------------ 19 Rekursive Folgen
+    C('rekursiv-grenzwert', D, 'Diff 1, Lösung Bl. 1, A3; Lösung Bl. 3, A3; Kurzskript Satz 1.0.3, 2.0.1',
+      r"Wie zeigt man, dass eine <b>rekursive Folge</b> konvergiert, und wie bestimmt man ihren Grenzwert?",
+      r'''<ol><li><b>Monotonie</b> und <b>Beschränktheit</b> zeigen (meist mit Induktion).</li>
+<li>Hauptsatz über monotone Folgen ⇒ \((a_n)\) konvergiert gegen ein \(a\).</li>
+<li>Schranken übertragen sich: \(1\le a_n\le5\Rightarrow1\le a\le5\).</li>
+<li>In der Rekursion \(n\to\infty\): \(a=\lim a_{n+1}=f(a)\). Gleichung lösen.</li>
+<li>Die Lösung wählen, die zu den <b>Schranken</b> passt.</li></ol>
+<p><b>Beispiel</b> (Lösung Bl. 3, A3): \(a_1=\frac72\), \(a_{n+1}=5-\sqrt{11-2a_n}\), monoton fallend, \(a_n\in[1,5]\):</p>
+\[\begin{aligned}&a=5-\sqrt{11-2a}\\&\Rightarrow a^2-8a+14=0\\&\Rightarrow a=4\pm\sqrt2.\end{aligned}\]
+<p>Da \(4+\sqrt2>5\), ist \(a=4-\sqrt2\approx2{,}59\).</p>''',
+      'rekursive Folge Grenzwert Fixpunkt monoton beschränkt konvergent Gleichung Lösung wählen'),
+
+    C('rekursiv-divergenz', D, 'Diff 1, Lösung Bl. 3, A4',
+      r"Was folgt, wenn <b>keine Lösung</b> der Grenzwertgleichung \(a=f(a)\) zu den Schranken der rekursiven Folge passt?",
+      r'''<p>Dann kann die Folge <b>nicht konvergieren</b> (Widerspruchsbeweis).</p>
+<p><b>Beispiel</b> (Lösung Bl. 3, A4): \(x_0=4\), \(x_{n+1}=\frac14x_n^2+\frac34\). Mit Induktion: \(0<x_n<x_{n+1}\), also \(x_n\ge x_0=4\).</p>
+<p>Annahme \(x_n\to a\). Dann \(a\ge4\) und \(a=\frac14a^2+\frac34\), also \(a^2-4a+3=(a-1)(a-3)=0\), d. h. \(a=1\) oder \(a=3\). Widerspruch zu \(a\ge4\) ⇒ \((x_n)\) divergiert.</p>''',
+      'rekursive Folge divergent Widerspruch Grenzwertgleichung keine passende Lösung Startwert'),
+
+    # ------------------------------------------------ 21 Monotonie nachweisen
+    C('monotonie-nachweis', D, 'Diff 1, Lösung Bl. 1, A1, A3b; Lösung Bl. 2, A1',
+      r"Wie weist man die <b>Monotonie</b> einer Folge nach?",
+      r'''<ul><li><b>Differenz:</b> \(a_{n+1}-a_n\le0\) ⇒ monoton fallend (\(\ge0\) ⇒ wachsend).</li>
+<li><b>Quotient</b>, nur wenn alle \(a_n>0\): \(\frac{a_{n+1}}{a_n}\le1\) ⇒ monoton fallend (\(\ge1\) ⇒ wachsend).</li>
+<li><b>Umformen:</b> \(a_n=\frac{2n+1}{n+2}=2-\frac3{n+2}\) ist streng monoton wachsend.</li>
+<li>Bei rekursiven Folgen oft mit <b>Induktion</b>: \(a_n\ge a_{n+1}\Rightarrow a_{n+1}\ge a_{n+2}\).</li>
+<li><b>Nicht monoton:</b> drei Glieder genügen, z. B. \(b_1=1<\frac74=b_2\) und \(b_2>\frac79=b_3\).</li></ul>
+<p><b>Beispiel</b> (Lösung Bl. 1, A1) mit \(a_n\ge2\):</p>
+\[a_{n+1}-a_n=\frac{4-a_n^2}{2a_n}\le0,\]\[\frac{a_{n+1}}{a_n}=\frac12+\frac2{a_n^2}\le1.\]''',
+      'Monotonie nachweisen Differenz Quotient monoton wachsend fallend Induktion nicht monoton'),
+
+    # ------------------------------------------------ 23 Beschränktheit
+    C('beschraenktheit-zeigen', D, 'Diff 1, Lösung Bl. 2, A1; Kurzskript Satz 1.0.2, Bem. 1.0.4',
+      r"Auf welchen Wegen zeigt man, dass eine Folge <b>beschränkt</b> ist?",
+      r'''<ul><li><b>Direkt abschätzen</b>, z. B. \(0\le\frac{2n+1}{n+2}\le\frac{2n+2}{n+1}=2\), oder mit der Dreiecksungleichung.</li>
+<li>Über <b>Konvergenz</b>: Konvergiert die Folge, ist sie beschränkt (Satz 1.0.2). Etwa \(\frac{2n+1}{n+2}\to2\), also beschränkt.</li>
+<li>Über <b>Monotonie</b>: Monoton wachsend ⇒ \(a_1\) ist untere Schranke; monoton fallend ⇒ \(a_1\) ist obere Schranke.</li></ul>
+<p>Umgekehrt: Ist eine Folge <b>unbeschränkt</b>, so ist sie divergent.</p>''',
+      'beschränkt zeigen Beschränktheit Schranke konvergent abschätzen monoton'),
+
+    # ------------------------------------------------ 24 Reihen (beide Fächer)
+    C('geometrische-summe', QD, 'Diff 1, Bl. 4 (Hinweis zu A1); Kap. 3, Satz 3.4 (2)',
+      r"Wie lauten die <b>geometrische Summenformel</b> und das Konvergenzverhalten der <b>geometrischen Reihe</b>?",
+      r'''<p>Für \(q\in\mathbb R\), \(q\neq1\):</p>
+\[\sum_{i=0}^{n}q^i=\frac{1-q^{n+1}}{1-q}.\]
+<p>Die geometrische Reihe \(\sum_{n=0}^\infty q^n\) konvergiert <b>genau dann</b>, wenn \(|q|<1\); dann gilt</p>
+\[\sum_{n=0}^{\infty}q^n=\frac1{1-q}.\]
+<p>Grund: \(q^{n+1}\to0\) für \(|q|<1\). Für \(|q|\ge1\) ist \((q^n)\) keine Nullfolge.</p>''',
+      'geometrische Summe Summenformel geometrische Reihe q Konvergenz Reihenwert'),
+
+    C('teleskopsumme', QD, 'Kap. 3, Bem. 3.1, Bsp. 3.3 (3); Diff 1, Bl. 5 (Hinweis zu A2)',
+      r"Was ist eine <b>Teleskopsumme</b>, und wie hilft sie bei Reihen?",
+      r'''<p>In einer Summe aus Differenzen heben sich alle inneren Glieder auf:</p>
+\[\begin{aligned}&(x_n-x_{n-1})+(x_{n-1}-x_{n-2})\\&+\dots+(x_{m+1}-x_m)\\&=x_n-x_m.\end{aligned}\]
+<p>So lassen sich Partialsummen oft direkt ausrechnen. Mit der Dreiecksungleichung folgt außerdem (Bl. 5, Hinweis zu A2):</p>
+\[\begin{aligned}|x_n-x_m|&\le|x_n-x_{n-1}|\\&+\dots+|x_{m+1}-x_m|.\end{aligned}\]
+<p><b>Beispiel</b> (Kap. 3, Bem. 3.1): \(\sum_{k=1}^{n}\frac1{k(k+1)}=\frac n{n+1}\to1\), also \(\sum_{n=1}^\infty\frac1{n(n+1)}=1\).</p>''' + H(r'Mit \(\frac1{k(k+1)}=\frac1k-\frac1{k+1}\) ist das eine Teleskopsumme: \(s_n=1-\frac1{n+1}\). Im Skript wird die Formel per Induktion gezeigt.'),
+      'Teleskopsumme Partialsumme Differenzen heben sich auf Reihe 1/(n(n+1))'),
+
+    C('harmonische-reihe', QD, 'Kap. 3, Satz 3.4 (1), Bsp. 3.7 (2), (3), Bem. 3.10; Diff 1, Bl. 5, A2',
+      r"Was gilt für die <b>harmonische Reihe</b> \(\sum\frac1n\), und was hat das mit Nullfolgen zu tun?",
+      r'''<ul><li>\(\sum_{n=1}^\infty\frac1n\) <b>divergiert</b>, obwohl \(\frac1n\to0\).</li>
+<li>Allgemein: Ist \(\sum a_n\) konvergent, so ist \((a_n)\) eine Nullfolge. Die <b>Umkehrung gilt nicht</b> – die harmonische Reihe ist das Gegenbeispiel.</li>
+<li>Ist \((a_n)\) keine Nullfolge, divergiert \(\sum a_n\).</li>
+<li>\(\sum_{n=1}^\infty\frac1{n^p}\) mit \(p\ge2\) <b>konvergiert</b>.</li>
+<li>Die alternierende harmonische Reihe \(\sum\frac{(-1)^{n-1}}n\) <b>konvergiert</b>.</li></ul>''',
+      'harmonische Reihe divergent Nullfolge notwendig Umkehrung 1/n 1/n^2 alternierend'),
+]
+
+# ------------------------------------------------------------ Diff 1 Punkte 12–24: Multiple Choice
+mc('allg-mc-57', D, r'Was zeigt man bei einer vollständigen Induktion im <b>Induktionsschluss</b> „\(n\to n+1\)“?',
+   [r'Gilt die Aussage für ein \(n\), so gilt sie auch für \(n+1\)', r'Die Aussage gilt für den kleinsten Index', r'Gilt die Aussage für \(n+1\), so gilt sie auch für \(n\)', r'Die Aussage gilt für unendlich viele \(n\)'], 0,
+   r'Der Anfang sichert den kleinsten Index, der Schluss überträgt die Aussage von \(n\) auf \(n+1\). Zusammen folgt sie für alle \(n\).',
+   'Diff 1, Lösung Bl. 1, A1', 'Induktion Induktionsschluss')
+mc('allg-mc-58', D, r'Für \(a_0=3\), \(a_{n+1}=\frac{a_n^2+4}{2a_n}\) soll \(a_{n+1}\ge2\) aus \(a_n\ge2\) folgen. Welche Umformung trägt den Beweis?',
+   [r'\(a_{n+1}-2=\frac{(a_n-2)^2}{2a_n}\)', r'\(a_{n+1}-2=\frac{a_n^2-4}{2a_n}\)', r'\(a_{n+1}-2=\frac{4-a_n^2}{2a_n}\)', r'\(a_{n+1}-2=\frac{a_n-2}{2}\)'], 0,
+   r'\(\frac{a_n^2+4}{2a_n}-2=\frac{a_n^2-4a_n+4}{2a_n}=\frac{(a_n-2)^2}{2a_n}\ge0\), da \(a_n>0\). \(\frac{4-a_n^2}{2a_n}\) ist dagegen \(a_{n+1}-a_n\) (Monotonie).',
+   'Diff 1, Lösung Bl. 1, A1', 'Induktion rekursiv Umformung binomisch')
+mc('allg-mc-59', D, r'Behauptung: \(\prod_{k=2}^{n}\bigl(1-\frac{2}{k(k+1)}\bigr)=\frac13\bigl(1+\frac2n\bigr)\). Wie beginnt man den Induktionsschluss?',
+   [r'Den letzten Faktor abspalten und für das restliche Produkt die Induktionsvoraussetzung einsetzen', r'Alle Faktoren ausmultiplizieren', r'Den Grenzwert \(n\to\infty\) bilden', r'\(n=2\) einsetzen'], 0,
+   r'\(\prod_{k=2}^{n+1}=\bigl(\prod_{k=2}^{n}\bigr)\cdot\bigl(1-\frac2{(n+1)(n+2)}\bigr)\); das Produkt bis \(n\) ersetzt man durch \(\frac13(1+\frac2n)\).',
+   'Diff 1, Lösung Bl. 2, A3', 'Induktion Produkt letzter Faktor')
+mc('allg-mc-60', D, r'Es gilt \(1\le a_n\le5\). Was folgt nach Multiplikation mit \(-2\)?',
+   [r'\(-2\ge-2a_n\ge-10\)', r'\(-2\le-2a_n\le-10\)', r'\(2\le-2a_n\le10\)', r'\(-10\ge-2a_n\ge-2\)'], 0,
+   r'Multiplikation mit einer negativen Zahl dreht beide Ungleichheitszeichen um.',
+   'Diff 1, Lösung Bl. 1, A3a', 'Ungleichung negativ multiplizieren umdrehen', warn=True)
+mc('allg-mc-61', D, r'Unter welcher Voraussetzung folgt aus \(x<y\) sicher \(x^2<y^2\)?',
+   [r'\(0<x<y\)', r'immer', r'\(x<y<0\)', r'\(x<0<y\)'], 0,
+   r'Quadrieren ist nur für positive Zahlen monoton. Gegenbeispiel: \(-3<1\), aber \(9>1\).',
+   'Diff 1, Lösung Bl. 3, A4', 'Ungleichung quadrieren positiv')
+mc('allg-mc-62', D, r'Es ist \(n+2<n+3\). Was folgt für \(\frac3{n+2}\) und \(\frac3{n+3}\)?',
+   [r'\(\frac3{n+2}>\frac3{n+3}\)', r'\(\frac3{n+2}<\frac3{n+3}\)', r'\(\frac3{n+2}=\frac3{n+3}\)', r'Man kann sie nicht vergleichen'], 0,
+   r'Größerer positiver Nenner ⇒ kleinerer Bruch. Daraus folgt, dass \(a_n=2-\frac3{n+2}\) streng monoton wächst.',
+   'Diff 1, Lösung Bl. 2, A1', 'Ungleichung Kehrwert Nenner Bruch')
+mc('allg-mc-63', D, r'Für \(x_n=\frac{6n+1}{2n-1}\) ist \(|x_n-3|=\frac4{2n-1}\). Welche Abschätzung ist richtig und führt zum Ziel?',
+   [r'\(\frac4{2n-1}\le\frac4{2n-n}=\frac4n\)', r'\(\frac4{2n-1}\le\frac4{2n}\)', r'\(\frac4{2n-1}\le\frac4{2n+1}\)', r'\(\frac4{2n-1}=\frac4n\)'], 0,
+   r'Wegen \(1\le n\) ist \(2n-1\ge2n-n=n\); kleinerer Nenner ⇒ größerer Bruch. \(\frac4{2n}\) und \(\frac4{2n+1}\) sind dagegen kleiner als \(\frac4{2n-1}\).',
+   'Diff 1, Lösung Bl. 1, A2', 'epsilon n0 Abschätzung Nenner verkleinern', warn=True)
+mc('allg-mc-64', D, r'Es ist gezeigt: \(|x_n-a|\le\frac4n\) für alle \(n\). Wie wählt man \(n_0\) zu gegebenem \(\varepsilon>0\)?',
+   [r'\(n_0>\frac4\varepsilon\)', r'\(n_0>\frac\varepsilon4\)', r'\(n_0>4\varepsilon\)', r'\(n_0=4\)'], 0,
+   r'Dann gilt für \(n\ge n_0\): \(\frac4n\le\frac4{n_0}<\varepsilon\). Ein solches \(n_0\) gibt es nach dem Archimedischen Axiom.',
+   'Diff 1, Lösung Bl. 1, A2', 'epsilon n0 wählen Archimedes')
+mc('allg-mc-65', D, r'Man will einen Bruch mit positivem Nenner für einen \(\varepsilon\)-\(n_0\)-Nachweis <b>nach oben</b> abschätzen. Was ist erlaubt?',
+   [r'Zähler vergrößern und Nenner verkleinern (Nenner bleibt positiv)', r'Zähler verkleinern und Nenner vergrößern', r'Zähler und Nenner beide vergrößern', r'Zähler und Nenner beide verkleinern'], 0,
+   r'Beides macht den Bruch größer, z. B. \(\frac{3(n-1)}{n^2+n-1}\le\frac{3n}{n^2+n-n}=\frac3n\) (Lösung Bl. 2, A2).',
+   'Diff 1, Lösung Bl. 2, A2', 'Abschätzung Zähler vergrößern Nenner verkleinern')
+mc('allg-mc-66', QD, r'Welche Ungleichung ist die <b>umgekehrte</b> Dreiecksungleichung?',
+   [r'\(\bigl||x|-|y|\bigr|\le|x-y|\)', r'\(|x+y|\le|x|+|y|\)', r'\(|x-y|\le\bigl||x|-|y|\bigr|\)', r'\(|x\cdot y|\le|x|+|y|\)'], 0,
+   r'Sie gilt für alle reellen \(x,y\), auch mit \(|x+y|\) rechts. \(|x+y|\le|x|+|y|\) ist die gewöhnliche Dreiecksungleichung.',
+   'Kap. 1, Bem. 1.1 e); Diff 1 Kurzskript, Bem. 1.0.8', 'umgekehrte Dreiecksungleichung Betrag')
+mc('allg-mc-67', D, r'Wie zeigt man mit der Dreiecksungleichung, dass \(b_n=1+\frac{(-1)^n}n+\frac1{n^2}\) beschränkt ist?',
+   [r'\(|b_n|\le1+\frac1n+\frac1{n^2}\le3\)', r'\(|b_n|=1+\frac1n+\frac1{n^2}\)', r'\(|b_n|\le\frac1n\)', r'\(|b_n|\le1\)'], 0,
+   r'\(\bigl|\frac{(-1)^n}n\bigr|=\frac1n\le1\) und \(\frac1{n^2}\le1\). Gleichheit gilt nicht immer: Für ungerades \(n\) ist der mittlere Summand negativ.',
+   'Diff 1, Lösung Bl. 2, A1', 'Dreiecksungleichung beschränkt Abschätzung')
+mc('allg-mc-68', D, r'Wie lautet \(\displaystyle\lim_{n\to\infty}\frac{(2n^2+3)^3}{(3n^3+2)^2}\)?',
+   [r'\(\frac89\)', r'\(\frac23\)', r'\(\frac49\)', r'\(0\)'], 0,
+   r'Zähler und Nenner haben die höchste Potenz \(n^6\); nach Ausklammern bleibt \(\frac{2^3}{3^2}=\frac89\).',
+   'Diff 1, Lösung Bl. 3, A1a', 'höchste Potenz ausklammern Grenzwert Bruch')
+mc('allg-mc-69', D, r'Wie geht man bei \(\displaystyle\lim_{n\to\infty}\frac{2n+1}{n+2}\) vor?',
+   [r'\(n\) in Zähler und Nenner ausklammern: \(\frac{2+\frac1n}{1+\frac2n}\to2\)', r'Zähler und Nenner gehen gegen \(\infty\), also ist der Grenzwert \(1\)', r'Nur den Zähler durch \(n\) teilen: \(2+\frac1n\to2\)', r'Der Grenzwert existiert nicht, weil der Zähler unbeschränkt ist'], 0,
+   r'„\(\frac\infty\infty\)“ ist kein Ergebnis. Erst nach dem Ausklammern sind Zähler und Nenner konvergent mit Nennergrenzwert \(\neq0\), dann greifen die Grenzwertsätze.',
+   'Diff 1, Lösung Bl. 2, A1', 'höchste Potenz ausklammern Grenzwertsätze unendlich durch unendlich', warn=True)
+mc('allg-mc-70', D, r'Wogegen konvergiert \(y_n=\frac{2+\frac1{n^2}}{3+\frac1n}\cdot\bigl(1+\frac1n\bigr)^n\)?',
+   [r'\(\frac23\,e\)', r'\(\frac23\)', r'\(e\)', r'\(\frac32\,e\)'], 0,
+   r'Erster Faktor \(\to\frac23\), zweiter \(\to e\); Produkt konvergenter Folgen.',
+   'Diff 1, Lösung Bl. 3, A1b', 'Eulersche Zahl e Produkt Grenzwert')
+mc('allg-mc-71', D, r'Womit stimmt \(\frac{(n+1)^n}{n^n}\) überein?',
+   [r'\(\bigl(1+\frac1n\bigr)^n\)', r'\(1+\frac1n\)', r'\(\bigl(1+\frac1n\bigr)^{n+1}\)', r'\(n+1\)'], 0,
+   r'\(\frac{(n+1)^n}{n^n}=\bigl(\frac{n+1}n\bigr)^n=\bigl(1+\frac1n\bigr)^n\to e\).',
+   'Diff 1, Lösung Bl. 3, A1b', 'Eulersche Zahl umformen Potenz')
+mc('allg-mc-72', D, r'\(a_1=\frac72\), \(a_{n+1}=5-\sqrt{11-2a_n}\) konvergiert, und \(a_n\in[1,5]\). Aus \(a=5-\sqrt{11-2a}\) folgt \(a=4\pm\sqrt2\). Welcher ist der Grenzwert?',
+   [r'\(4-\sqrt2\), weil \(4+\sqrt2>5\)', r'\(4+\sqrt2\), weil die Folge fällt', r'beide', r'keiner, die Folge divergiert'], 0,
+   r'Der Grenzwert liegt wie alle Folgeglieder in \([1,5]\). \(4+\sqrt2\approx5{,}41\) liegt außerhalb.',
+   'Diff 1, Lösung Bl. 3, A3', 'rekursive Folge Grenzwert Lösung wählen Schranken')
+mc('allg-mc-73', D, r'\(x_0=4\), \(x_{n+1}=\frac14x_n^2+\frac34\) ist wachsend mit \(x_n\ge4\). Die Gleichung \(a=\frac14a^2+\frac34\) hat die Lösungen \(1\) und \(3\). Was folgt?',
+   [r'Die Folge divergiert, denn ein Grenzwert müsste \(\ge4\) sein', r'Die Folge konvergiert gegen \(3\)', r'Die Folge konvergiert gegen \(1\)', r'Die Folge konvergiert gegen \(4\)'], 0,
+   r'Widerspruchsbeweis: Angenommen \(x_n\to a\). Dann \(a\ge4\) und \(a\in\{1,3\}\) – unmöglich.',
+   'Diff 1, Lösung Bl. 3, A4', 'rekursive Folge divergent Widerspruch', warn=True)
+mc('allg-mc-74', D, r'Wann darf man aus \(\frac{a_{n+1}}{a_n}\le1\) für alle \(n\) schließen, dass \((a_n)\) monoton fallend ist?',
+   [r'Wenn alle \(a_n>0\) sind', r'Immer', r'Wenn alle \(a_n<0\) sind', r'Wenn \((a_n)\) beschränkt ist'], 0,
+   r'Nur bei positiven Gliedern darf man mit \(a_n\) multiplizieren, ohne dass sich das Zeichen dreht: \(a_{n+1}\le a_n\).',
+   'Diff 1, Lösung Bl. 1, A1', 'Monotonie Quotient positiv')
+mc('allg-mc-75', D, r'Es ist \(a_n=\frac{2n+1}{n+2}=2-\frac3{n+2}\). Welches Monotonieverhalten hat \((a_n)\)?',
+   [r'streng monoton wachsend', r'streng monoton fallend', r'nicht monoton', r'konstant'], 0,
+   r'\(\frac3{n+2}\) wird kleiner, also wird \(2-\frac3{n+2}\) größer.',
+   'Diff 1, Lösung Bl. 2, A1', 'Monotonie umformen wachsend')
+mc('allg-mc-76', D, r'Für \(b_n=1+\frac{(-1)^n}n+\frac1{n^2}\) ist \(b_1=1\), \(b_2=\frac74\), \(b_3=\frac79\). Was folgt?',
+   [r'\((b_n)\) ist weder monoton wachsend noch monoton fallend', r'\((b_n)\) ist monoton wachsend', r'\((b_n)\) ist monoton fallend', r'Ohne alle Glieder lässt sich nichts sagen'], 0,
+   r'\(b_1<b_2\) schließt „fallend“ aus, \(b_2>b_3\) schließt „wachsend“ aus. Für „nicht monoton“ genügen solche Gegenbeispiele.',
+   'Diff 1, Lösung Bl. 2, A1', 'nicht monoton Gegenbeispiel Folgeglieder')
+mc('allg-mc-77', D, r'Wie lässt sich die Beschränktheit von \(a_n=\frac{2n+1}{n+2}\) <b>ohne</b> direkte Abschätzung begründen?',
+   [r'\(a_n\to2\); konvergente Folgen sind beschränkt', r'\((a_n)\) ist monoton wachsend, also beschränkt', r'Zähler und Nenner sind beschränkt', r'\(a_1=1\) ist eine obere Schranke'], 0,
+   r'Konvergent ⇒ beschränkt. Monoton wachsend liefert nur die untere Schranke \(a_1\); Zähler und Nenner sind unbeschränkt.',
+   'Diff 1, Lösung Bl. 2, A1', 'beschränkt konvergent Begründung')
+mc('allg-mc-78', QD, r'Wie lautet die geometrische Summenformel \(\sum_{i=0}^{n}q^i\) für \(q\neq1\)?',
+   [r'\(\frac{1-q^{n+1}}{1-q}\)', r'\(\frac{1-q^{n}}{1-q}\)', r'\(\frac1{1-q}\)', r'\(\frac{q^{n+1}-1}{1-q}\)'], 0,
+   r'Die Summe hat \(n+1\) Glieder, daher der Exponent \(n+1\). \(\frac1{1-q}\) ist der Wert der unendlichen Reihe für \(|q|<1\).',
+   'Diff 1, Bl. 4 (Hinweis zu A1)', 'geometrische Summenformel', warn=True)
+mc('allg-mc-79', QD, r'Für welche \(q\in\mathbb R\) konvergiert die geometrische Reihe \(\sum_{n=0}^\infty q^n\)?',
+   [r'genau für \(|q|<1\)', r'genau für \(q<1\)', r'genau für \(|q|\le1\)', r'für alle \(q\neq1\)'], 0,
+   r'Für \(|q|\ge1\) ist \((q^n)\) keine Nullfolge, die Reihe divergiert. Zum Beispiel divergiert sie für \(q=-1\) und \(q=-2\).',
+   'Kap. 3, Satz 3.4 (2)', 'geometrische Reihe Konvergenz q')
+mc('allg-mc-80', QD, r'Welchen Wert hat \(\sum_{n=0}^\infty\bigl(\frac12\bigr)^n\)?',
+   [r'\(2\)', r'\(1\)', r'\(\frac12\)', r'Die Reihe divergiert'], 0,
+   r'Geometrische Reihe mit \(q=\frac12\): \(\frac1{1-\frac12}=2\).',
+   'Kap. 3, Satz 3.4 (2)', 'geometrische Reihe Reihenwert')
+mc('allg-mc-81', QD, r'Was gilt für die harmonische Reihe \(\sum_{n=1}^\infty\frac1n\)?',
+   [r'Sie divergiert, obwohl \(\frac1n\) eine Nullfolge ist', r'Sie konvergiert, weil \(\frac1n\) eine Nullfolge ist', r'Sie konvergiert gegen \(1\)', r'Sie divergiert, weil \(\frac1n\) keine Nullfolge ist'], 0,
+   r'„Nullfolge“ ist nur notwendig, nicht hinreichend für die Konvergenz einer Reihe.',
+   'Kap. 3, Satz 3.4 (1c), Bsp. 3.7 (2)', 'harmonische Reihe divergent Nullfolge', warn=True)
+mc('allg-mc-82', QD, r'Welchen Wert hat \(\sum_{n=1}^\infty\frac1{n(n+1)}\)?',
+   [r'\(1\)', r'\(\frac12\)', r'\(2\)', r'Die Reihe divergiert'], 0,
+   r'Die Partialsummen sind \(s_n=\frac n{n+1}\to1\).',
+   'Kap. 3, Bem. 3.1', 'Reihe Teleskopsumme Partialsumme Wert')
+mc('allg-mc-83', QD, r'Was ergibt die Teleskopsumme \(\sum_{k=m}^{n-1}(x_{k+1}-x_k)\)?',
+   [r'\(x_n-x_m\)', r'\(x_m-x_n\)', r'\(x_{n-1}-x_m\)', r'\(0\)'], 0,
+   r'Alle inneren Glieder heben sich weg; übrig bleiben nur \(x_n\) und \(-x_m\).',
+   'Kap. 3, Bsp. 3.3 (3b); Diff 1, Bl. 5 (Hinweis zu A2)', 'Teleskopsumme Differenzen')
+
+# ------------------------------------------------------------ Diff 1 Punkte 12–24: Richtig / Falsch
+tf('allg-tf-24', D, r'Im Induktionsschluss darf man die Induktionsvoraussetzung (Aussage für \(n\)) benutzen.', True,
+   r'Genau das ist der Kern: Man folgert die Aussage für \(n+1\) aus der für \(n\).', 'Diff 1, Lösung Bl. 1, A1', 'Induktion Voraussetzung')
+tf('allg-tf-25', D, r'Für einen Induktionsbeweis genügt der Induktionsschluss; den Induktionsanfang kann man weglassen.', False,
+   r'Ohne Anfang fehlt der Startpunkt der Kette; der Schluss allein beweist nichts.', 'Diff 1, Lösung Bl. 1, A1', 'Induktion Anfang nötig')
+tf('allg-tf-26', D, r'Multipliziert man beide Seiten einer Ungleichung mit einer negativen Zahl, dreht sich das Ungleichheitszeichen um.', True,
+   r'Beispiel: \(1\le a_n\le5\Rightarrow-2\ge-2a_n\ge-10\).', 'Diff 1, Lösung Bl. 1, A3', 'Ungleichung negativ umdrehen')
+tf('allg-tf-27', D, r'Aus \(a<b\) folgt stets \(a^2<b^2\).', False,
+   r'Gegenbeispiel: \(-3<1\), aber \(9>1\). Quadrieren ist nur für \(0<a<b\) erlaubt.', 'Diff 1, Lösung Bl. 3, A4', 'Ungleichung quadrieren', warn=True)
+tf('allg-tf-28', D, r'Aus \(0<x<y\) folgt \(\frac1x>\frac1y\).', True,
+   r'Bei positiven Zahlen dreht der Kehrwert die Ungleichung um.', 'Diff 1, Lösung Bl. 2, A1', 'Ungleichung Kehrwert')
+tf('allg-tf-29', QD, r'Für alle \(x,y\in\mathbb R\) gilt \(|x+y|\le|x|+|y|\).', True,
+   r'Dreiecksungleichung.', 'Kap. 1, Bem. 1.1 d)', 'Dreiecksungleichung')
+tf('allg-tf-30', QD, r'Für alle \(x,y\in\mathbb R\) gilt \(\bigl||x|-|y|\bigr|\le|x-y|\).', True,
+   r'Umgekehrte Dreiecksungleichung; damit folgt etwa aus \(a_n\to a\) auch \(|a_n|\to|a|\).', 'Kap. 1, Bem. 1.1 e); Diff 1 Kurzskript, Bem. 1.0.8', 'umgekehrte Dreiecksungleichung')
+tf('allg-tf-31', D, r'Jede Lösung der Gleichung \(a=f(a)\) ist Grenzwert der rekursiven Folge \(a_{n+1}=f(a_n)\).', False,
+   r'Man muss die Lösung wählen, die zu den Schranken passt (Lösung Bl. 3, A3: nur \(4-\sqrt2\)); passt keine, divergiert die Folge (A4).', 'Diff 1, Lösung Bl. 3, A3, A4', 'rekursive Folge Fixpunkt Lösung wählen', warn=True)
+tf('allg-tf-32', D, r'Gilt \(1\le a_n\le5\) für alle \(n\) und \(a_n\to a\), dann ist auch \(1\le a\le5\).', True,
+   r'Nicht-strikte Ungleichungen übertragen sich auf den Grenzwert (Satz 1.0.3).', 'Diff 1 Kurzskript, Satz 1.0.3; Lösung Bl. 3, A3', 'Schranken Grenzwert übertragen')
+tf('allg-tf-33', D, r'Ist \(a_{n+1}-a_n\ge0\) für alle \(n\), so ist \((a_n)\) monoton wachsend.', True,
+   r'Das ist genau \(a_n\le a_{n+1}\).', 'Diff 1, Lösung Bl. 1, A1', 'Monotonie Differenz')
+tf('allg-tf-34', D, r'Aus \(\frac{a_{n+1}}{a_n}\le1\) für alle \(n\) folgt stets \(a_{n+1}\le a_n\).', False,
+   r'Nur für positive Glieder. Gegenbeispiel: \(a_n=-2\), \(a_{n+1}=-1\): Quotient \(\frac12\le1\), aber \(a_{n+1}>a_n\).', 'Diff 1, Lösung Bl. 1, A1', 'Monotonie Quotient positiv', warn=True)
+tf('allg-tf-35', D, r'Die Folge \(\bigl(1+\frac1n\bigr)^n\) ist monoton wachsend und nach oben beschränkt.', True,
+   r'Daher konvergiert sie; ihr Grenzwert ist \(e\).', 'Diff 1, Lösung Bl. 3, A1b', 'Eulersche Zahl monoton beschränkt')
+tf('allg-tf-36', D, r'Bei \(\frac{2n+1}{n+2}\) gehen Zähler und Nenner gegen \(\infty\), also ist der Grenzwert \(1\).', False,
+   r'„\(\frac\infty\infty\)“ ist kein Ergebnis. Nach Ausklammern: \(\frac{2+\frac1n}{1+\frac2n}\to2\).', 'Diff 1, Lösung Bl. 2, A1', 'Grenzwert Bruch unendlich ausklammern', warn=True)
+tf('allg-tf-37', QD, r'Ist die Reihe \(\sum a_n\) konvergent, so ist \((a_n)\) eine Nullfolge.', True,
+   r'Notwendige Bedingung für die Konvergenz einer Reihe.', 'Kap. 3, Satz 3.4 (1a)', 'Reihe Nullfolge notwendig')
+tf('allg-tf-38', QD, r'Ist \((a_n)\) eine Nullfolge, so konvergiert die Reihe \(\sum a_n\).', False,
+   r'Gegenbeispiel: die harmonische Reihe \(\sum\frac1n\) divergiert.', 'Kap. 3, Satz 3.4 (1c), Bsp. 3.7 (2)', 'Reihe Nullfolge nicht hinreichend harmonisch', warn=True)
+tf('allg-tf-39', QD, r'Die Reihe \(\sum_{n=1}^\infty\frac1{n^2}\) konvergiert.', True,
+   r'\(\sum\frac1{n^p}\) konvergiert für \(p\ge2\); nur für \(p=1\) (harmonische Reihe) divergiert sie.', 'Kap. 3, Bsp. 3.7 (3)', 'Reihe 1/n^2 konvergent')
+tf('allg-tf-40', QD, r'Die geometrische Reihe \(\sum_{n=0}^\infty(-1)^n\) konvergiert.', False,
+   r'Konvergenz nur für \(|q|<1\); hier ist \(|q|=1\), und \((-1)^n\) ist keine Nullfolge.', 'Kap. 3, Satz 3.4 (2)', 'geometrische Reihe q=-1 divergent')
+
+# ------------------------------------------------------------ Diff 1 Punkte 12–24: Lückentext
+gap('allg-gap-15', D, r'Ein Induktionsbeweis besteht aus dem {{Induktionsanfang}} und dem {{Induktionsschluss|Induktionsschritt}}.',
+    r'Anfang: kleinster Index; Schluss: von \(n\) auf \(n+1\).', 'Diff 1, Lösung Bl. 1, A1', 'Induktion Anfang Schluss')
+gap('allg-gap-16', D, r'Multipliziert man eine Ungleichung mit einer negativen Zahl, {{dreht|kehrt}} sich das Ungleichheitszeichen um.',
+    r'\(1\le a_n\le5\Rightarrow-2\ge-2a_n\ge-10\).', 'Diff 1, Lösung Bl. 1, A3', 'Ungleichung negativ umdrehen')
+gap('allg-gap-17', D, r'Um einen Bruch nach oben abzuschätzen, {{vergrößert|vergroessert}} man den Zähler und {{verkleinert}} den Nenner.',
+    r'Beispiel: \(\frac4{2n-1}\le\frac4{2n-n}=\frac4n\).', 'Diff 1, Lösung Bl. 1, A2', 'Abschätzung Zähler Nenner')
+gap('allg-gap-18', QD, r'Die Ungleichung \(|x+y|\le|x|+|y|\) heißt {{Dreiecksungleichung}}.',
+    r'Umgekehrt: \(\bigl||x|-|y|\bigr|\le|x\pm y|\).', 'Kap. 1, Bem. 1.1 d)', 'Dreiecksungleichung Name')
+gap('allg-gap-19', D, r'Bei Brüchen aus Polynomen in \(n\) klammert man in Zähler und Nenner die {{höchste|hoechste|größte}} Potenz von \(n\) aus und wendet dann die {{Grenzwertsätze|Grenzwertsatz|Rechenregeln}} an.',
+    r'Beispiel: \(\frac{2n+1}{n+2}=\frac{2+\frac1n}{1+\frac2n}\to2\).', 'Diff 1, Lösung Bl. 2, A1', 'höchste Potenz ausklammern Grenzwertsätze')
+gap('allg-gap-20', D, r'Für die Monotonie untersucht man die {{Differenz}} zweier aufeinanderfolgender Glieder oder, bei positiven Gliedern, ihren {{Quotienten|Quotient}}.',
+    r'\(a_{n+1}-a_n\le0\) bzw. \(\frac{a_{n+1}}{a_n}\le1\) ⇒ monoton fallend.', 'Diff 1, Lösung Bl. 1, A1', 'Monotonie Differenz Quotient')
+gap('allg-gap-21', D, r'Den Grenzwert einer rekursiven Folge erhält man, indem man ihn in die {{Rekursion|Rekursionsvorschrift|Rekursionsformel}} einsetzt; von den Lösungen wählt man die, die zu den {{Schranken|Schranke}} der Folge passt.',
+    r'Beispiel: \(a=4\pm\sqrt2\) mit \(a\in[1,5]\) ⇒ \(a=4-\sqrt2\).', 'Diff 1, Lösung Bl. 3, A3', 'rekursive Folge Grenzwert Schranken')
+gap('allg-gap-22', QD, r'Die Reihe \(\sum\frac1n\) heißt {{harmonische|harmonisch}} Reihe; sie ist {{divergent|divergiert}}.',
+    r'Obwohl \(\frac1n\to0\).', 'Kap. 3, Bsp. 3.7 (2)', 'harmonische Reihe divergent')
+gap('allg-gap-23', QD, r'Eine Reihe ist die Folge ihrer {{Partialsummen|Teilsummen|Partialsumme}}.',
+    r'\(s_n=a_1+\dots+a_n\); konvergiert \((s_n)\), heißt der Grenzwert Summe der Reihe.', 'Kap. 3, Def. 3.2', 'Reihe Partialsummen')
+gap('allg-gap-24', QD, r'Heben sich in einer Summe aus Differenzen alle inneren Glieder auf, spricht man von einer {{Teleskopsumme}}.',
+    r'\((x_n-x_{n-1})+\dots+(x_{m+1}-x_m)=x_n-x_m\).', 'Kap. 3, Bsp. 3.3 (3b); Diff 1, Bl. 5 (Hinweis zu A2)', 'Teleskopsumme Name')
+
+
 assert len({c['key'] for c in CARDS}) == len(CARDS)
 assert len({i['id'] for i in ITEMS}) == len(ITEMS)
 for x in CARDS + ITEMS:

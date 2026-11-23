@@ -7,7 +7,9 @@ S={s['id']:s for s in C['subjects']}
 qa=[c for c in S['quer']['chapters'] if c['id']=='allg'][0]; da=[c for c in S['diff1']['chapters'] if c['id']=='allg'][0]
 print('quer allg:',len(qa['cards']),'Karten',len(qa['items']),'Fragen · diff1 allg:',len(da['cards']),'Karten',len(da['items']),'Fragen')
 qids={x['id'] for x in qa['cards']+qa['items']}; dids={x['id'] for x in da['cards']+da['items']}
-if not dids or not dids<=qids: errs.append('diff1-Teilmenge')
+# ab v47 gibt es auch reine Diff-1-Inhalte (subj D); geteilt = Schnittmenge
+shared=dids&qids
+if not shared or not (dids-qids): errs.append('diff1-Teilmenge')
 if qa.get('group')!='allg': errs.append('gruppe')
 raw=json.dumps(C)
 for ch in (qa,da):
@@ -15,7 +17,7 @@ for ch in (qa,da):
         if re.search(r'\\\\[(\[]', json.dumps(x)): errs.append('TeX roh '+x['id'])
 # Karten/Fragen gesamt (für Gemischt mit beiden Fächern)
 def tot(key): return sum(len(c.get(key) or []) for s in ('quer','diff1') for c in S[s]['chapters'] if not c.get('placeholder'))
-uc=tot('cards')-len(da['cards']); ui=tot('items')-len(da['items'])
+uc=tot('cards')-len([x for x in da['cards'] if x['id'] in shared]); ui=tot('items')-len([x for x in da['items'] if x['id'] in shared])
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path='/usr/bin/google-chrome',args=['--no-sandbox'])
     ctx=b.new_context(viewport={'width':390,'height':780},service_workers='block'); pg=ctx.new_page()
