@@ -1933,8 +1933,10 @@
   document.addEventListener('visibilitychange', statVisible);
   // ---- Automatische Update-Prüfung (höchstens alle 20 Stunden) und Hinweis, nie mitten im Test
   var updReady = false, updDismissed = false, bar = document.createElement('div');
-  bar.className = 'updbar'; bar.setAttribute('role', 'status');
-  bar.innerHTML = '<span>Update bereit</span><button id="updGo">Neu laden</button><button class="x" id="updX" aria-label="Später">' + ic('x') + '</button>';
+  // v51: groß und mittig, damit niemand das Update verpasst; nie mitten im Lernmodus
+  bar.className = 'updbar'; bar.setAttribute('role', 'dialog'); bar.setAttribute('aria-modal', 'true'); bar.setAttribute('aria-label', 'Update bereit');
+  bar.innerHTML = '<div class="updcard"><div class="obico ok">' + ic('arrow') + '</div><h2>Update bereit</h2><p>Eine neue Version der Lernkiste ist da. Dein Lernstand bleibt erhalten.</p>' +
+    '<button type="button" class="primary obbig" id="updGo">Jetzt neu laden</button><button type="button" class="oblink" id="updX">Später</button></div>';
   document.body.appendChild(bar);
   $('#updGo').onclick = function () { location.reload(); };
   $('#updX').onclick = function () { updDismissed = true; updUI(); };
