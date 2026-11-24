@@ -467,7 +467,7 @@ mc('allg-mc-22', QD, r'Wie lautet die <b>Quotientenregel</b>?',
    r"Im Zähler zuerst \(f'g\), dann minus \(fg'\); Nenner \(g^2\), Voraussetzung \(g\ne0\).",
    'Satz 6.5 (1)', 'Quotientenregel Ableitung')
 mc('allg-mc-23', QD, r'Wie lautet die <b>Kettenregel</b>?',
-   [r"\((f\circ g)'(a)=f'(g(a))\cdot g'(a)\)", r"\((f\circ g)'(a)=f'(a)\cdot g'(a)\)", r"\((f\circ g)'(a)=f'(g'(a))\)", r"\((f\circ g)'(a)=f(g'(a))\cdot g'(a)\)"], 0,
+   [r"\((f\circ g)'(a)\) \(=f'(g(a))\cdot g'(a)\)", r"\((f\circ g)'(a)\) \(=f'(a)\cdot g'(a)\)", r"\((f\circ g)'(a)\) \(=f'(g'(a))\)", r"\((f\circ g)'(a)\) \(=f(g'(a))\cdot g'(a)\)"], 0,
    r'Äußere Ableitung an der inneren Stelle mal innere Ableitung.',
    'Satz 6.5 (2)', 'Kettenregel Ableitung Verkettung')
 mc('allg-mc-24', QD, r'Was ist die Ableitung von \(e^{\sin(x)}\)?',
