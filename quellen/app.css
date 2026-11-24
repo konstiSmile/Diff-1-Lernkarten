@@ -559,3 +559,6 @@ body.immersive .updbar { display:none; }
 .updcard h2 { font-size:1.45rem; font-weight:800; margin:14px 0 6px; }
 .updcard p { margin:0 0 18px; line-height:1.5; color:var(--muted); font-weight:600; }
 .updcard .oblink { margin-top:6px; }
+
+/* v52 Lernstand: Balken nie zu schmal */
+.tile .foot .bar { min-width:64px; }

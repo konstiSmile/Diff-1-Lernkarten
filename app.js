@@ -533,32 +533,29 @@
 
   // ====================================================================== Start / Fach
   function subjStats(s) {
-    var known = 0, total = 0, items = 0, best = null, allPlaceholder = true;
-    s.chapters.forEach(function (ch) {
-      if (!ch.placeholder) allPlaceholder = false;
-      if (ch.cards) { total += ch.cards.length; ch.cards.forEach(function (c) { if (DB.progress[c.id] === 'known') known++; }); }
-      if (ch.items) { items += ch.items.length; var b = tests(s.id, ch.id).best.exam; if (b !== undefined && (best === null || b > best)) best = b; }
-    });
-    var txt, pct = 0;
-    if (total) { txt = known ? known + ' von ' + total + ' gewusst' : total + ' Karten'; pct = known / total * 100; }
-    else if (best !== null) { txt = 'Klausur-Bestwert ' + best + ' %'; pct = best; }
-    else txt = allPlaceholder ? 'Inhalte folgen' : items + ' Fragen';
-    return { txt: txt, pct: pct, placeholder: allPlaceholder };
+    var allPlaceholder = s.chapters.every(function (ch) { return ch.placeholder; }), r = progOf(s.chapters, true);
+    return { txt: allPlaceholder ? 'Inhalte folgen' : progTxt(r), pct: r.pct, placeholder: allPlaceholder };
   }
-  // ---- Startseite „Klausuren im Blick“ (v44, Entwurf Home1)
   var LAST_KEY = 'lernkiste-last', MON = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
   function getLast() { var l = rd(LAST_KEY); return l && l.h && l.t ? l : null; }
   function setLast(o) { o.ts = Date.now(); try { localStorage.setItem(LAST_KEY, JSON.stringify(o)); } catch (e) {} }
-  // Lernstand % = Anteil gewusster Karten (zuletzt „Gewusst“) und Fragen (zuletzt ganz richtig); ohne Gerüst und ohne „nicht klausurrelevant“
-  function subjPct(s) {
-    var ls = learnState(), seen = {}, n = 0, k = 0;
-    s.chapters.forEach(function (ch) {
-      if (ch.placeholder || /nicht klausurrelevant/i.test(ch.note || '')) return;
-      (ch.cards || []).forEach(function (c) { if (seen[c.id]) return; seen[c.id] = 1; n++; if (DB.progress[c.id] === 'known') k++; });
-      (ch.items || []).forEach(function (it) { if (seen[it.id]) return; seen[it.id] = 1; n++; var r = ls[it.id]; if (r && r.s === 1) k++; });
+  // Lernstand (v52): Fragen sind der Maßstab (zuletzt ganz richtig). Karten zählen nur, wo es keine Fragen gibt.
+  // Ohne Gerüst; mit agg auch ohne „nicht klausurrelevant“. Geteilte IDs zählen einmal.
+  function progOf(chs, agg) {
+    var ls = learnState(), seen = {}, r = { n: 0, k: 0, nc: 0, kc: 0, pct: 0 };
+    chs.forEach(function (ch) {
+      if (ch.placeholder || (agg && /nicht klausurrelevant/i.test(ch.note || ''))) return;
+      (ch.cards || []).forEach(function (c) { if (seen[c.id]) return; seen[c.id] = 1; r.nc++; if (DB.progress[c.id] === 'known') r.kc++; });
+      (ch.items || []).forEach(function (it) { if (seen[it.id]) return; seen[it.id] = 1; r.n++; var x = ls[it.id]; if (x && x.s === 1) r.k++; });
     });
-    return n ? Math.round(k / n * 100) : 0;
+    if (agg && !r.n && !r.nc) return progOf(chs, false);
+    r.pct = r.n ? r.k / r.n * 100 : r.nc ? r.kc / r.nc * 100 : 0;
+    return r;
   }
+  function progTxt(r) {
+    return [r.n ? (r.k ? r.k + '/' + r.n + ' Fragen' : r.n + ' Fragen') : '', r.nc ? (r.kc ? r.kc + '/' + r.nc + ' Karten' : r.nc + ' Karten') : ''].filter(Boolean).join(' · ');
+  }
+  function subjPct(s) { return Math.round(progOf(s.chapters, true).pct); }
   function homeView() {
     var st = DB.settings, now = new Date(), hr = now.getHours(), nm = (st.name || '').trim();
     var greet = (hr >= 5 && hr < 11 ? 'Guten Morgen' : hr >= 11 && hr < 18 ? 'Guten Tag' : 'Guten Abend') + (nm ? ', ' + nm : '') + '!';
@@ -709,12 +706,10 @@
     $('#mxT').onclick = function () { location.hash = '#/mix/tests'; };
   }
   function chapTile(s, ch) {
-    var parts = [], pct = 0, k = 0, desc;
-    if (ch.cards) { k = ch.cards.filter(function (c) { return DB.progress[c.id] === 'known'; }).length; pct = k / ch.cards.length * 100; }
-    if (ch.items) { var b = tests(s.id, ch.id).best.exam; if (b !== undefined) pct = Math.max(pct, b); }
-    if (ch.cards && ch.items) { parts.push(ch.items.length + ' Fragen', ch.cards.length + ' Karten'); desc = 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation'; }
-    else if (ch.cards) { parts.push(k ? k + ' von ' + ch.cards.length + ' gewusst' : ch.cards.length + ' Karten'); desc = 'Karteikarten'; }
-    else { var b2 = tests(s.id, ch.id).best.exam; parts.push(ch.items.length + ' Fragen' + (b2 !== undefined ? ' · Klausur ' + b2 + ' %' : '')); desc = 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation'; }
+    var r = progOf([ch], false), pct = r.pct, parts = [progTxt(r)], desc;
+    if (ch.cards && ch.items) desc = 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation';
+    else if (ch.cards) desc = 'Karteikarten';
+    else { var b2 = tests(s.id, ch.id).best.exam; if (b2 !== undefined) parts.push('Klausur ' + b2 + ' %'); desc = 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation'; }
     return '<a class="tile s-' + s.id + '" href="#/f/' + s.id + '/' + ch.id + '">' + (ch.placeholder ? '<span class="badge">Gerüst</span>' : '') +
       '<div><h2 class="name">' + esc(ch.title) + '</h2><p class="desc">' + esc(desc) + '</p>' + (ch.note ? '<p class="cnote">' + esc(ch.note) + '</p>' : '') + '</div>' +
       '<div class="foot"><span>' + esc(parts.join(' · ')) + '</span><div class="bar"><div style="width:' + pct + '%"></div></div><span class="go">Öffnen</span></div></a>';
@@ -729,12 +724,11 @@
     if (sid === 'psy' && !grp) h = h.replace(/<div class="grid">$/, '<p class="disclaimer">Alle Inhalte dieser App wurden nicht von der Dozentin bzw. dem Dozenten überprüft und sind ohne jede Gewähr zu verwenden. Es können sich Fehler eingeschlichen haben, und die Klausur kann andere Inhalte abfragen.</p><div class="grid">');
     if (s.groups && !grp) {
       s.groups.forEach(function (g) {
-        var chs = s.chapters.filter(function (c) { return c.group === g.id; }), cards = 0, items = 0, known = 0;
-        chs.forEach(function (c) { if (c.cards) { cards += c.cards.length; c.cards.forEach(function (x) { if (DB.progress[x.id] === 'known') known++; }); } if (c.items) items += c.items.length; });
-        var txt = !chs.length ? 'Inhalte folgen' : [chs.length + (chs.length === 1 ? ' Kapitel' : ' Kapitel'), cards ? cards + ' Karten' : '', items ? items + ' Fragen' : ''].filter(Boolean).join(' · ');
+        var chs = s.chapters.filter(function (c) { return c.group === g.id; }), gp = progOf(chs, true);
+        var txt = !chs.length ? 'Inhalte folgen' : progTxt(gp);
         h += '<a class="tile s-' + sid + '" href="#/f/' + sid + (chs.length === 1 ? '/' + chs[0].id : '/u/' + g.id) + '">' + (chs.length ? '' : '<span class="badge">Folgt</span>') +
           '<div><h2 class="name">' + esc(g.name) + '</h2><p class="desc">' + esc(g.desc) + '</p></div>' +
-          '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + (cards ? known / cards * 100 : 0) + '%"></div></div><span class="go">Öffnen</span></div></a>';
+          '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + gp.pct + '%"></div></div><span class="go">Öffnen</span></div></a>';
       });
     } else {
       var list = grp ? s.chapters.filter(function (c) { return c.group === gid; }) : s.chapters;
