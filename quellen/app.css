@@ -576,3 +576,6 @@ body.immersive .updbar { display:none; }
 .group.sec > .gbody { border-top:1px solid var(--line); }
 .subh { margin:16px 0 0; font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:800; }
 .group.sec .gbody > .setrow:last-child, .group.sec .gbody > .fbbox:last-child { margin-bottom:6px; }
+
+/* v54 Namensfeld schmaler */
+#uname { width:7.5em; flex:none; padding:8px 12px; min-height:38px; }
