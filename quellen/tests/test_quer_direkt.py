@@ -3,7 +3,7 @@ from playwright.sync_api import sync_playwright
 errs=[]; B='http://localhost:8765/index.html'
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path='/usr/bin/google-chrome',args=['--no-sandbox'])
-    pg=b.new_context(viewport={'width':390,'height':780},service_workers='block').new_page()
+    _c=b.new_context(viewport={'width':390,'height':780},service_workers='block'); _c.add_init_script("if(!localStorage.getItem('lernkiste-v1'))localStorage.setItem('lernkiste-v1',JSON.stringify({settings:{statsAsked:1,obDone:1}}))"); pg=_c.new_page()
     pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(B+'#/f/quer'); pg.reload(); pg.wait_for_selector('.tile')
     hrefs=pg.eval_on_selector_all('.tile','els=>els.map(e=>e.getAttribute("href"))'); print('quer:',hrefs)

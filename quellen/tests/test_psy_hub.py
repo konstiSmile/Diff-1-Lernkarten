@@ -3,11 +3,11 @@ from playwright.sync_api import sync_playwright
 errs=[]; B='http://localhost:8765/index.html'
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path='/usr/bin/google-chrome',args=['--no-sandbox'])
-    ctx=b.new_context(viewport={'width':390,'height':780},service_workers='block')
+    ctx=b.new_context(viewport={'width':390,'height':780},service_workers='block'); ctx.add_init_script("if(!localStorage.getItem('lernkiste-v1'))localStorage.setItem('lernkiste-v1',JSON.stringify({settings:{statsAsked:1,obDone:1}}))")
     pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e)))
     ovf=lambda t: errs.append(f'OVF {t}') if pg.evaluate("document.documentElement.scrollWidth")>390 else None
     # alter Stand mit Test-Kapitel tp
-    pg.goto(B); pg.evaluate("localStorage.setItem('lernkiste-v1', JSON.stringify({v:1,tests:{'psy/tp':{best:{exam:70},wrong:['pp-mc-01','pp-tf-08','pp-gap-06']}}}))")
+    pg.goto(B); pg.evaluate("localStorage.setItem('lernkiste-v1', JSON.stringify({v:1,settings:{statsAsked:1},tests:{'psy/tp':{best:{exam:70},wrong:['pp-mc-01','pp-tf-08','pp-gap-06']}}}))")
     pg.goto(B+'#/f/psy/u/pers'); pg.reload(); pg.wait_for_selector('.tile')
     print('kapitel:', [t.replace('\n',' | ') for t in pg.locator('.tile').all_inner_texts()]); ovf('gruppe')
     t=pg.evaluate("JSON.parse(localStorage.getItem('lernkiste-v1')).tests"); print('migriert:', {k:v.get('wrong') for k,v in t.items()})

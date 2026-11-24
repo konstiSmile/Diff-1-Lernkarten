@@ -27,7 +27,7 @@ def tot(key): return sum(len(c.get(key) or []) for s in ('quer','diff1') for c i
 uc=tot('cards')-len([x for x in da['cards'] if x['id'] in shared]); ui=tot('items')-len([x for x in da['items'] if x['id'] in shared])
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path='/usr/bin/google-chrome',args=['--no-sandbox'])
-    ctx=b.new_context(viewport={'width':390,'height':780},service_workers='block'); pg=ctx.new_page()
+    ctx=b.new_context(viewport={'width':390,'height':780},service_workers='block'); ctx.add_init_script("if(!localStorage.getItem('lernkiste-v1'))localStorage.setItem('lernkiste-v1',JSON.stringify({settings:{statsAsked:1,obDone:1}}))"); pg=ctx.new_page()
     pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(B+'#/f/quer'); pg.reload(); pg.wait_for_selector('.tile')
     hrefs=pg.eval_on_selector_all('.tile','els=>els.map(e=>e.getAttribute("href"))'); print('quer:',hrefs)

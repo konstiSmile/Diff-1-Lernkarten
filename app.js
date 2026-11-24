@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'auto', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1 };
+  var DEFAULTS = { theme: 'auto', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1, obDone: 0 };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -134,26 +134,82 @@
     cleanups.push(closeTile);
     $('.pvx', w).focus();
   }
-  // ---- Einmalige Frage nach der Nutzungsstatistik (Einwilligung); ohne Antwort beim nächsten Start erneut
-  var statAskedNow = false;
+  // ---- v50: Einführung beim ersten Öffnen (wischbare Seiten) und Pflicht-Antwort zur Nutzungsstatistik.
+  // Neue Nutzer: Willkommen + Name · Home-Bildschirm · So lernst du · Statistik. Wer schon lernt und nie geantwortet hat: nur die Statistik-Seite.
+  // „Überspringen“ führt immer zur Statistik-Seite; schließen lässt sie sich nur mit Ja oder Nein (keine Vorauswahl).
+  var statAskedNow = false, obEl = null;
+  function obStandalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+  function obPlatform() { var u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1)) return 'ios'; if (/Android/.test(u)) return 'android'; return 'other'; }
   function statAsk() {
-    if (statAskedNow || DB.settings.statsAsked) return;
-    if (DB.settings.stats) { DB.settings.statsAsked = Date.now(); save(); return; }
-    if (DB.log.length < 5) return; // v44: erst nach der ersten Lernrunde fragen, nicht beim ersten Öffnen
-    setTimeout(function () {
-      if (statAskedNow || DB.settings.statsAsked || tileEl || document.body.classList.contains('immersive')) return;
-      statAskedNow = true;
-      openTile('Kurze Frage', '<p>Darf die Lernkiste <b>anonym zählen</b>, wie oft sie geöffnet und welches Fach genutzt wird?</p>' +
-        '<p class="note">Kein Name, keine Geräte-ID, kein Lernstand – nur Zahlen, die niemandem zugeordnet werden können. Jederzeit änderbar unter Einstellungen → App, dort steht auch alles zum Datenschutz.</p>',
-        '<div class="row"><button type="button" class="ghost" id="stNo">Nein</button><button type="button" class="primary" id="stYes">Ja, gern</button></div>');
-      function answer(on) {
-        DB.settings.stats = on ? 1 : 0; DB.settings.statsAsked = Date.now(); save(); closeTile(); if (!on) statForget();
-        if (on) { statPing('start'); var r = parseHash().parts; if (r[0] === 'f' && r[1]) statFach(r[1]); }
-        toast(on ? 'Danke!' : 'Okay, es wird nichts gezählt');
+    if (statAskedNow || obEl) return;
+    var st = DB.settings;
+    if (st.stats && !st.statsAsked) { st.statsAsked = Date.now(); save(); }
+    var fresh = !st.obDone && !st.statsAsked && !DB.log.length && !Object.keys(DB.progress).length && !Object.keys(DB.tests).length;
+    if (!fresh && st.statsAsked) { if (!st.obDone) { st.obDone = Date.now(); save(); } return; }
+    statAskedNow = true;
+    var pages = [];
+    if (fresh) {
+      pages.push('<div class="obico">' + ic('cards') + '</div><h2>Willkommen in der Lernkiste</h2>' +
+        '<p>Karteikarten und Tests für deine Klausuren, offline auf deinem Handy. Dein Lernstand bleibt auf deinem Gerät.</p>' +
+        '<label class="oblab" for="obName">Wie heißt du? <span>(optional)</span></label>' +
+        '<input class="txt wide obname" id="obName" type="text" maxlength="20" placeholder="Name" autocomplete="off" autocapitalize="words" spellcheck="false" value="' + esc(st.name || '') + '">' +
+        '<p class="note">Aus „Konstis Lernkiste“ wird dann deine Lernkiste. Später änderbar.</p>');
+      if (!obStandalone()) {
+        var pf = obPlatform(), how = pf === 'ios' ? '<ol class="obsteps"><li>Öffne die Seite in <b>Safari</b>.</li><li>Tippe unten auf <b>Teilen</b> (Quadrat mit Pfeil).</li><li>Wähle <b>Zum Home-Bildschirm</b>.</li></ol>'
+          : pf === 'android' ? '<ol class="obsteps"><li>Öffne die Seite in <b>Chrome</b>.</li><li>Tippe oben rechts auf <b>⋮</b>.</li><li>Wähle <b>App installieren</b> oder <b>Zum Startbildschirm hinzufügen</b>.</li></ol>'
+          : '<ol class="obsteps"><li><b>iPhone:</b> in Safari auf Teilen, dann „Zum Home-Bildschirm“.</li><li><b>Android:</b> in Chrome auf ⋮, dann „App installieren“.</li></ol>';
+        pages.push('<div class="obico">' + ic('arrow') + '</div><h2>Auf den Home-Bildschirm</h2><p>Dann startet die Lernkiste wie eine App und funktioniert auch ohne Internet.</p>' + how +
+          (pf === 'ios' ? '<p class="note">Wichtig: Die App auf dem Home-Bildschirm hat einen eigenen Speicher. Lerne am besten nur dort.</p>' : ''));
       }
-      $('#stYes').onclick = function () { answer(true); };
-      $('#stNo').onclick = function () { answer(false); };
-    }, 1500);
+      pages.push('<div class="obico">' + ic('book') + '</div><h2>So lernst du</h2><ul class="obsteps plain">' +
+        '<li><b>Fächer</b> → Kapitel wählen, dann Karteikarten oder Tests.</li>' +
+        '<li><b>Karten:</b> antippen zum Umdrehen, dann „Gewusst“ oder „Nochmal“.</li>' +
+        '<li><b>Tests:</b> Multiple Choice, Richtig/Falsch, Lückentext und Klausur auf Zeit.</li>' +
+        '<li><b>Start</b> zeigt, was heute fällig ist, und deinen Lernstand.</li></ul>');
+    }
+    pages.push('<div class="obico ok">' + ic('check') + '</div><h2>Eine Bitte</h2>' +
+      '<p>Darf die Lernkiste <b>anonym zählen</b>, wie oft sie geöffnet und welches Fach genutzt wird? Das hilft mir zu sehen, ob sich die Arbeit lohnt und welche Fächer ich ausbaue.</p>' +
+      '<ul class="obsteps plain small"><li>Kein Name, keine Geräte-ID, kein Lernstand</li><li>Nur Zahlen, niemandem zuzuordnen</li><li>Jederzeit änderbar unter Einstellungen → App</li></ul>' +
+      '<button type="button" class="oblink" id="obPriv">Alles zum Datenschutz</button>');
+    var last = pages.length - 1, cur = 0;
+    var w = obEl = document.createElement('div'); w.className = 'ob'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', fresh ? 'Einführung' : 'Kurze Frage');
+    w.innerHTML = '<div class="obtop"><button type="button" class="oblink" id="obSkip">Überspringen</button></div>' +
+      '<div class="obvp"><div class="obtrack">' + pages.map(function (h, k) { return '<section class="obpage" aria-hidden="' + (k ? 'true' : 'false') + '">' + h + '</section>'; }).join('') + '</div></div>' +
+      '<div class="obfoot">' + (last ? '<div class="obdots">' + pages.map(function () { return '<i></i>'; }).join('') + '</div>' : '') +
+      '<div class="obbtns" id="obNav"><button type="button" class="primary obbig" id="obNext">Weiter</button></div>' +
+      '<div class="obbtns" id="obAsk"><button type="button" class="primary obbig" id="stYes">Ja, gern</button><button type="button" class="ghost obbig" id="stNo">Nein, danke</button></div></div>';
+    document.body.appendChild(w); document.body.classList.add('pvopen');
+    var track = $('.obtrack', w), secs = $$('.obpage', w), dots = $$('.obdots i', w);
+    function go(k) {
+      cur = Math.max(0, Math.min(last, k)); track.style.transform = 'translateX(' + (-100 * cur) + '%)';
+      secs.forEach(function (x, n) { x.setAttribute('aria-hidden', n === cur ? 'false' : 'true'); if (n === cur) x.scrollTop = 0; });
+      dots.forEach(function (d, n) { d.classList.toggle('on', n === cur); });
+      $('#obSkip', w).style.visibility = cur === last ? 'hidden' : 'visible';
+      $('#obNav', w).style.display = cur === last ? 'none' : ''; $('#obAsk', w).style.display = cur === last ? '' : 'none';
+      if (document.activeElement && document.activeElement.blur && cur === last) document.activeElement.blur();
+    }
+    var nm = $('#obName', w);
+    if (nm) nm.addEventListener('input', function () { st.name = this.value.slice(0, 20); save(); document.title = appName(); });
+    $('#obNext', w).onclick = function () { go(cur + 1); };
+    $('#obSkip', w).onclick = function () { go(last); };
+    $('#obPriv', w).onclick = function () { openTile('Datenschutz', privacyHTML()); };
+    var x0 = null, y0 = 0;
+    w.addEventListener('touchstart', function (e) { if (e.target.closest('input')) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+    w.addEventListener('touchend', function (e) {
+      if (x0 === null) return; var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(cur + (dx < 0 ? 1 : -1));
+    });
+    w.addEventListener('keydown', function (e) { if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') go(cur + 1); return; } if (e.key === 'ArrowRight') go(cur + 1); if (e.key === 'ArrowLeft') go(cur - 1); });
+    function answer(on) {
+      st.stats = on ? 1 : 0; st.statsAsked = Date.now(); st.obDone = Date.now(); save(); if (!on) statForget();
+      w.remove(); obEl = null; document.body.classList.remove('pvopen');
+      if (on) { statPing('start'); var r = parseHash().parts; if (r[0] === 'f' && r[1]) statFach(r[1]); }
+      toast(on ? 'Danke!' : 'Okay, es wird nichts gezählt');
+      if (fresh && st.name) { var y = window.scrollY; route(); window.scrollTo(0, y); }
+    }
+    $('#stYes', w).onclick = function () { answer(true); };
+    $('#stNo', w).onclick = function () { answer(false); };
+    go(0);
   }
   function privacyHTML() {
     return '<div class="pvkey"><b>Das Wichtigste zuerst</b><p>Ich erhebe keine personenbezogenen Daten. Ich bekomme weder deinen Namen noch deine E-Mail-Adresse, IP-Adresse, eine Geräte-Kennung oder deinen Lernstand (außer du richtest den Sync ein, siehe unten). Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“. Ich kann nicht erkennen, wer die App nutzt, mit welchem Gerät oder von wo, und bei der Statistik auch nicht, ob zwei Einträge von derselben Person stammen.</p></div>' +
@@ -1612,7 +1668,7 @@
   // ====================================================================== Sync (v49): Sync-Code ohne Konto, Supabase-Tabelle lernkiste_sync
   var SB_URL = 'https://qbdpzamygonpruaafcrt.supabase.co', SB_KEY = 'sb_publishable_A7zukzk82Suux8jteQvLGA_WmXnZb14', SYNC_KEY = 'lernkiste-sync';
   // bleibt auf dem Gerät: Name (personenbezogen), Statistik-Zustimmung, Backup-Merker
-  var SYNC_LOCAL = { name: 1, stats: 1, statsAsked: 1, lastBackup: 1, ownDirty: 1, ownTip: 1, nagDay: 1, ui44: 1 };
+  var SYNC_LOCAL = { obDone: 1, name: 1, stats: 1, statsAsked: 1, lastBackup: 1, ownDirty: 1, ownTip: 1, nagDay: 1, ui44: 1 };
   var SYNC_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   var syncApplying = false, syncBusy = false, syncAgain = false, syncTimer = 0, syncErr = false;
   function syncCfg() { var o = rd(SYNC_KEY); return o && typeof o.code === 'string' && o.code.length === 20 ? o : null; }

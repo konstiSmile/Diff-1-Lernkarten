@@ -531,4 +531,28 @@ div.mopt { cursor:default; }
 .fig text.t-sin { fill:#4a90d9; font-weight:800; } .fig text.t-cos { fill:#3fa66b; font-weight:800; } .fig text.t-tan { fill:#d98a3a; font-weight:800; }
 /* v49 Sync */
 .setrow .l small.synccode { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9rem; letter-spacing:.02em; color:var(--ink); user-select:all; -webkit-user-select:all; }
-.txt.synin { width:100%; box-sizing:border-box; margin-top:8px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; text-transform:uppercase; letter-spacing:.04em; }
+.txt.synin { width:100%; max-width:none; text-align:left; box-sizing:border-box; margin-top:8px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; text-transform:uppercase; letter-spacing:.04em; }
+/* v50 Einführung */
+.ob { position:fixed; inset:0; z-index:65; background:var(--bg); color:var(--ink); display:flex; flex-direction:column; padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+.obtop { display:flex; justify-content:flex-end; padding:10px 14px 0; min-height:44px; box-sizing:border-box; }
+.oblink { background:none; border:0; color:var(--muted); font:700 .95rem "Nunito", system-ui, sans-serif; padding:10px 6px; cursor:pointer; }
+.obpage .oblink { padding:8px 0; text-decoration:underline; text-underline-offset:3px; }
+.obvp { flex:1; overflow:hidden; min-height:0; }
+.obtrack { display:flex; height:100%; transition:transform .3s ease; }
+.obpage { flex:0 0 100%; box-sizing:border-box; padding:24px 26px 12px; overflow-y:auto; display:flex; flex-direction:column; justify-content:center; max-width:520px; margin:0 auto; }
+.obpage h2 { font-size:1.6rem; line-height:1.2; margin:14px 0 10px; font-weight:800; }
+.obpage p { margin:0 0 12px; line-height:1.5; }
+.obico { width:64px; height:64px; border-radius:20px; background:var(--paper); box-shadow:var(--shadow-card); display:flex; align-items:center; justify-content:center; }
+.obico svg { width:30px; height:30px; fill:none; stroke:var(--accent); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.obico.ok { background:var(--sage); } .obico.ok svg { stroke:var(--onaccent); }
+.oblab { font-weight:700; margin:8px 0 6px; display:block; } .oblab span { color:var(--muted); font-weight:600; }
+input.txt.obname { flex:none; width:100%; max-width:none; text-align:left; padding:12px 14px; font-size:1rem; margin-bottom:8px; }
+.obsteps { margin:4px 0 12px; padding-left:1.3em; } .obsteps li { margin:0 0 8px; line-height:1.45; }
+.obsteps.plain { list-style:none; padding:0; } .obsteps.plain li { position:relative; padding-left:18px; }
+.obsteps.plain li::before { content:""; position:absolute; left:2px; top:.62em; width:7px; height:7px; border-radius:50%; background:var(--s3); }
+.obsteps.small li { font-size:.92rem; color:var(--muted); font-weight:600; margin-bottom:4px; }
+.obfoot { padding:8px 22px 18px; max-width:520px; width:100%; margin:0 auto; box-sizing:border-box; }
+.obdots { display:flex; justify-content:center; gap:7px; margin:0 0 14px; } .obdots i { width:7px; height:7px; border-radius:50%; background:var(--track); transition:all .2s; } .obdots i.on { background:var(--accent); width:20px; border-radius:4px; }
+.obbtns { display:flex; flex-direction:column; gap:10px; }
+.obbig { width:100%; padding:14px 16px; font-size:1.05rem; border-radius:18px; }
+.ob ~ .pvwrap { z-index:70; }
