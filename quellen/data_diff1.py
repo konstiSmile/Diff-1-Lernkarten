@@ -102,7 +102,7 @@ tf('d1-tf-04', r'Eine monoton fallende Folge ist stets nach oben beschränkt.', 
    r'Es gilt \(a_n\le a_1\) für alle \(n\), also ist \(a_1\) obere Schranke.', 'Bem. 1.0.4', 'monoton fallend nach oben beschränkt')
 tf('d1-tf-05', r'Eine monoton fallende Folge ist stets beschränkt.', False,
    r'Nach oben ja (\(a_n\le a_1\)), aber nach unten nicht unbedingt: \(a_n=-n\) ist monoton fallend und unbeschränkt.', 'Bem. 1.0.4', 'monoton fallend beschränkt Gegenbeispiel', warn=True)
-tf('d1-tf-06', r'Aus \(a_n\to a\), \(b_n\to b\) und \(a_n<b_n\) für alle \(n\) folgt \(a<b\).', False,
+tf('d1-tf-06', r'Aus \(a_n\to a\), \(b_n\to b\) und \(a_n<b_n\) für alle \(n\) folgt die strikte Ungleichung \(a<b\).', False,
    r'Nur \(a\le b\) folgt. Gegenbeispiel: \(a_n=0<\frac1n=b_n\), beide Grenzwerte sind \(0\).', 'Bem. 1.0.6', 'Ungleichung Grenzübergang strikt', warn=True)
 tf('d1-tf-07', r'In \(\mathbb Q\) besitzt jede nichtleere, nach oben beschränkte Teilmenge ein Supremum in \(\mathbb Q\).', False,
    r'Gegenbeispiel: \(\{q\in\mathbb Q: q^2<2\}\) hat kein Supremum in \(\mathbb Q\). \(\mathbb Q\) ist nicht vollständig.', 'Bem. 1.0.1 (4)', 'Q vollständig Supremum')
@@ -118,7 +118,7 @@ tf('d1-tf-12', r'Die Summe zweier divergenter Folgen ist stets divergent.', Fals
    r'Gegenbeispiel: \(a_n=n\) und \(b_n=-n\) sind divergent, aber \(a_n+b_n=0\) konvergiert. Die Grenzwertsätze setzen <b>konvergente</b> Folgen voraus.', 'Satz 1.0.4', 'Grenzwertsätze Summe divergent Voraussetzung', warn=True)
 tf('d1-tf-13', r'In der Grenzwertdefinition darf der Index \(n_0\) von \(\varepsilon\) abhängen.', True,
    r'Die Reihenfolge der Quantoren \(\forall\varepsilon\ \exists n_0\) erlaubt das ausdrücklich. Je kleiner \(\varepsilon\), desto größer wird \(n_0\) meist.', 'Def. 1.0.4', 'Grenzwert Quantoren n0 Epsilon')
-tf('d1-tf-14', r'Das Schrankenlemma setzt voraus, dass die eingeschlossene Folge \((c_n)\) konvergiert.', False,
+tf('d1-tf-14', r'Beim Schrankenlemma muss man die Konvergenz von \((c_n)\) vorher nachweisen.', False,
    r'Vorausgesetzt werden nur \(a_n\le c_n\le b_n\) und gleiche Grenzwerte von \((a_n)\), \((b_n)\). Die Konvergenz von \((c_n)\) folgt.', 'Satz 1.0.3 (2)', 'Schrankenlemma Voraussetzung Sandwich')
 tf('d1-tf-15', r'Ist eine Folge unbeschränkt, so ist sie divergent.', True,
    r'Kontraposition von „konvergent ⇒ beschränkt“.', 'Satz 1.0.2', 'unbeschränkt divergent Kontraposition')

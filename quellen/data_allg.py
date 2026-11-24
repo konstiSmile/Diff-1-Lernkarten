@@ -528,7 +528,7 @@ tf('allg-tf-05', Q, r'Ist \(D\) kompakt und zusammenhängend und \(f\) stetig, s
    r'Dann gilt \(W_f=[f(p),f(q)]\) mit Minimal- und Maximalstelle \(p,q\).', 'Bem. 10.9 (2c)', 'Weierstraß zusammenhängend Wertebereich Intervall')
 tf('allg-tf-06', Q, r'\((r\cos\varphi,\ r\sin\varphi)\) mit <b>festem</b> \(r>0\) und \(\varphi\in[0,2\pi]\) beschreibt eine Kreisscheibe.', False,
    r'Bei festem \(r\) erhält man nur die Kreislinie. Für die Scheibe muss auch \(r\in[0,R]\) laufen.', 'Bsp. 9.6 (2), 10.4 (4)', 'Polarkoordinaten Kreislinie Kreisscheibe', warn=True)
-tf('allg-tf-07', QD, r'Die Sinusfunktion ist gerade.', False,
+tf('allg-tf-07', QD, r'Die Sinusfunktion ist gerade, d. h. \(\sin(-x)=\sin(x)\).', False,
    r'\(\sin(-x)=-\sin(x)\): Sinus ist ungerade, Cosinus ist gerade.', 'Bem. 5.9 (1)', 'Sinus ungerade gerade Symmetrie')
 tf('allg-tf-08', QD, r'Für alle \(x\in\mathbb R\) gilt \(\sin^2(x)+\cos^2(x)=1\).', True,
    r'Folgt aus den Additionstheoremen. Im Einheitskreis: \((\cos\varphi,\sin\varphi)\) hat Abstand \(1\) vom Ursprung.', 'Bem. 5.9 (2c)', 'trigonometrischer Pythagoras sin cos quadrat')
@@ -543,7 +543,7 @@ tf('allg-tf-12', QD, r'Der Wertebereich von \(\sin\) ist \([-1,1]\).', True,
 tf('allg-tf-13', QD, r'Jede stetige Funktion ist differenzierbar.', False,
    r'Gegenbeispiel: \(|x|\) ist überall stetig, aber in \(0\) nicht differenzierbar. Umgekehrt ist jede differenzierbare Funktion stetig.', 'Satz 6.4 (1)', 'stetig differenzierbar Betrag Gegenbeispiel')
 tf('allg-tf-14', QD, r'Die Ableitung von \(\tan(x)\) ist \(1+\tan^2(x)\).', True,
-   r'Quotientenregel: \(\frac{\cos^2x+\sin^2x}{\cos^2x}=1+\tan^2x=\frac1{\cos^2x}\).', 'Bsp. 6.6 (3)', 'Ableitung Tangens Quotientenregel')
+   r'Quotientenregel: \(\frac{\cos^2x+\sin^2x}{\cos^2x}=1+\tan^2x=\frac1{\cos^2x}\). Dabei ist \(\tan^2(x)=(\tan x)^2\).', 'Bsp. 6.6 (3)', 'Ableitung Tangens Quotientenregel')
 tf('allg-tf-15', Q, r"Existiert \(\lim\frac{f}{g}\), so existiert nach de l’Hospital auch \(\lim\frac{f'}{g'}\).", False,
    r"Die Regel geht nur in die andere Richtung: Aus der Existenz von \(\lim\frac{f'}{g'}\) folgt die von \(\lim\frac fg\).", 'Satz 6.17', 'de l Hospital Richtung Existenz', warn=True)
 tf('allg-tf-16', Q, r'Jede streng monotone Funktion ist injektiv.', True,
