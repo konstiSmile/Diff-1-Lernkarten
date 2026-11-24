@@ -31,6 +31,10 @@
   };
   function ic(n, cls) { return '<svg class="' + (cls || 'i') + '" viewBox="0 0 24 24" aria-hidden="true"' + (n === 'more' ? ' style="fill:currentColor;stroke:none"' : '') + '>' + IC[n] + '</svg>'; }
   var CHEV = '<svg class="chev" viewBox="0 0 8 14" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>';
+  // v56: aus der Suche geöffnet (hl= im Link) → Zurück führt in die Suche mit dem Suchbegriff
+  var lastQ = '';
+  function fromSearch() { return /[?&]hl=/.test(location.hash); }
+  function backHref(def) { return fromSearch() ? '#/suche' + (lastQ ? '?q=' + encodeURIComponent(lastQ) : '') : def; }
   function backLink(href, label) { return '<a href="' + href + '" style="gap:4px">' + ic('back') + esc(label) + '</a>'; }
   function appName() {
     var n = (DB.settings.name || '').trim().replace(/\s+/g, ' ');
@@ -803,7 +807,7 @@
       var nAgain = cards.filter(function (c) { return DB.progress[c.id] === 'again'; }).length;
       var known = deck.filter(function (id) { return DB.progress[id] === 'known'; }).length;
       setImm(true);
-      var h = lhead('bClose', s.href || '#/f/' + s.id, ch.title, s.mix ? (ch.sub || '') : (subj(s.id) ? subj(s.id).name : s.name), total ? (pos + 1) + '/' + total : '0', total ? known / total : 0) +
+      var h = lhead('bClose', backHref(s.href || '#/f/' + s.id), ch.title, s.mix ? (ch.sub || '') : (subj(s.id) ? subj(s.id).name : s.name), total ? (pos + 1) + '/' + total : '0', total ? known / total : 0) +
         (ch.note ? '<p class="cnote hub">' + esc(ch.note) + '</p>' : '') +
         '<div class="seg" id="seg">' + (noRed ? '' : '<button data-f="red" class="' + (filter === 'red' ? 'on' : '') + '"><span class="dot"></span>Rot markiert (' + nRed + ')</button>') +
         '<button data-f="all" class="' + (filter === 'all' ? 'on' : '') + '">Alle (' + cards.length + ')</button>' +
@@ -982,7 +986,7 @@
     var T = tests(s.id, ch.id), st = DB.settings;
     var sh = s.mix ? function (l) { return mixShuffle(l, st.mixMode === 'even'); } : shuffle;
     function pool(type) { return ITEMS.filter(function (i) { return i.type === type; }); }
-    function nav(extra) { return '<div class="nav">' + backLink(s.href || '#/f/' + s.id, s.name) + (extra || '') + '</div>'; }
+    function nav(extra) { return '<div class="nav">' + backLink(backHref(s.href || '#/f/' + s.id), fromSearch() ? 'Suche' : s.name) + (extra || '') + '</div>'; }
     function prep(id) { var it = BYID[id]; return { it: it, order: it.type === 'mc' ? shuffle(it.options.map(function (_, i) { return i; })) : null, multi: isMulti(it, s.id) }; }
     function finishLog(r) {
       logAns(r.it._s || s.id, r.it.id, r.s, r.p); T.ts = Date.now();
@@ -1320,7 +1324,7 @@
     }
     function render() {
       var q = input.value.trim(); box.classList.toggle('has', input.value.length > 0);
-      try { history.replaceState(null, '', q ? '#/suche?q=' + encodeURIComponent(q) : '#/suche'); } catch (e) {}
+      lastQ = q || ''; try { history.replaceState(null, '', q ? '#/suche?q=' + encodeURIComponent(q) : '#/suche'); } catch (e) {}
       var res = $('#res');
       if (!q) {
         var h = '';
