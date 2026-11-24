@@ -1756,8 +1756,38 @@
     learn: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="14" height="13" rx="2"/><path d="M7 4h12a2 2 0 0 1 2 2v11"/></svg>',
     motiv: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
     data: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
-    fb: '<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>'
+    fb: '<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
+    help: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>'
   };
+  // v58: Hilfe / häufige Fragen in den Einstellungen (aufklappbar, eine Frage pro <details>)
+  function faqHTML() {
+    var Q = function (q, a) { return '<details class="faq"><summary>' + q + '<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary><div class="fa">' + a + '</div></details>'; };
+    var P = 'Einstellungen → Daten und App';
+    return Q('Wie bekomme ich die App aufs Handy?',
+        '<p><b>iPhone</b></p><ol><li>Öffne die Seite in <b>Safari</b>.</li><li>Tippe auf <b>Teilen</b> (Quadrat mit Pfeil). Siehst du es nicht, tippe zuerst auf die drei Punkte.</li><li>Wähle <b>Zum Home-Bildschirm</b>.</li><li>Tippe auf <b>Hinzufügen</b>.</li></ol>' +
+        '<p><b>Android</b></p><ol><li>Öffne die Seite in <b>Chrome</b>.</li><li>Tippe oben rechts auf <b>⋮</b>.</li><li>Wähle <b>App installieren</b> oder <b>Zum Startbildschirm hinzufügen</b>.</li><li>Bestätige.</li></ol>' +
+        '<p class="note">iPhone: Die App auf dem Home-Bildschirm hat einen eigenen Speicher, getrennt von Safari. Hast du vorher in Safari gelernt, übertrage den Stand per Sync oder Backup (siehe unten).</p>') +
+      Q('Funktioniert die App ohne Internet?',
+        '<p>Ja. Nach dem ersten Öffnen mit Internet kannst du ohne Netz lernen. Nur Sync und Updates brauchen eine Verbindung. Feedback und gemeldete Fragen werden gesendet, sobald du wieder online bist.</p>') +
+      Q('Wo ist mein Lernstand gespeichert?',
+        '<p>Nur auf diesem Gerät, in dieser App bzw. diesem Browser. Er geht verloren, wenn du die App vom Home-Bildschirm löschst oder im Browser die Website-Daten löschst. Im privaten Modus wird nichts dauerhaft gespeichert.</p>' +
+        '<p>Sichern kannst du ihn mit dem Sync oder einem Backup.</p>') +
+      Q('Wie verbinde ich zwei Geräte?',
+        '<ol><li>Auf dem ersten Gerät: ' + P + ' → <b>Code erzeugen</b>.</li><li>Mit <b>Kopieren</b> den Code übernehmen und dir selbst schicken oder abschreiben.</li><li>Auf dem zweiten Gerät: ' + P + ' → <b>Code eingeben</b>, Code einfügen, <b>Verbinden</b>.</li><li>Fertig. Beide gleichen sich ab jetzt von selbst ab. Mit <b>Jetzt abgleichen</b> geht es sofort.</li></ol>' +
+        '<p class="note">Der Lernstand beider Geräte wird zusammengeführt. Bei jeder Karte und Frage zählt die neueste Antwort. Dein Name wird nicht übertragen. Gib den Code nur auf deinen eigenen Geräten ein.</p>') +
+      Q('Wie mache ich ein Backup?',
+        '<ol><li>' + P + ' → Backup speichern → <b>Datei</b>.</li><li>Auf dem iPhone z. B. <b>In Dateien sichern</b> wählen.</li></ol>' +
+        '<p>Oder mit <b>Backup als Text kopieren</b> den Stand kopieren und z. B. in einer Notiz einfügen.</p>') +
+      Q('Wie spiele ich ein Backup ein?',
+        '<ol><li>' + P + ' → Backup einspielen → <b>Datei</b> oder <b>Text</b>.</li><li>Datei wählen oder den kopierten Text einfügen und <b>Prüfen</b>.</li><li><b>Zusammenführen</b> behält deinen jetzigen Stand und ergänzt ihn. <b>Ersetzen</b> überschreibt ihn mit dem Backup.</li></ol>') +
+      Q('Wie bekomme ich Updates?',
+        '<p>Von selbst: Gibt es eine neue Version, erscheint <b>Update bereit</b>. Tippe auf <b>Jetzt neu laden</b>. Dein Lernstand bleibt erhalten.</p>' +
+        '<p>Selbst nachsehen: ' + P + ' → <b>Nach Update suchen</b>.</p>') +
+      Q('Ich habe einen Fehler in einer Frage gefunden.',
+        '<p>Beantworte die Frage und tippe darunter auf <b>Frage melden</b>. Für alles andere gibt es unten das <b>Feedback</b>.</p>') +
+      Q('Was zeigt der Balken beim Lernstand?',
+        '<p>Den Anteil der Fragen, die du zuletzt ganz richtig beantwortet hast. Hat ein Kapitel keine Fragen, zählen die Karten mit „Gewusst“.</p>');
+  }
   function settingsView() {
     function syncHTML() {
       var c = syncCfg();
@@ -1812,6 +1842,7 @@
         sub('Zurücksetzen') +
         '<div class="setrow"><div class="l"><b>Verlauf löschen</b></div><button class="actbtn danger" id="bLog">Löschen</button></div>' +
       '<div class="setrow"><div class="l"><b>Lernstand zurücksetzen</b><small>Alle Fächer, Einstellungen bleiben</small></div><button class="actbtn danger" id="bProg">Zurücksetzen</button></div>') +
+      sec('hilfe', 'help', 'Hilfe', 'Installieren, Sync, Backup', faqHTML()) +
       sec('fb', 'fb', 'Feedback', 'Anonym, ohne Namen',
         '<div class="fbbox"><div class="l"><small>Schreib, was dir fehlt, was nicht klappt oder besser sein könnte. Anonym, ohne Namen. Bitte keine persönlichen Daten hineinschreiben.</small></div>' +
       '<textarea id="fbText" class="fbtext" maxlength="' + FB_MAX + '" placeholder="Deine Nachricht …" aria-label="Feedback"></textarea>' +
