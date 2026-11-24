@@ -34,7 +34,7 @@ with sync_playwright() as pw:
     ctx.add_init_script(SEED)
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     def openMot():
-        if not pg.locator('.group.open .ghead:has-text("Motivation")').count(): pg.click('.ghead:has-text("Motivation")')
+        if not pg.locator('.group.open .shead:has-text("Motivation")').count(): pg.click('.shead:has-text("Motivation")')
     def go(h):
         pg.goto(URL + '#/leer'); pg.wait_for_timeout(100); pg.goto(URL + h); pg.wait_for_timeout(250)
 

@@ -363,7 +363,7 @@
     { id: 'start', href: '#/', label: 'Start', svg: '<path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5H9v5H5a1 1 0 0 1-1-1z"/>' },
     { id: 'faecher', href: '#/faecher', label: 'Fächer', svg: '<rect x="3" y="6" width="14" height="14" rx="3"/><path d="M7 3h11a3 3 0 0 1 3 3v11"/>' },
     { id: 'verlauf', href: '#/verlauf', label: 'Statistik', svg: '<path d="M5 20V11M12 20V5M19 20v-6"/>' },
-    { id: 'set', href: '#/einstellungen', label: 'Einstellungen', svg: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>' }
+    { id: 'set', href: '#/einstellungen', label: 'Einstellungen', svg: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>' }
   ];
   $('#tabbar').innerHTML = '<nav aria-label="Hauptmenü">' + TABS.map(function (t) {
     return '<a class="tab" data-t="' + t.id + '" href="' + t.href + '" aria-label="' + t.label + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + t.svg + '</svg><span class="t">' + t.label + '</span></a>';
@@ -1748,6 +1748,12 @@
   function syncStatusText() { var c = syncCfg(); if (!c) return ''; return syncErr ? 'Gerade keine Verbindung · wird später erneut versucht' : syncWhen(c.last); }
   function syncStatusUI() { var e = $('#syncStat'); if (e) e.textContent = syncStatusText(); }
   var openSec = {};
+  var SETIC = {
+    learn: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="14" height="13" rx="2"/><path d="M7 4h12a2 2 0 0 1 2 2v11"/></svg>',
+    motiv: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
+    data: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
+    fb: '<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>'
+  };
   function settingsView() {
     function syncHTML() {
       var c = syncCfg();
@@ -1759,56 +1765,61 @@
         '<div class="setrow"><div class="l"><b>Sync beenden</b><small>Nur auf diesem Gerät. Der Lernstand hier bleibt.</small></div><button class="actbtn" id="sEnd">Beenden</button></div>' +
         '<div class="setrow"><div class="l"><b>Online-Kopie löschen</b><small>Löscht den Stand auf dem Server und beendet den Sync hier. Andere Geräte laden ihn beim nächsten Abgleich wieder hoch, bis du dort auch beendest.</small></div><button class="actbtn danger" id="sDel">Löschen</button></div>';
     }
-    var st = DB.settings;
+    var st = DB.settings, sc = syncCfg();
+    var motOn = ['mDue', 'mGoal', 'mChain', 'mCount', 'mMosaic', 'mBadges'].filter(function (k) { return st[k]; }).length;
+    function sec(id, icon, title, sum, body) {
+      return '<div class="group sec" data-sec="' + id + '"><button type="button" class="shead"><span class="sico">' + SETIC[icon] + '</span>' +
+        '<span class="stx"><b>' + title + '</b><small>' + esc(sum) + '</small></span><svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button><div class="gbody">' + body + '</div></div>';
+    }
+    var sub = function (t) { return '<h4 class="subh">' + t + '</h4>'; };
     var h = '<h1>Einstellungen</h1><p class="sub" style="margin-bottom:12px">' + esc(appName()) + '</p>' +
-      '<div class="group"><h3>Persönlich</h3>' +
-      '<div class="setrow"><div class="l"><b>Dein Name</b><small>Aus „Konstis Lernkiste“ wird z. B. „Annas Lernkiste“. Leer lassen für den Standardnamen.</small></div>' +
-      '<input class="txt" id="uname" type="text" maxlength="20" value="' + esc(st.name || '') + '" placeholder="Name" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Dein Name"></div></div>' +
-      '<div class="group"><h3>Darstellung</h3>' +
+      '<div class="group top">' +
+      '<div class="setrow"><div class="l"><b>Dein Name</b><small>Für den Titel, z. B. „Annas Lernkiste“</small></div>' +
+      '<input class="txt" id="uname" type="text" maxlength="20" value="' + esc(st.name || '') + '" placeholder="Name" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Dein Name"></div>' +
       '<div class="setrow"><div class="l"><b>Design</b></div>' + segHTML('theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['auto', 'System']], st.theme) + '</div>' +
-      '<div class="setrow"><div class="l"><b>Schriftgröße</b></div>' + segHTML('font', [[0.9, 'Klein'], [1, 'Mittel'], [1.15, 'Groß']], st.font) + '</div></div>' +
-      '<div class="group"><h3>Karteikarten</h3>' +
-      '<div class="setrow"><div class="l"><b>Standard-Filter</b><small>Welche Karten zuerst erscheinen</small></div>' + segHTML('cardFilter', [['red', 'Rot markiert'], ['all', 'Alle']], st.cardFilter) + '</div>' +
-      '<div class="setrow"><div class="l"><b>Reihenfolge</b></div>' + segHTML('cardOrder', [['script', 'Skript'], ['shuffle', 'Gemischt']], st.cardOrder) + '</div></div>' +
-      '<div class="group"><h3>Tests</h3>' +
-      '<div class="setrow"><div class="l"><b>Fragen pro Runde</b></div>' + segHTML('testN', [[5, '5'], [10, '10'], [0, 'Alle']], st.testN) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Schriftgröße</b></div>' + segHTML('font', [[0.9, 'Klein'], [1, 'Mittel'], [1.15, 'Groß']], st.font) + '</div>' + '</div>' +
+      sec('lernen', 'learn', 'Lernen', (st.testN ? st.testN : 'Alle') + ' Fragen pro Runde · Klausur ' + st.examMin + ' Min.',
+        sub('Karteikarten') +
+        '<div class="setrow"><div class="l"><b>Standard-Filter</b><small>Welche Karten zuerst erscheinen</small></div>' + segHTML('cardFilter', [['red', 'Rot markiert'], ['all', 'Alle']], st.cardFilter) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Reihenfolge</b></div>' + segHTML('cardOrder', [['script', 'Skript'], ['shuffle', 'Gemischt']], st.cardOrder) + '</div>' +
+        sub('Tests') +
+        '<div class="setrow"><div class="l"><b>Fragen pro Runde</b></div>' + segHTML('testN', [[5, '5'], [10, '10'], [0, 'Alle']], st.testN) + '</div>' +
       '<div class="setrow"><div class="l"><b>Klausur: Minuten</b></div>' + segHTML('examMin', [[10, '10'], [20, '20'], [30, '30']], st.examMin) + '</div>' +
-      '<div class="setrow"><div class="l"><b>Klausur: Fragen</b></div>' + segHTML('examN', [[8, '8'], [12, '12'], [16, '16']], st.examN) + '</div></div>' +
-      '<div class="group"><h3>Motivation</h3>' +
-      '<div class="setrow"><div class="l"><b>Heute fällig</b><small>Wiederholung nach 1, 3, 7 und 14 Tagen</small></div>' + segHTML('mDue', [[0, 'Aus'], [1, 'An']], st.mDue) + '</div>' +
+      '<div class="setrow"><div class="l"><b>Klausur: Fragen</b></div>' + segHTML('examN', [[8, '8'], [12, '12'], [16, '16']], st.examN) + '</div>') +
+      sec('motiv', 'motiv', 'Motivation', motOn ? motOn + ' von 6 an' : 'Alles aus',
+        '<div class="setrow"><div class="l"><b>Heute fällig</b><small>Wiederholung nach 1, 3, 7 und 14 Tagen</small></div>' + segHTML('mDue', [[0, 'Aus'], [1, 'An']], st.mDue) + '</div>' +
       '<div class="setrow"><div class="l"><b>Tagesziel</b><small>Antworten pro Tag</small></div>' + segHTML('mGoal', [[0, 'Aus'], [10, '10'], [20, '20'], [30, '30'], [50, '50']], st.mGoal) + '</div>' +
       '<div class="setrow"><div class="l"><b>Lerntage-Kette</b><small>Ein Pausetag pro Woche reißt sie nicht</small></div>' + segHTML('mChain', [[0, 'Aus'], [1, 'An']], st.mChain) + '</div>' +
       '<div class="setrow"><div class="l"><b>Klausur-Countdown</b></div>' + segHTML('mCount', [[0, 'Aus'], [1, 'An']], st.mCount) + '</div>' +
       '<div class="setrow"><div class="l"><b>Fragen-Übersicht</b><small>Mosaik im Kapitel</small></div>' + segHTML('mMosaic', [[0, 'Aus'], [1, 'An']], st.mMosaic) + '</div>' +
-      '<div class="setrow"><div class="l"><b>Abzeichen</b><small>Im Verlauf</small></div>' + segHTML('mBadges', [[0, 'Aus'], [1, 'An']], st.mBadges) + '</div></div>' +
-      '<div class="group"><h3>Geräte synchronisieren</h3>' + syncHTML() + '</div>' +
-      '<div class="group"><h3>Daten und Backup</h3>' +
-      '<div class="setrow"><div class="l"><b>Backup speichern</b><small>Lernstand, Verlauf, eigene Karten und Einstellungen als Datei</small></div><button class="actbtn" id="bShare">Datei</button></div>' +
+      '<div class="setrow"><div class="l"><b>Abzeichen</b><small>Im Verlauf</small></div>' + segHTML('mBadges', [[0, 'Aus'], [1, 'An']], st.mBadges) + '</div>') +
+      sec('daten', 'data', 'Daten und App', (sc ? 'Sync an' : 'Sync aus') + ' · Backup · Version',
+        sub('Geräte synchronisieren') + syncHTML() +
+        sub('Backup') +
+        '<div class="setrow"><div class="l"><b>Backup speichern</b><small>Lernstand, Verlauf, eigene Karten und Einstellungen als Datei</small></div><button class="actbtn" id="bShare">Datei</button></div>' +
       '<div class="setrow"><div class="l"><b>Backup als Text kopieren</b><small>Zum Einfügen auf einem anderen Gerät</small></div><button class="actbtn" id="bCopy">Kopieren</button></div>' +
       '<div class="setrow"><div class="l"><b>Backup einspielen</b><small>Aus Datei oder eingefügtem Text</small></div><span style="display:flex;gap:6px"><button class="actbtn" id="bFile">Datei</button><button class="actbtn" id="bPaste">Text</button></span></div>' +
       '<div id="impbox"></div><input type="file" id="file" accept=".json,application/json,text/plain" style="display:none">' +
-      '<div class="setrow"><div class="l"><b>Verlauf löschen</b></div><button class="actbtn danger" id="bLog">Löschen</button></div>' +
-      '<div class="setrow"><div class="l"><b>Lernstand zurücksetzen</b><small>Alle Fächer, Einstellungen bleiben</small></div><button class="actbtn danger" id="bProg">Zurücksetzen</button></div></div>' +
-      '<div class="group"><h3>Feedback</h3>' +
-      '<div class="fbbox"><div class="l"><b>Feedback / Ideen senden</b><small>Schreib, was dir fehlt, was nicht klappt oder besser sein könnte. Anonym, ohne Namen. Bitte keine persönlichen Daten hineinschreiben.</small></div>' +
-      '<textarea id="fbText" class="fbtext" maxlength="' + FB_MAX + '" placeholder="Deine Nachricht …" aria-label="Feedback"></textarea>' +
-      '<input type="text" id="fbWeb" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' +
-      '<div class="fbrow"><small id="fbInfo" class="fbinfo">' + fbInfo() + '</small><button class="actbtn" id="fbSend" disabled>Senden</button></div></div></div>' +
-      '<div class="group"><h3>App</h3>' +
-      '<div class="setrow"><div class="l"><b>Version</b><small>' + esc(C.version) + '</small></div><button class="actbtn" id="bUpd">Nach Update suchen</button></div>' +
+        sub('App') +
+        '<div class="setrow"><div class="l"><b>Version</b><small>' + esc(C.version) + '</small></div><button class="actbtn" id="bUpd">Nach Update suchen</button></div>' +
       '<div class="setrow"><div class="l"><b>Offline</b><small>Nach dem ersten Öffnen mit Internet funktioniert die App ohne Netz.</small></div></div>' +
       '<div class="setrow"><div class="l"><b>Anonyme Nutzungsstatistik</b><small>Ohne personenbezogene Daten: zählt nur App-Starts und geöffnete Fächer. Kein Name, keine IP-Adresse, keine Geräte-ID, kein Lernstand. Niemand ist daran erkennbar, auch nicht für mich.</small></div>' + segHTML('stats', [[0, 'Aus'], [1, 'An']], st.stats ? 1 : 0) + '</div>' +
-      '<div class="setrow tap" id="privRow" role="button" tabindex="0"><div class="l"><b>Datenschutz</b><small>Was die App speichert und sendet</small></div><button class="actbtn" id="bPriv" type="button">Lesen</button></div></div>' +
+      '<div class="setrow tap" id="privRow" role="button" tabindex="0"><div class="l"><b>Datenschutz</b><small>Was die App speichert und sendet</small></div><button class="actbtn" id="bPriv" type="button">Lesen</button></div>' +
+        sub('Zurücksetzen') +
+        '<div class="setrow"><div class="l"><b>Verlauf löschen</b></div><button class="actbtn danger" id="bLog">Löschen</button></div>' +
+      '<div class="setrow"><div class="l"><b>Lernstand zurücksetzen</b><small>Alle Fächer, Einstellungen bleiben</small></div><button class="actbtn danger" id="bProg">Zurücksetzen</button></div>') +
+      sec('fb', 'fb', 'Feedback', 'Anonym, ohne Namen',
+        '<div class="fbbox"><div class="l"><small>Schreib, was dir fehlt, was nicht klappt oder besser sein könnte. Anonym, ohne Namen. Bitte keine persönlichen Daten hineinschreiben.</small></div>' +
+      '<textarea id="fbText" class="fbtext" maxlength="' + FB_MAX + '" placeholder="Deine Nachricht …" aria-label="Feedback"></textarea>' +
+      '<input type="text" id="fbWeb" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">' +
+      '<div class="fbrow"><small id="fbInfo" class="fbinfo">' + fbInfo() + '</small><button class="actbtn" id="fbSend" disabled>Senden</button></div></div>') +
       '<p class="note" style="text-align:center">' + (syncCfg() ? 'Dein Lernstand wird über deinen Sync-Code mit deinen anderen Geräten abgeglichen.' : 'Dein Lernstand liegt nur auf diesem Gerät. Mit dem Backup oder dem Sync sicherst du ihn.') + '</p>';
     view.innerHTML = h;
-    $$('#view .group').forEach(function (g) {
-      var t = $('h3', g); if (!t || t.textContent === 'Persönlich') return;
-      var name = t.textContent, body = document.createElement('div'), btn = document.createElement('button');
-      body.className = 'gbody'; while (t.nextSibling) body.appendChild(t.nextSibling); g.appendChild(body);
-      btn.type = 'button'; btn.className = 'ghead'; btn.innerHTML = '<span>' + esc(name) + '</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
-      function set(on) { g.classList.toggle('open', on); btn.setAttribute('aria-expanded', on ? 'true' : 'false'); openSec[name] = on; }
+    $$('#view .sec').forEach(function (g) {
+      var id = g.dataset.sec, btn = $('.shead', g);
+      function set(on) { g.classList.toggle('open', on); btn.setAttribute('aria-expanded', on ? 'true' : 'false'); openSec[id] = on; }
       btn.onclick = function () { set(!g.classList.contains('open')); };
-      t.replaceWith(btn); set(!!openSec[name]);
+      set(openSec[id] === undefined ? id === 'fb' : !!openSec[id]);
     });
     $$('.seg[data-k] button').forEach(function (b) {
       b.onclick = function () {

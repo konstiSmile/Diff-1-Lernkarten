@@ -16,8 +16,8 @@ def dev(b, prog, ptime, name):
     pg=ctx.new_page(); pg.on('pageerror',lambda e:errs.append(str(e))); return pg
 def db(pg): return json.loads(pg.evaluate("localStorage.getItem('lernkiste-v1')"))
 def opensync(pg):
-    pg.goto(B+'#/einstellungen'); pg.wait_for_selector('.ghead')
-    if pg.get_attribute('.ghead:has-text("Geräte synchronisieren")','aria-expanded')!='true': pg.click('.ghead:has-text("Geräte synchronisieren")')
+    pg.goto(B+'#/einstellungen'); pg.wait_for_selector('.shead')
+    if pg.get_attribute('.shead:has-text("Daten und App")','aria-expanded')!='true': pg.click('.shead:has-text("Daten und App")')
 ok=lambda c,m: print(('OK   ' if c else 'FAIL ')+m)
 with sync_playwright() as p:
     b=p.chromium.launch(executable_path='/usr/bin/google-chrome',args=['--no-sandbox'])
@@ -36,7 +36,7 @@ with sync_playwright() as p:
     A.evaluate("document.dispatchEvent(new Event('visibilitychange'))"); A.wait_for_timeout(1000)
     ok(db(A)['progress']=={'k1-a':'known','k1-b':'known','k1-c':'known'}, 'A übernimmt neuere Bewertung von B '+str(db(A)['progress']))
     # Lernstand auf A zurücksetzen -> B verliert ihn
-    A.goto(B+'#/einstellungen'); A.wait_for_selector('.ghead'); A.click('.ghead:has-text("Daten und Backup")') if A.get_attribute('.ghead:has-text("Daten und Backup")','aria-expanded')!='true' else None; A.click('#bProg'); A.click('#bProg')
+    A.goto(B+'#/einstellungen'); A.wait_for_selector('.shead'); A.click('.shead:has-text("Daten und App")') if A.get_attribute('.shead:has-text("Daten und App")','aria-expanded')!='true' else None; A.click('#bProg'); A.click('#bProg')
     A.evaluate("document.dispatchEvent(new Event('visibilitychange'))"); A.wait_for_timeout(1000)
     Bd.evaluate("document.dispatchEvent(new Event('visibilitychange'))"); Bd.wait_for_timeout(1000)
     ok(db(Bd)['progress']=={}, 'Reset gilt auf B '+str(db(Bd)['progress']))

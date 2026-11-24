@@ -51,7 +51,7 @@ with sync_playwright() as pw:
         ok(pg.evaluate('document.documentElement.scrollWidth') <= 390, theme + ': Verlauf ohne Überlauf')
         # Abschalten
         go('#/einstellungen')
-        if not pg.locator('.group.open .ghead:has-text("Motivation")').count(): pg.click('.ghead:has-text("Motivation")')
+        if not pg.locator('.group.open .shead:has-text("Motivation")').count(): pg.click('.shead:has-text("Motivation")')
         pg.click('.seg[data-k=mMosaic] button[data-v="0"]'); pg.click('.seg[data-k=mBadges] button[data-v="0"]')
         go('#/f/psy/k1'); ok(pg.locator('.mosaic').count() == 0, theme + ': Mosaik abschaltbar')
         go('#/verlauf'); ok(pg.locator('.badges').count() == 0, theme + ': Abzeichen abschaltbar')

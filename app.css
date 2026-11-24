@@ -562,3 +562,17 @@ body.immersive .updbar { display:none; }
 
 /* v52 Lernstand: Balken nie zu schmal */
 .tile .foot .bar { min-width:64px; }
+
+/* v53 Einstellungen gegliedert */
+.group.top { padding:2px 16px; }
+.group.sec { padding:0 16px; }
+.shead { all:unset; box-sizing:border-box; width:100%; display:flex; align-items:center; gap:12px; padding:14px 0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.shead .sico { flex:none; width:40px; height:40px; border-radius:14px; background:var(--green-soft); color:var(--green); display:flex; align-items:center; justify-content:center; }
+.shead .sico svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.shead .stx { flex:1; min-width:0; } .shead .stx b { display:block; font-weight:800; color:var(--ink); }
+.shead .stx small { display:block; color:var(--muted); font-size:.82rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.shead .chev { flex:none; width:18px; height:18px; fill:none; stroke:var(--chev); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; transition:transform .2s; }
+.group.sec.open > .shead .chev { transform:rotate(180deg); }
+.group.sec > .gbody { border-top:1px solid var(--line); }
+.subh { margin:16px 0 0; font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:800; }
+.group.sec .gbody > .setrow:last-child, .group.sec .gbody > .fbbox:last-child { margin-bottom:6px; }
