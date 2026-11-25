@@ -251,7 +251,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'qr.svg', 'font/
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v61';
+const CACHE = 'lernkiste-v62';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{

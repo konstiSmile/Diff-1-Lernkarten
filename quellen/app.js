@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'auto', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1, obDone: 0 };
+  var DEFAULTS = { theme: 'auto', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1, obDone: 0, favs: null, homeHide: null, tint: null };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -27,7 +27,9 @@
     book: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/>',
     cards: '<rect x="3" y="6" width="14" height="14" rx="3"/><path d="M7 3h11a3 3 0 0 1 3 3v11"/>', mc: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/>',
     tf: '<path d="M4 8.5l2.5 2.5L11 6.5"/><path d="M14 14l6 6M20 14l-6 6"/>', gap: '<rect x="3" y="8" width="18" height="8" rx="2.5"/><path d="M7 12h4"/>',
-    clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5"/>', more: '<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>'
+    clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5"/>', more: '<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>',
+    eyeoff: '<path d="M3 3l18 18"/><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4 9.5 6a12.6 12.6 0 0 1-2.9 3.6M6.5 7.6C4.5 8.9 3.1 10.7 2.5 12c1 2 4.5 6 9.5 6 1.6 0 3-.4 4.3-1"/><path d="M9.9 10a3 3 0 0 0 4.1 4.1"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-1.3-1-1.6-1-2.7 0-1 .8-1.6 1.8-1.6H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.3" r="1"/><circle cx="14.5" cy="7.3" r="1"/>'
   };
   function ic(n, cls) { return '<svg class="' + (cls || 'i') + '" viewBox="0 0 24 24" aria-hidden="true"' + (n === 'more' ? ' style="fill:currentColor;stroke:none"' : '') + '>' + IC[n] + '</svg>'; }
   var CHEV = '<svg class="chev" viewBox="0 0 8 14" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>';
@@ -561,6 +563,72 @@
     return [r.n ? (r.k ? r.k + '/' + r.n + ' Fragen' : r.n + ' Fragen') : '', r.nc ? (r.kc ? r.kc + '/' + r.nc + ' Karten' : r.nc + ' Karten') : ''].filter(Boolean).join(' · ');
   }
   function subjPct(s) { return Math.round(progOf(s.chapters, true).pct); }
+  // ====================================================================== Favoriten, Farben, Startseite anpassen (v62)
+  var TINTS = [['', 'Standard'], ['sage', 'Salbei'], ['peach', 'Pfirsich'], ['honey', 'Honig'], ['sky', 'Himmel'], ['lilac', 'Flieder']];
+  function stTouch() { DB.settings._ts = Date.now(); save(); }
+  function favList() { return Array.isArray(DB.settings.favs) ? DB.settings.favs : []; }
+  function isFav(k) { return favList().indexOf(k) >= 0; }
+  function setFav(k, on) { var l = favList().filter(function (x) { return x !== k; }); if (on) l.push(k); DB.settings.favs = l; stTouch(); }
+  function homeHidden(sid) { return (DB.settings.homeHide || []).indexOf(sid) >= 0; }
+  function setHomeHidden(sid, on) { var l = (DB.settings.homeHide || []).filter(function (x) { return x !== sid; }); if (on) l.push(sid); DB.settings.homeHide = l; stTouch(); }
+  function tintMap() { return DB.settings.tint && typeof DB.settings.tint === 'object' ? DB.settings.tint : {}; }
+  function setTint(k, v) { var m = Object.assign({}, tintMap()); if (v) m[k] = v; else delete m[k]; DB.settings.tint = m; stTouch(); }
+  // Schlüssel: „sid“ (Fach), „sid/u/gid“ (Unterbereich), „sid/cid“ (Kapitel); Farbe erbt Fach → Unterbereich → Kapitel
+  function tintOf(sid, gid, cid) { var m = tintMap(); return (cid && m[sid + '/' + cid]) || (gid && m[sid + '/u/' + gid]) || m[sid] || ''; }
+  function tintCls(t) { return t ? ' tinted t-' + t : ''; }
+  function favInfo(k) {
+    var p = k.split('/'), s = subj(p[0]); if (!s) return null;
+    if (p[1] === 'u') { var g = (s.groups || []).filter(function (x) { return x.id === p[2]; })[0]; if (!g) return null;
+      var chs = s.chapters.filter(function (c) { return c.group === g.id; });
+      return { s: s, short: g.name, title: g.name, href: '#/f/' + s.id + (chs.length === 1 ? '/' + chs[0].id : '/u/' + g.id) }; }
+    var ch = chap(p[0], p[1]); if (!ch) return null;
+    var t0 = ch.title.split(' · ')[0];
+    return { s: s, short: t0.replace(/^Kapitel /, 'Kap. '), title: ch.title, href: '#/f/' + s.id + '/' + ch.id };
+  }
+  var STAR = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>';
+  function favChips(sid) {
+    var l = favList().map(function (k) { var f = favInfo(k); return f && f.s.id === sid ? '<a class="favchip" href="' + f.href + '" data-lp="fav" data-k="' + esc(k) + '">' + STAR + esc(f.short) + '</a>' : ''; }).join('');
+    return l ? '<div class="favchips">' + l + '</div>' : '';
+  }
+  // Langes Drücken (Touch) bzw. Rechtsklick öffnet das Menü; danach wird der Klick geschluckt
+  function wireLongPress(root, open) {
+    $$('[data-lp]', root).forEach(function (el) {
+      var tm = 0, x0 = 0, y0 = 0, fired = false;
+      el.addEventListener('touchstart', function (e) { if (e.target.closest('[data-lp]') !== el) return; var t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; fired = false; clearTimeout(tm);
+        tm = setTimeout(function () { fired = true; el.classList.remove('lpdown'); if (navigator.vibrate) try { navigator.vibrate(12); } catch (x) {} open(el); }, 480); el.classList.add('lpdown'); }, { passive: true });
+      el.addEventListener('touchmove', function (e) { var t = e.touches[0]; if (Math.abs(t.clientX - x0) > 10 || Math.abs(t.clientY - y0) > 10) { clearTimeout(tm); el.classList.remove('lpdown'); } }, { passive: true });
+      ['touchend', 'touchcancel'].forEach(function (n) { el.addEventListener(n, function () { clearTimeout(tm); el.classList.remove('lpdown'); }); });
+      el.addEventListener('contextmenu', function (e) { if (e.target.closest('[data-lp]') !== el) return; e.preventDefault(); clearTimeout(tm); if (!fired) { fired = true; open(el); } });
+      el.addEventListener('click', function (e) { if (fired) { e.preventDefault(); e.stopPropagation(); fired = false; } }, true);
+    });
+  }
+  function tintPicker(k, inherit) {
+    var cur = tintMap()[k] || '', x = TINTS.filter(function (t) { return t[0] === cur; })[0] || TINTS[0];
+    return '<div class="tintrow" role="radiogroup" aria-label="Farbe">' + TINTS.map(function (t) {
+      var lab = !t[0] && inherit ? 'Wie das Fach' : t[1];
+      return '<button type="button" class="sw2 ' + (t[0] ? 't-' + t[0] : 'none') + (cur === t[0] ? ' on' : '') + '" data-t="' + t[0] + '" role="radio" aria-checked="' + (cur === t[0]) + '" aria-label="' + lab + '"></button>';
+    }).join('') + '</div><p class="tintlab">' + (!cur && inherit ? 'Wie das Fach' : x[1]) + '</p>';
+  }
+  // Menü zu einem Fach (Startseite / Fächer) oder einem Unterbereich/Kapitel
+  function lpMenu(kind, k, rerender) {
+    var p = k.split('/'), s = subj(p[0]), h = '', name, inherit = kind !== 'subj';
+    if (kind === 'fav') { var f = favInfo(k); setFav(k, false); rerender(); toast('„' + (f ? f.short : '') + '“ aus den Favoriten genommen', 'Rückgängig', function () { setFav(k, true); rerender(); }); return; }
+    if (kind === 'subj') name = s.name; else { var fi = favInfo(k); name = fi ? fi.title : k; }
+    if (kind !== 'subj') h += '<button type="button" class="lprow" id="lpFav">' + STAR + (isFav(k) ? 'Aus den Favoriten nehmen' : 'Favorisieren') + '</button>';
+    if (kind === 'subj') h += '<button type="button" class="lprow" id="lpHide">' + ic('eyeoff') + 'Ausblenden</button>';
+    h += '<div class="lprow nob">' + ic('palette') + 'Farbe' + (inherit ? '' : '<small>gilt auch für die Unterbereiche</small>') + '</div><div id="tintBox">' + tintPicker(k, inherit) + '</div>';
+    openTile(name, h);
+    function wire() {
+      $$('#tintBox .sw2').forEach(function (b) { b.onclick = function () { setTint(k, b.dataset.t); $('#tintBox').innerHTML = tintPicker(k, inherit); wire(); rerender(); }; });
+    }
+    wire();
+    var fb = $('#lpFav'); if (fb) fb.onclick = function () { var on = !isFav(k); setFav(k, on); closeTile(); rerender(); toast(on ? 'Als Favorit auf der Startseite' : 'Aus den Favoriten genommen'); };
+    var hb = $('#lpHide'); if (hb) hb.onclick = function () {
+      $('.pvbody').innerHTML = '<p class="lpq">Wo soll „' + esc(s.name) + '“ ausgeblendet werden?</p><button type="button" class="lprow" id="lpH1">Nur auf der Startseite</button><button type="button" class="lprow" id="lpH2">Auch bei den Fächern</button>';
+      $('#lpH1').onclick = function () { setHomeHidden(s.id, true); closeTile(); rerender(); toast('„' + s.name + '“ nicht mehr auf der Startseite', 'Rückgängig', function () { setHomeHidden(s.id, false); rerender(); }); };
+      $('#lpH2').onclick = function () { setHidden(s.id, true); closeTile(); rerender(); toast('„' + s.name + '“ ausgeblendet', 'Rückgängig', function () { setHidden(s.id, false); rerender(); }); };
+    };
+  }
   function homeView() {
     var st = DB.settings, now = new Date(), hr = now.getHours(), nm = (st.name || '').trim();
     var greet = (hr >= 5 && hr < 11 ? 'Guten Morgen' : hr >= 11 && hr < 18 ? 'Guten Tag' : 'Guten Abend') + (nm ? ', ' + nm : '') + '!';
@@ -575,17 +643,25 @@
     h += '<div class="hello"><div class="stk a"></div><div class="stk b"></div><div class="stk c"><i></i><i></i><i></i></div>' +
       '<div class="txt"><b>' + esc(greet) + '</b><span>' + line + '</span></div>' +
       '<a class="go1" id="goLearn" href="' + goHref + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>Lernen starten</a></div>';
-    var ex = examDays();
+    var exAll = examDays(), ex = exAll.filter(function (x) { return !homeHidden(x.s.id); }), shown = {};
     if (ex.length) {
       h += '<div class="sechead"><b>Deine Klausuren</b><a href="#/faecher">Alle Fächer</a></div><div class="exams">' + ex.map(function (x) {
-        var dt = new Date(x.s.exam + 'T12:00:00'), p = subjPct(x.s);
+        var dt = new Date(x.s.exam + 'T12:00:00'), p = subjPct(x.s); shown[x.s.id] = 1;
         var when = x.d === 0 ? 'heute' : x.d === 1 ? 'morgen' : 'in ' + x.d + ' Tagen';
-        return '<a class="exrow" href="#/f/' + x.s.id + '"><div class="exdate"><b>' + dt.getDate() + '</b><span>' + MON[dt.getMonth()] + '</span></div>' +
+        return '<div class="exwrap' + tintCls(tintOf(x.s.id)) + '" data-lp="subj" data-k="' + x.s.id + '"><a class="exrow" href="#/f/' + x.s.id + '"><div class="exdate"><b>' + dt.getDate() + '</b><span>' + MON[dt.getMonth()] + '</span></div>' +
           '<div class="exmid"><div class="l1"><b>' + esc(x.s.name) + '</b><span>' + p + ' %</span></div>' +
           '<div class="bar" role="img" aria-label="Lernstand ' + p + ' Prozent"><div style="width:' + p + '%"></div></div>' +
-          (st.mCount ? '<small>' + when + (x.s.examTime ? ' · ' + esc(x.s.examTime) : '') + '</small>' : '') + '</div>' + CHEV + '</a>';
+          (st.mCount ? '<small>' + when + (x.s.examTime ? ' · ' + esc(x.s.examTime) : '') + '</small>' : '') + '</div>' + CHEV + '</a>' + favChips(x.s.id) + '</div>';
       }).join('') + '</div>';
     } else h += '<div class="sechead"><b>Deine Fächer</b><a href="#/faecher">Alle Fächer</a></div>';
+    // Favoriten von Fächern ohne eigene Zeile (von der Startseite genommen oder ohne Klausur)
+    var rest = C.subjects.filter(function (x) { return !shown[x.id] && !isHidden(x.id) && favChips(x.id); });
+    if (rest.length) h += '<div class="exams">' + rest.map(function (x) {
+      return '<div class="exwrap favonly' + tintCls(tintOf(x.id)) + '"><a class="favhead" href="#/f/' + x.id + '">' + esc(x.name) + CHEV + '</a>' + favChips(x.id) + '</div>';
+    }).join('') + '</div>';
+    var hh = exAll.filter(function (x) { return homeHidden(x.s.id); });
+    if (hh.length) h += '<button type="button" class="hiddenlink" id="hidLink">nicht auf der Startseite (' + hh.length + ')</button><div class="hiddenlist" id="hidList" hidden>' +
+      hh.map(function (x) { return '<div class="hidrow"><i class="sw" style="background:var(--c-' + x.s.id + ')"></i><span>' + esc(x.s.name) + '</span><button type="button" data-show="' + x.s.id + '">Einblenden</button></div>'; }).join('') + '</div>';
     if (last) {
       h += '<a class="next" href="' + esc(last.h) + '"><div class="nt"><span class="k">Als Nächstes</span><b>' + esc(last.t) + '</b><small>' + esc(last.sub) + '</small></div>' +
         '<span class="arr">' + ic('arrow') + '</span></a>';
@@ -593,6 +669,9 @@
     var kwn = kwList().length; if (kwn) h += kwRowHTML('#/begriffe', kwn, '', 1);
     h += todayHTML();
     view.innerHTML = h;
+    wireLongPress(view, function (el) { lpMenu(el.dataset.lp, el.dataset.k, homeView); });
+    var hl = $('#hidLink'); if (hl) hl.onclick = function () { var l = $('#hidList'); l.hidden = !l.hidden; };
+    $$('[data-show]').forEach(function (b) { b.onclick = function () { setHomeHidden(b.dataset.show, false); homeView(); toast('„' + subj(b.dataset.show).name + '“ wieder auf der Startseite'); }; });
   }
   function faecherView() {
     var vis = C.subjects.filter(function (s) { return !isHidden(s.id); }), hid = C.subjects.filter(function (s) { return isHidden(s.id); });
@@ -600,7 +679,7 @@
       '<a class="fakesearch" href="#/suche"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Begriff oder Satz suchen …</a><div class="grid fach">';
     vis.forEach(function (s) {
       var st = subjStats(s);
-      h += '<div class="tilewrap" data-sid="' + s.id + '"><div class="hidehint">Ausblenden</div><a class="tile s-' + s.id + '" href="#/f/' + s.id + '">' + (st.placeholder ? '<span class="badge">Gerüst</span>' : '') +
+      h += '<div class="tilewrap" data-sid="' + s.id + '"><div class="hidehint">Ausblenden</div><a class="tile s-' + s.id + tintCls(tintOf(s.id)) + '" data-lp="subj" data-k="' + s.id + '" href="#/f/' + s.id + '">' + (st.placeholder ? '<span class="badge">Gerüst</span>' : '') +
         '<div><h2 class="name">' + esc(s.name) + '</h2><p class="desc">' + esc(s.desc) + '</p></div>' +
         '<div class="foot"><span>' + esc(st.txt) + '</span><div class="bar"><div style="width:' + st.pct + '%"></div></div><span class="go">Öffnen</span></div></a>' +
         '<button type="button" class="tilemenu" aria-label="Mehr zu ' + esc(s.name) + '">' + ic('more') + '</button></div>';
@@ -615,6 +694,7 @@
     }
     view.innerHTML = h;
     wireHome(!!hid.length);
+    wireLongPress(view, function (el) { lpMenu(el.dataset.lp, el.dataset.k, faecherView); });
   }
   function hideSubject(sid) {
     setHidden(sid, true); faecherView();
@@ -716,8 +796,9 @@
     if (ch.cards && ch.items) desc = 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation';
     else if (ch.cards) desc = 'Karteikarten';
     else { var b2 = tests(s.id, ch.id).best.exam; if (b2 !== undefined) parts.push('Klausur ' + b2 + ' %'); desc = 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation'; }
-    return '<a class="tile s-' + s.id + '" href="#/f/' + s.id + '/' + ch.id + '">' + (ch.placeholder ? '<span class="badge">Gerüst</span>' : '') +
-      '<div><h2 class="name">' + esc(ch.title) + '</h2><p class="desc">' + esc(desc) + '</p>' + (ch.note ? '<p class="cnote">' + esc(ch.note) + '</p>' : '') + '</div>' +
+    var ck = s.id + '/' + ch.id;
+    return '<a class="tile s-' + s.id + tintCls(tintOf(s.id, ch.group, ch.id)) + '"' + (ch.placeholder ? '' : ' data-lp="sec" data-k="' + ck + '"') + ' href="#/f/' + s.id + '/' + ch.id + '">' + (ch.placeholder ? '<span class="badge">Gerüst</span>' : '') +
+      '<div><h2 class="name">' + (isFav(ck) ? '<span class="favst" aria-label="Favorit">' + STAR + '</span>' : '') + esc(ch.title) + '</h2><p class="desc">' + esc(desc) + '</p>' + (ch.note ? '<p class="cnote">' + esc(ch.note) + '</p>' : '') + '</div>' +
       '<div class="foot"><span>' + esc(parts.join(' · ')) + '</span><div class="bar"><div style="width:' + pct + '%"></div></div><span class="go">Öffnen</span></div></a>';
   }
   function fachView(sid, gid) {
@@ -732,8 +813,9 @@
       s.groups.forEach(function (g) {
         var chs = s.chapters.filter(function (c) { return c.group === g.id; }), gp = progOf(chs, true);
         var txt = !chs.length ? 'Inhalte folgen' : progTxt(gp);
-        h += '<a class="tile s-' + sid + '" href="#/f/' + sid + (chs.length === 1 ? '/' + chs[0].id : '/u/' + g.id) + '">' + (chs.length ? '' : '<span class="badge">Folgt</span>') +
-          '<div><h2 class="name">' + esc(g.name) + '</h2><p class="desc">' + esc(g.desc) + '</p></div>' +
+        var one = chs.length === 1 ? chs[0].id : null, gk = one ? sid + '/' + one : sid + '/u/' + g.id; // ein Kapitel = Kachel steht für das Kapitel
+        h += '<a class="tile s-' + sid + tintCls(tintOf(sid, g.id, one)) + '"' + (chs.length ? ' data-lp="sec" data-k="' + gk + '"' : '') + ' href="#/f/' + sid + (chs.length === 1 ? '/' + chs[0].id : '/u/' + g.id) + '">' + (chs.length ? '' : '<span class="badge">Folgt</span>') +
+          '<div><h2 class="name">' + (isFav(gk) ? '<span class="favst" aria-label="Favorit">' + STAR + '</span>' : '') + esc(g.name) + '</h2><p class="desc">' + esc(g.desc) + '</p></div>' +
           '<div class="foot"><span>' + esc(txt) + '</span><div class="bar"><div style="width:' + gp.pct + '%"></div></div><span class="go">Öffnen</span></div></a>';
       });
     } else {
@@ -743,6 +825,7 @@
     }
     var kwn = !grp ? kwList(sid).length : 0;
     view.innerHTML = h + '</div>' + (kwn ? kwRowHTML('#/begriffe?s=' + sid, kwn) : '');
+    wireLongPress(view, function (el) { lpMenu(el.dataset.lp, el.dataset.k, function () { fachView(sid, gid); }); });
   }
   function chapterView(sid, cid, q) {
     if (sid === 'psy' && cid === 'tp') { location.replace('#/f/psy/u/pers'); return; }
@@ -2037,6 +2120,9 @@
       Q('Wie merke ich mir Begriffe, die ich nicht kenne?',
         '<ol><li>Tippe in einer Frage oben rechts auf <span class="kwi sm">' + KW_IC + '</span>.</li><li>Tippe das Wort an. Für längere Begriffe tippst du die Wörter daneben dazu.</li><li><b>Erklärung</b> zeigt die passende Karteikarte aus diesem Fach. Gibt es noch keine, siehst du eine passende Testfrage mit Lösung. <b>Merken</b> setzt den Begriff auf deine Liste.</li></ol>' +
         '<p>Die Liste <b>Meine Begriffe</b> findest du auf der Startseite und im jeweiligen Fach. Gibt es keine passende Erklärung, tippe auf <b>Erklärung fehlt melden</b>, dann ergänzen wir sie.</p>') +
+      Q('Wie lege ich Favoriten an oder ändere Farben?',
+        '<p>Halte eine Kachel gedrückt. Bei Unterbereichen und Kapiteln (unter <b>Fächer</b>) kannst du <b>Favorisieren</b>, dann erscheinen sie auf der Startseite als Knopf unter ihrem Fach. Mit <b>Farbe</b> gibst du der Kachel eine eigene Farbe. Die Farbe eines Fachs gilt auch für seine Unterbereiche, außer du stellst sie dort extra ein.</p>' +
+        '<p>Eine Klausur auf der Startseite gedrückt halten → <b>Ausblenden</b>: nur auf der Startseite oder auch bei den Fächern. Zurückholen kannst du sie unter der Liste mit <b>nicht auf der Startseite</b>. Favoriten-Knopf gedrückt halten nimmt ihn wieder heraus.</p>') +
       Q('Ich habe einen Fehler in einer Frage gefunden.',
         '<p>Beantworte die Frage und tippe darunter auf <b>Frage melden</b>. Für alles andere gibt es unten das <b>Feedback</b>.</p>') +
       Q('Was zeigt der Balken beim Lernstand?',
