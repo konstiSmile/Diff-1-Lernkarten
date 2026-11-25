@@ -1,7 +1,7 @@
 // Offline-Speicher für Konstis Lernkiste.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v59';
-const FILES = ["./", "index.html", "app.css", "app.js", "content.js", "font/nunito.woff", "diff1.html", "querschnitt.html", "psycho2.html", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
+const CACHE = 'lernkiste-v60';
+const FILES = ["./", "index.html", "app.css", "app.js", "content.js", "qr.svg", "font/nunito.woff", "diff1.html", "querschnitt.html", "psycho2.html", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));

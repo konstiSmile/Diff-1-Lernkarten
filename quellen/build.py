@@ -173,7 +173,7 @@ open(f'{OUT}/content.js', 'w', encoding='utf-8').write(js)
 print('content.js', len(js) // 1024, 'KB', len(search), 'Suchtreffer-Einträge')
 
 # ---------------------------------------------------------------- Shell
-shutil.copy('app.css', f'{OUT}/app.css'); shutil.copy('app.js', f'{OUT}/app.js')
+shutil.copy('app.css', f'{OUT}/app.css'); shutil.copy('app.js', f'{OUT}/app.js'); shutil.copy('qr.svg', f'{OUT}/qr.svg')
 os.makedirs(f'{OUT}/font', exist_ok=True); shutil.copy('font/nunito.woff', f'{OUT}/font/nunito.woff'); shutil.copy('font/OFL.txt', f'{OUT}/font/OFL.txt')
 import hashlib, base64
 THEME_JS = "try{var s=JSON.parse(localStorage.getItem('lernkiste-v1')||'null'),g=s&&s.settings,t=g&&g.theme;if(!t||t==='auto'||(t==='dark'&&!g.ui44))t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}"
@@ -247,11 +247,11 @@ def icon(size, path):
     im.resize((size, size), Image.LANCZOS).save(path)
 icon(180, f'{OUT}/apple-touch-icon.png'); icon(192, f'{OUT}/icon-192.png'); icon(512, f'{OUT}/icon-512.png')
 
-FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'font/nunito.woff', 'diff1.html', 'querschnitt.html', 'psycho2.html',
+FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'qr.svg', 'font/nunito.woff', 'diff1.html', 'querschnitt.html', 'psycho2.html',
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v59';
+const CACHE = 'lernkiste-v60';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{

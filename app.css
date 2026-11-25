@@ -638,3 +638,9 @@ body:has(.kwbar) #app { padding-bottom:110px; }
 .kwrow.acc .kwi { background:var(--dark); color:var(--ondark-h); }
 .kwrow.acc .kwrt small { color:var(--onaccent); opacity:.8; }
 .kwrow.acc .chev { stroke:var(--onaccent); }
+
+/* v60 App teilen */
+.qrbox { width:236px; max-width:100%; margin:4px auto 12px; background:#fff; border-radius:20px; padding:8px; box-shadow:var(--well); }
+.qrbox img { display:block; width:100%; height:auto; }
+.sharelead { text-align:center; color:var(--muted); font-weight:600; margin:0 0 6px !important; }
+.sharelink { text-align:center; font-weight:800; color:var(--ink); overflow-wrap:anywhere; font-size:.95rem; }

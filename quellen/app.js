@@ -1952,6 +1952,24 @@
     fb: '<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
     help: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>'
   };
+  // v60: App teilen – QR-Code (qr.svg, offline im Cache), Link kopieren, Teilen-Menü des Systems
+  var SHARE_URL = 'https://konstismile.github.io/Diff-1-Lernkarten/';
+  var SHARE_TXT = 'Lernkiste: Karteikarten und Klausurfragen für Diff 1, Querschnitt und Psycho 2. Kostenlos, offline, ohne Konto.';
+  function shareApp() {
+    var canShare = !!navigator.share;
+    openTile('App teilen',
+      '<div class="qrbox"><img src="qr.svg" alt="QR-Code zur Lernkiste" width="220" height="220"></div>' +
+      '<p class="sharelead">Lass den Code abfotografieren oder schick den Link.</p>' +
+      '<div class="sharelink" id="shLink">' + esc(SHARE_URL.replace(/^https:\/\//, '').replace(/\/$/, '')) + '</div>',
+      '<div class="row"><button type="button" class="ghost" id="shCopy">Link kopieren</button>' + (canShare ? '<button type="button" class="primary" id="shGo">Teilen …</button>' : '<button type="button" class="primary pvok">Fertig</button>') + '</div>');
+    $('#shCopy').onclick = function () {
+      var b = this;
+      function ok() { b.textContent = 'Kopiert ✓'; }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(SHARE_URL).then(ok, function () { toast('Kopieren nicht möglich'); });
+      else toast('Kopieren nicht möglich');
+    };
+    var g = $('#shGo'); if (g) g.onclick = function () { navigator.share({ title: 'Lernkiste', text: SHARE_TXT, url: SHARE_URL }).catch(function () {}); };
+  }
   // v58: Hilfe / häufige Fragen in den Einstellungen (aufklappbar, eine Frage pro <details>)
   function faqHTML() {
     var Q = function (q, a) { return '<details class="faq"><summary>' + q + '<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary><div class="fa">' + a + '</div></details>'; };
@@ -1976,6 +1994,8 @@
       Q('Wie bekomme ich Updates?',
         '<p>Von selbst: Gibt es eine neue Version, erscheint <b>Update bereit</b>. Tippe auf <b>Jetzt neu laden</b>. Dein Lernstand bleibt erhalten.</p>' +
         '<p>Selbst nachsehen: ' + P + ' → <b>Nach Update suchen</b>.</p>') +
+      Q('Wie teile ich die App?',
+        '<p>Einstellungen → <b>App teilen</b>. Dort lässt du den QR-Code abfotografieren, kopierst den Link oder verschickst ihn mit <b>Teilen</b>. Dein Lernstand wird dabei nicht mitgeschickt.</p>') +
       Q('Wie merke ich mir Begriffe, die ich nicht kenne?',
         '<ol><li>Tippe in einer Frage oben rechts auf <span class="kwi sm">' + KW_IC + '</span>.</li><li>Tippe das Wort an. Für längere Begriffe tippst du die Wörter daneben dazu.</li><li><b>Erklärung</b> zeigt die passende Karteikarte. <b>Merken</b> setzt den Begriff auf deine Liste.</li></ol>' +
         '<p>Die Liste <b>Meine Begriffe</b> findest du auf der Startseite und im jeweiligen Fach. Gibt es keine passende Erklärung, tippe auf <b>Erklärung fehlt melden</b>, dann ergänzen wir sie.</p>') +
@@ -2008,6 +2028,7 @@
       '<input class="txt" id="uname" type="text" maxlength="20" value="' + esc(st.name || '') + '" placeholder="Name" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="Dein Name"></div>' +
       '<div class="setrow"><div class="l"><b>Design</b></div>' + segHTML('theme', [['light', 'Hell'], ['dark', 'Dunkel'], ['auto', 'System']], st.theme) + '</div>' +
       '<div class="setrow"><div class="l"><b>Schriftgröße</b></div>' + segHTML('font', [[0.9, 'Klein'], [1, 'Mittel'], [1.15, 'Groß']], st.font) + '</div>' + '</div>' +
+      '<div class="group"><div class="setrow tap" id="appShareRow" role="button" tabindex="0"><div class="l"><b>App teilen</b><small>QR-Code oder Link für Kommilitonen</small></div><button class="actbtn" id="bAppShare" type="button">Teilen</button></div></div>' +
       sec('lernen', 'learn', 'Lernen', (st.testN ? st.testN : 'Alle') + ' Fragen pro Runde · Klausur ' + st.examMin + ' Min.',
         sub('Karteikarten') +
         '<div class="setrow"><div class="l"><b>Standard-Filter</b><small>Welche Karten zuerst erscheinen</small></div>' + segHTML('cardFilter', [['red', 'Rot markiert'], ['all', 'Alle']], st.cardFilter) + '</div>' +
@@ -2063,6 +2084,8 @@
     });
     $('#bShare').onclick = shareFile; $('#bCopy').onclick = copyText;
     $('#privRow').onclick = function () { openTile('Datenschutz', privacyHTML()); };
+    $('#appShareRow').onclick = shareApp;
+    $('#appShareRow').onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); shareApp(); } };
     $('#privRow').onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.onclick(); } };
     var fbT = $('#fbText'), fbB = $('#fbSend');
     fbT.addEventListener('input', function () { fbB.disabled = !fbT.value.trim(); $('#fbInfo').textContent = fbT.value.length > FB_MAX - 200 ? (FB_MAX - fbT.value.length) + ' Zeichen übrig' : fbInfo(); });
