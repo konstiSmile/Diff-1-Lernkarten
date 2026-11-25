@@ -1337,43 +1337,80 @@
     var bt = b && b.terms; if (!bt || typeof bt !== 'object') return;
     Object.keys(bt).forEach(function (k) { var y = bt[k], x = a.terms[k]; if (y && typeof y.t === 'string' && (!x || (y.ts || 0) > (x.ts || 0))) a.terms[k] = y; });
   }
+  // v61: Wörter statt zusammengeklebter Buchstaben vergleichen, Füllwörter ignorieren, nur das aktuelle Fach
+  var KW_STOP = {};
+  ('der die das den dem des ein eine einer eines einem einen kein keine keiner keines keinem keinen zum zur vom im ins am ans beim ' +
+   'von mit fuer auf aus an in bei bis durch ueber unter nach vor zu um ohne gegen seit zwischen hinter neben waehrend wegen pro je ' +
+   'und oder aber sondern denn doch wenn dann falls dass weil da als wie ob so sowie bzw bzgl etc usw ca dh zb sog ' +
+   'ist sind war waren sei seien wird werden wurde wurden worden hat haben hatte hatten gilt gelten gibt heisst nennt nennen ' +
+   'kann koennen konnte muss muessen soll sollen darf duerfen will mag ' +
+   'nicht nur auch noch schon sehr mehr weniger immer nie oft hier dort dabei damit dazu also alle allen aller alles jede jeder jedes jeden jedem ' +
+   'man es er sie wir ihr ich du sich sein seine seiner seinen seinem ihre ihrer ihren ihrem ihm ihn uns euch dies diese dieser dieses diesen diesem ' +
+   'welche welcher welches welchen welchem was wer wo wann warum wieso ja nein gleich genau etwa eher bzw').split(' ').forEach(function (w) { KW_STOP[w] = 1; });
+  function kwToks(s) { return String(s || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').normalize('NFD').replace(/[̀-ͯ]/g, '').split(/[^a-z0-9]+/).filter(Boolean); }
+  // inhaltstragende Wortstämme eines Begriffs (leer = nur Füllwörter)
+  function kwCore(t) { return kwToks(t).filter(function (w) { return w.length >= 3 && !KW_STOP[w] && !/^\d+$/.test(w); }).map(kwStem); }
+  function kwHit(st, toks) { for (var i = 0; i < toks.length; i++) { var w = toks[i]; if (st.length >= 5 ? w.indexOf(st) >= 0 : w.indexOf(st) === 0) return true; } return false; }
+  function kwGapFill(h) { return String(h || '').replace(/\{\{([^}]*)\}\}/g, function (_, x) { return '<b>' + x.split('|')[0] + '</b>'; }); }
   var KW_CARDS = null;
   function kwCards() {
     if (KW_CARDS) return KW_CARDS;
-    var kws = {}, seen = {}; KW_CARDS = [];
-    SEARCH.forEach(function (e) { var m = /[?&]c=([^&]+)/.exec(e.route || ''); if (m) kws[m[1]] = e.kw || ''; });
+    var kws = {}, ikw = {}, seen = {}; KW_CARDS = [];
+    SEARCH.forEach(function (e) { var m = /[?&]c=([^&]+)/.exec(e.route || ''); if (m) kws[m[1]] = e.kw || ''; m = /[?&]q=([^&]+)/.exec(e.route || ''); if (m) ikw[e.s + '|' + m[1]] = e.kw || ''; });
+    function add(s, ch, c, q, a, kw, test) {
+      var key = s.id + '|' + c.id; if (seen[key]) return; seen[key] = 1;
+      var bold = '', bs = []; String(q).replace(/<b>([\s\S]*?)<\/b>/g, function (_, x) { bold += ' ' + x; bs.push(kwCore(kwTxt(x)).join(' ')); });
+      KW_CARDS.push({ c: { id: c.id, q: q, a: a, src: c.src }, s: s.id, ch: ch, test: test, bs: bs, b: kwToks(kwTxt(bold)), f: kwToks(kwTxt(q)), k: kwToks(kw), a: kwToks(kwTxt(a)) });
+    }
     C.subjects.forEach(function (s) {
       s.chapters.forEach(function (ch) {
         if (ch.placeholder) return;
-        (ch.cards || []).forEach(function (c) {
-          var key = s.id + '|' + c.id; if (seen[key]) return; seen[key] = 1;
-          var bold = '', bs = []; String(c.q).replace(/<b>([\s\S]*?)<\/b>/g, function (_, x) { bold += ' ' + x; bs.push(kwStem(kwTxt(x))); });
-          KW_CARDS.push({ c: c, s: s.id, ch: ch, bs: bs, b: norm(kwTxt(bold)), f: norm(kwTxt(c.q)), k: norm(kws[c.id] || ''), a: norm(kwTxt(c.a)) });
+        (ch.cards || []).forEach(function (c) { add(s, ch, c, c.q, c.a, kws[c.id] || '', 0); });
+        // Ersatz aus den Tests (nur wenn keine Karte passt): Lösung + Erklärung als Antwortseite
+        (ch.items || []).forEach(function (it) {
+          var q = '', a = '', ex = it.expl ? '<p>' + it.expl + '</p>' : '';
+          if (it.type === 'gap') { q = kwGapFill(it.text); a = ex; }
+          else if (it.type === 'tf') { q = it.statement; a = '<p><b>' + (it.answer ? 'Richtig.' : 'Falsch.') + '</b></p>' + ex; }
+          else if (it.type === 'mc' && it.options) {
+            var ok = Array.isArray(it.correct) ? it.options.filter(function (o, n) { return it.correct.indexOf(n) >= 0; }) : [it.options[it.correct]];
+            q = it.q; a = '<p><b>Lösung:</b> ' + ok.join(' · ') + '</p>' + ex;
+          } else return;
+          add(s, ch, it, q, a, ikw[s.id + '|' + it.id] || '', it.type === 'gap' ? 3 : it.type === 'mc' ? 2 : 1);
         });
       });
     });
     return KW_CARDS;
   }
-  function kwFind(t, sid) {
-    var st = kwStem(t); if (st.length < 3) return [];
-    var res = [], ids = {};
+  function kwFind(t, sid, skip) {
+    var core = kwCore(t); if (!core.length) return [];
+    var whole = core.join(' '), res = [];
     kwCards().forEach(function (x) {
-      if (isHidden(x.s)) return;
-      var sc = (x.b && x.b.indexOf(st) >= 0 ? 6 : 0) + (x.f.indexOf(st) >= 0 ? 4 : 0) + (x.k.indexOf(st) >= 0 ? 2 : 0) + (x.a.indexOf(st) >= 0 ? 1 : 0);
-      if (!sc) return; if (x.s === sid) sc += 0.5; if (x.bs.indexOf(st) >= 0) sc += 5;
-      res.push({ x: x, sc: sc });
+      if (x.s !== sid || isHidden(x.s) || (skip && x.c.id === skip)) return;
+      var sc = 0, front = 0;
+      for (var i = 0; i < core.length; i++) {
+        var st = core[i], v = (kwHit(st, x.b) ? 6 : 0) + (kwHit(st, x.f) ? 4 : 0) + (kwHit(st, x.k) ? 2 : 0), w = kwHit(st, x.a) ? 1 : 0;
+        if (!v && !w) return; // jedes Wort des Begriffs muss vorkommen
+        if (v) front++; sc += v + w;
+      }
+      if (x.bs.indexOf(whole) >= 0) sc += 5;
+      res.push({ x: x, sc: sc, front: front === core.length });
     });
-    res.sort(function (p, q) { return q.sc - p.sc || (p.x.f.length - q.x.f.length); });
-    return res.filter(function (r, n) { if (ids[r.x.c.id] || (n && r.sc < 2)) return false; ids[r.x.c.id] = 1; return true; }).slice(0, 4).map(function (r) { return r.x; });
+    var fr = res.filter(function (r) { return r.front; });
+    if (fr.length) res = fr; else res = res.filter(function (r) { return core.every(function (st) { return st.length >= 5; }); });
+    // Karteikarten haben Vorrang, Testfragen nur als Ersatz
+    var cards = res.filter(function (r) { return !r.x.test; });
+    if (cards.length) res = cards;
+    res.sort(function (p, q) { return q.sc - p.sc || (q.x.test || 0) - (p.x.test || 0) || (p.x.f.length - q.x.f.length); });
+    return res.slice(0, 4).map(function (r) { return r.x; });
   }
   function kwCardHTML(x, noQ) {
     var sn = subj(x.s) ? subj(x.s).name : '';
-    return '<div class="kwcard"><div class="kwsrc">' + esc(sn + (x.c.src ? ' · ' + x.c.src : '')) + '</div>' + (noQ ? '' : '<div class="face kwq">' + x.c.q + '</div>') + '<div class="face kwa">' + x.c.a + '</div></div>';
+    return '<div class="kwcard"><div class="kwsrc">' + esc(sn + (x.c.src ? ' · ' + x.c.src : '') + (x.test ? ' · aus den Tests' : '')) + '</div>' + (noQ ? '' : '<div class="face kwq">' + x.c.q + '</div>') + '<div class="face kwa">' + x.c.a + '</div></div>';
   }
   // Fenster zu einem Begriff: passende Karte(n), „Auf die Liste“, „Erklärung fehlt“ (geht als Feedback raus)
   function kwShow(t, sid, ctx) {
     ctx = ctx || {};
-    var found = kwFind(t, sid), h = '';
+    var found = kwFind(t, sid, ctx.list ? null : ctx.q), h = '';
     if (found.length) {
       h += kwCardHTML(found[0]);
       if (found.length > 1) h += '<p class="kwmore">Weitere Karten</p>' + found.slice(1).map(function (x) {
@@ -1437,8 +1474,9 @@
     function paint() {
       $$('.kw.sel', card).forEach(function (x) { x.classList.remove('sel'); });
       sel.forEach(function (x) { x.classList.add('sel'); });
-      var t = phrase();
-      bar.innerHTML = t ? '<div class="kwt"><b>„' + esc(t) + '“</b><small>' + (kwHas(sid, t) ? 'Auf deiner Liste' : 'Weitere Wörter daneben antippen für längere Begriffe') + '</small></div>' +
+      var t = phrase(), core = t ? kwCore(t).length : 0;
+      bar.innerHTML = t && !core ? '<div class="kwt"><b>„' + esc(t) + '“</b><small>Allgemeines Wort · tippe den Fachbegriff daneben an</small></div><div class="kwacts"><button type="button" class="ghost" id="kwOff">Fertig</button></div>'
+        : t ? '<div class="kwt"><b>„' + esc(t) + '“</b><small>' + (kwHas(sid, t) ? 'Auf deiner Liste' : 'Weitere Wörter daneben antippen für längere Begriffe') + '</small></div>' +
         '<div class="kwacts"><button type="button" class="ghost" id="kwListB">' + (kwHas(sid, t) ? 'Gemerkt ✓' : 'Merken') + '</button><button type="button" class="primary" id="kwExpl">Erklärung</button></div>'
         : '<div class="kwt"><b>Begriff antippen</b><small>Zum Nachschlagen oder Merken</small></div><div class="kwacts"><button type="button" class="ghost" id="kwOff">Fertig</button></div>';
       var o = $('#kwOff', bar); if (o) o.onclick = function () { set(false); };
@@ -1997,7 +2035,7 @@
       Q('Wie teile ich die App?',
         '<p>Einstellungen → <b>App teilen</b>. Dort lässt du den QR-Code abfotografieren, kopierst den Link oder verschickst ihn mit <b>Teilen</b>. Dein Lernstand wird dabei nicht mitgeschickt.</p>') +
       Q('Wie merke ich mir Begriffe, die ich nicht kenne?',
-        '<ol><li>Tippe in einer Frage oben rechts auf <span class="kwi sm">' + KW_IC + '</span>.</li><li>Tippe das Wort an. Für längere Begriffe tippst du die Wörter daneben dazu.</li><li><b>Erklärung</b> zeigt die passende Karteikarte. <b>Merken</b> setzt den Begriff auf deine Liste.</li></ol>' +
+        '<ol><li>Tippe in einer Frage oben rechts auf <span class="kwi sm">' + KW_IC + '</span>.</li><li>Tippe das Wort an. Für längere Begriffe tippst du die Wörter daneben dazu.</li><li><b>Erklärung</b> zeigt die passende Karteikarte aus diesem Fach. Gibt es noch keine, siehst du eine passende Testfrage mit Lösung. <b>Merken</b> setzt den Begriff auf deine Liste.</li></ol>' +
         '<p>Die Liste <b>Meine Begriffe</b> findest du auf der Startseite und im jeweiligen Fach. Gibt es keine passende Erklärung, tippe auf <b>Erklärung fehlt melden</b>, dann ergänzen wir sie.</p>') +
       Q('Ich habe einen Fehler in einer Frage gefunden.',
         '<p>Beantworte die Frage und tippe darunter auf <b>Frage melden</b>. Für alles andere gibt es unten das <b>Feedback</b>.</p>') +
