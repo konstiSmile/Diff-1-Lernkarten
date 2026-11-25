@@ -217,18 +217,18 @@
   }
   function privacyHTML() {
     return '<div class="pvkey"><b>Das Wichtigste zuerst</b><p>Ich erhebe keine personenbezogenen Daten. Ich bekomme weder deinen Namen noch deine E-Mail-Adresse, IP-Adresse, eine Geräte-Kennung oder deinen Lernstand (außer du richtest den Sync ein, siehe unten). Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“. Ich kann nicht erkennen, wer die App nutzt, mit welchem Gerät oder von wo, und bei der Statistik auch nicht, ob zwei Einträge von derselben Person stammen.</p></div>' +
-      '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst, eine Frage meldest, die Nutzungsstatistik einschaltest oder den Sync einrichtest.</p>' +
+      '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst, eine Frage oder eine fehlende Erklärung meldest, die Nutzungsstatistik einschaltest oder den Sync einrichtest.</p>' +
       '<h4>Auf deinem Gerät</h4>' +
-      '<p>Lernstand, Verlauf, eigene Karten und Einstellungen (auch dein Name) liegen nur im Speicher deines Browsers. Sie verlassen das Gerät nicht, außer du speicherst selbst ein Backup. Damit die App offline läuft, speichert der Browser außerdem die App-Dateien.</p>' +
+      '<p>Lernstand, Verlauf, gemerkte Begriffe, eigene Karten und Einstellungen (auch dein Name) liegen nur im Speicher deines Browsers. Sie verlassen das Gerät nicht, außer du speicherst selbst ein Backup. Damit die App offline läuft, speichert der Browser außerdem die App-Dateien.</p>' +
       '<h4>Beim Laden der App</h4>' +
       '<p>Die App liegt bei GitHub Pages (GitHub, USA). Wie jeder Webserver verarbeitet GitHub dabei technisch deine IP-Adresse. Die App lädt keine Werbung, keine Tracker und nichts von fremden Seiten.</p>' +
-      '<h4>Feedback und „Frage melden“ (nur wenn du sendest)</h4>' +
-      '<p>Gesendet werden dein Text (beim Melden: Grund, Kommentar, Fach und Nummer der Frage), die App-Version und eine zufällige Kennung gegen Spam. Diese Kennung wird beim ersten Feedback auf dem Gerät gespeichert und sagt nichts über dich. Kein Name. Ziel ist eine private Google-Tabelle über Google Apps Script (Google, Server auch in den USA). Google verarbeitet dabei technisch deine IP-Adresse, in der Tabelle landet sie nicht. Schreib bitte keine persönlichen Daten in den Text.</p>' +
+      '<h4>Feedback, „Frage melden“ und „Erklärung fehlt“ (nur wenn du sendest)</h4>' +
+      '<p>Gesendet werden dein Text (beim Melden: Grund, Kommentar, Fach und Nummer der Frage; bei „Erklärung fehlt“: der Begriff, Fach und Nummer der Frage), die App-Version und eine zufällige Kennung gegen Spam. Diese Kennung wird beim ersten Feedback auf dem Gerät gespeichert und sagt nichts über dich. Kein Name. Ziel ist eine private Google-Tabelle über Google Apps Script (Google, Server auch in den USA). Google verarbeitet dabei technisch deine IP-Adresse, in der Tabelle landet sie nicht. Schreib bitte keine persönlichen Daten in den Text.</p>' +
       '<h4>Nutzungsstatistik (nur wenn eingeschaltet)</h4>' +
       '<p><b>Die Statistik ist vollständig anonym.</b> Sie zählt nur, <i>wie oft</i> die App und die Fächer geöffnet werden, nicht <i>wer</i> sie öffnet. Kein Eintrag enthält etwas, das auf dich oder dein Gerät schließen lässt.</p>' +
       '<p>Nur mit deiner Zustimmung: Die App fragt einmal, und du kannst es jederzeit ändern. Wenn sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Beim Öffnen kommt dazu nur, ob es der erste Start heute, in dieser Woche oder überhaupt auf diesem Gerät ist (ja/nein). So lässt sich zählen, wie viele Geräte die App nutzen, ohne sie zu unterscheiden. Dafür merkt sich die App auf deinem Gerät das Datum der letzten Meldung; das wird nicht gesendet und beim Ausschalten gelöscht. Den Zeitpunkt notiert die Tabelle. Nicht gesendet werden: Name, E-Mail, IP-Adresse, Geräte-ID, Gerätetyp, Standort, Antworten oder Lernstände. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
       '<h4>Geräte synchronisieren (nur wenn eingerichtet)</h4>' +
-      '<p>Dann wird dein Lernstand an eine Datenbank bei Supabase gesendet: bewertete Karten, Testergebnisse, Verlauf und Einstellungen, aber nicht dein Name und keine eigenen Karten. Es gibt kein Konto und keine E-Mail-Adresse. Gespeichert wird der Stand unter einer verschlüsselten Form deines Codes (Hash), der Code selbst bleibt auf deinen Geräten. Supabase verarbeitet dabei technisch deine IP-Adresse. Den Lernstand könnte ich in der Datenbank technisch sehen, aber keiner Person zuordnen. Mit „Online-Kopie löschen“ entfernst du ihn jederzeit.</p>' +
+      '<p>Dann wird dein Lernstand an eine Datenbank bei Supabase gesendet: bewertete Karten, Testergebnisse, Verlauf, gemerkte Begriffe und Einstellungen, aber nicht dein Name und keine eigenen Karten. Es gibt kein Konto und keine E-Mail-Adresse. Gespeichert wird der Stand unter einer verschlüsselten Form deines Codes (Hash), der Code selbst bleibt auf deinen Geräten. Supabase verarbeitet dabei technisch deine IP-Adresse. Den Lernstand könnte ich in der Datenbank technisch sehen, aber keiner Person zuordnen. Mit „Online-Kopie löschen“ entfernst du ihn jederzeit.</p>' +
       '<h4>Wie lange</h4>' +
       '<p>Einträge in der Tabelle werden nach spätestens 12 Monaten automatisch gelöscht.</p>' +
       '<h4>Keine Rückschlüsse auf dich</h4>' +
@@ -264,7 +264,7 @@
   function rd(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function normalizeDB(d) {
     d = d || {};
-    d.v = 1; d.recent = d.recent || []; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || []; d.custom = d.custom || {}; d.custom.folders = d.custom.folders || []; d.badges = (d.badges && typeof d.badges === 'object' && !Array.isArray(d.badges)) ? d.badges : {};
+    d.v = 1; d.recent = d.recent || []; d.progress = d.progress || {}; d.tests = d.tests || {}; d.log = d.log || []; d.hidden = d.hidden || []; d.custom = d.custom || {}; d.custom.folders = d.custom.folders || []; d.terms = d.terms && typeof d.terms === 'object' && !Array.isArray(d.terms) ? d.terms : {}; d.badges = (d.badges && typeof d.badges === 'object' && !Array.isArray(d.badges)) ? d.badges : {};
     d.settings = Object.assign({}, DEFAULTS, d.settings || {});
     // v44: neues Design; der alte Standard „Dunkel“ wird einmalig zu „System“
     if (!d.settings.ui44) { if (d.settings.theme === 'dark') d.settings.theme = 'auto'; d.settings.ui44 = 1; d._mig = 1; }
@@ -387,6 +387,7 @@
     else if (p[0] === 'einstellungen') { tab = 'set'; settingsView(); }
     else if (p[0] === 'mix') { tab = 'faecher'; mixView(p[1]); }
     else if (p[0] === 'faellig') dueView(p[1]);
+    else if (p[0] === 'begriffe') kwView(r.q.s || '');
     else if (p[0] === 'f' && p[1] && p[2] === 'u' && p[3]) { tab = 'faecher'; fachView(p[1], p[3]); }
     else if (p[0] === 'f' && p[1] && !p[2]) { tab = 'faecher'; fachView(p[1]); }
     else if (p[0] === 'f' && p[1] && p[2]) { tab = 'faecher'; chapterView(p[1], p[2], r.q); }
@@ -589,6 +590,7 @@
       h += '<a class="next" href="' + esc(last.h) + '"><div class="nt"><span class="k">Als Nächstes</span><b>' + esc(last.t) + '</b><small>' + esc(last.sub) + '</small></div>' +
         '<span class="arr">' + ic('arrow') + '</span></a>';
     }
+    var kwn = kwList().length; if (kwn) h += kwRowHTML('#/begriffe', kwn, '', 1);
     h += todayHTML();
     view.innerHTML = h;
   }
@@ -739,7 +741,8 @@
       list.forEach(function (ch) { h += chapTile(s, ch); });
       if (!list.length) h += '<div class="note" style="text-align:center;padding:18px 6px">Inhalte folgen.</div>';
     }
-    view.innerHTML = h + '</div>';
+    var kwn = !grp ? kwList(sid).length : 0;
+    view.innerHTML = h + '</div>' + (kwn ? kwRowHTML('#/begriffe?s=' + sid, kwn) : '');
   }
   function chapterView(sid, cid, q) {
     if (sid === 'psy' && cid === 'tp') { location.replace('#/f/psy/u/pers'); return; }
@@ -1079,6 +1082,7 @@
         if (it.type === 'gap') h += '<div class="row" id="gaprow"><button class="ghost" id="reveal">Lösung zeigen</button><button class="primary" id="check">Prüfen</button></div>';
         if (p.multi) h += '<div class="row" id="mcrow"><button class="primary" id="mcheck" disabled>Prüfen</button></div>';
         view.innerHTML = h; window.scrollTo(0, 0);
+        kwAttach($('.card', view), it, it._s || s.id);
         $('#quit').onclick = hub;
         function answered(score, pts) {
           if (done) return; done = true; results.push({ it: it, s: score, p: pts });
@@ -1312,6 +1316,193 @@
   }
   function chips(list, cls) { return '<div class="sugrow">' + list.map(function (w) { return '<button class="sugchip' + (cls ? ' ' + cls : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</button>'; }).join('') + '</div>'; }
 
+  // ====================================================================== Begriffe (v59): Wörter in Fragen antippen, Erklärung aus Karteikarten, Liste „Meine Begriffe“
+  var KW_IC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M4 11h7M4 16h5"/><circle cx="16.5" cy="14.5" r="3.5"/><path d="M19 17l2.5 2.5"/></svg>';
+  function kwTxt(h) { return textOf(String(h || '').replace(/<annotation[\s\S]*?<\/annotation>/g, '')); }
+  function kwKey(sid, t) { return sid + ':' + norm(t); }
+  function kwStem(t) { t = norm(t); return t.length >= 6 ? t.replace(/(en|er|es|n|s|e)$/, '') : t; }
+  function kwList(sid) {
+    return Object.keys(DB.terms).map(function (k) { return DB.terms[k]; })
+      .filter(function (x) { return x && !x.d && x.t && (!sid || x.s === sid) && subj(x.s) && !isHidden(x.s); })
+      .sort(function (a, b) { return b.ts - a.ts; });
+  }
+  function kwHas(sid, t) { var x = DB.terms[kwKey(sid, t)]; return !!(x && !x.d); }
+  function kwSet(sid, t, on, ctx) {
+    var k = kwKey(sid, t), old = DB.terms[k] || {};
+    DB.terms[k] = on ? { t: t, s: sid, q: (ctx && ctx.q) || old.q || '', src: (ctx && ctx.src) || old.src || '', m: old.m || 0, ts: Date.now() } : Object.assign(old, { d: 1, ts: Date.now() });
+    var keys = Object.keys(DB.terms); if (keys.length > 800) keys.filter(function (x) { return DB.terms[x].d; }).sort(function (a, b) { return DB.terms[a].ts - DB.terms[b].ts; }).slice(0, keys.length - 800).forEach(function (x) { delete DB.terms[x]; });
+    save();
+  }
+  function kwMergeTerms(a, b) {
+    var bt = b && b.terms; if (!bt || typeof bt !== 'object') return;
+    Object.keys(bt).forEach(function (k) { var y = bt[k], x = a.terms[k]; if (y && typeof y.t === 'string' && (!x || (y.ts || 0) > (x.ts || 0))) a.terms[k] = y; });
+  }
+  var KW_CARDS = null;
+  function kwCards() {
+    if (KW_CARDS) return KW_CARDS;
+    var kws = {}, seen = {}; KW_CARDS = [];
+    SEARCH.forEach(function (e) { var m = /[?&]c=([^&]+)/.exec(e.route || ''); if (m) kws[m[1]] = e.kw || ''; });
+    C.subjects.forEach(function (s) {
+      s.chapters.forEach(function (ch) {
+        if (ch.placeholder) return;
+        (ch.cards || []).forEach(function (c) {
+          var key = s.id + '|' + c.id; if (seen[key]) return; seen[key] = 1;
+          var bold = '', bs = []; String(c.q).replace(/<b>([\s\S]*?)<\/b>/g, function (_, x) { bold += ' ' + x; bs.push(kwStem(kwTxt(x))); });
+          KW_CARDS.push({ c: c, s: s.id, ch: ch, bs: bs, b: norm(kwTxt(bold)), f: norm(kwTxt(c.q)), k: norm(kws[c.id] || ''), a: norm(kwTxt(c.a)) });
+        });
+      });
+    });
+    return KW_CARDS;
+  }
+  function kwFind(t, sid) {
+    var st = kwStem(t); if (st.length < 3) return [];
+    var res = [], ids = {};
+    kwCards().forEach(function (x) {
+      if (isHidden(x.s)) return;
+      var sc = (x.b && x.b.indexOf(st) >= 0 ? 6 : 0) + (x.f.indexOf(st) >= 0 ? 4 : 0) + (x.k.indexOf(st) >= 0 ? 2 : 0) + (x.a.indexOf(st) >= 0 ? 1 : 0);
+      if (!sc) return; if (x.s === sid) sc += 0.5; if (x.bs.indexOf(st) >= 0) sc += 5;
+      res.push({ x: x, sc: sc });
+    });
+    res.sort(function (p, q) { return q.sc - p.sc || (p.x.f.length - q.x.f.length); });
+    return res.filter(function (r, n) { if (ids[r.x.c.id] || (n && r.sc < 2)) return false; ids[r.x.c.id] = 1; return true; }).slice(0, 4).map(function (r) { return r.x; });
+  }
+  function kwCardHTML(x, noQ) {
+    var sn = subj(x.s) ? subj(x.s).name : '';
+    return '<div class="kwcard"><div class="kwsrc">' + esc(sn + (x.c.src ? ' · ' + x.c.src : '')) + '</div>' + (noQ ? '' : '<div class="face kwq">' + x.c.q + '</div>') + '<div class="face kwa">' + x.c.a + '</div></div>';
+  }
+  // Fenster zu einem Begriff: passende Karte(n), „Auf die Liste“, „Erklärung fehlt“ (geht als Feedback raus)
+  function kwShow(t, sid, ctx) {
+    ctx = ctx || {};
+    var found = kwFind(t, sid), h = '';
+    if (found.length) {
+      h += kwCardHTML(found[0]);
+      if (found.length > 1) h += '<p class="kwmore">Weitere Karten</p>' + found.slice(1).map(function (x) {
+        return '<details class="faq"><summary><div class="face kwsum">' + x.c.q + '</div><svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary><div class="fa">' + kwCardHTML(x, 1) + '</div></details>';
+      }).join('');
+    } else h += '<p class="kwnone">Zu diesem Begriff gibt es noch keine Karte.</p>';
+    h += '<div class="kwfoot">' + (ctx.list ? '<a class="linkbtn" href="#/suche?q=' + encodeURIComponent(t) + '">In der Suche öffnen</a>' : '') +
+      '<button type="button" class="linkbtn" id="kwMiss">' + (found.length ? 'Passt nicht? Erklärung fehlt melden' : 'Erklärung fehlt melden') + '</button></div>';
+    var on = kwHas(sid, t);
+    openTile('„' + t + '“', h, '<div class="row"><button type="button" class="ghost pvok">Schließen</button><button type="button" class="' + (on ? 'ghost' : 'primary') + '" id="kwAdd">' + (on ? 'Entfernen' : 'Merken') + '</button></div>');
+    $('#kwAdd').onclick = function () {
+      var now = !kwHas(sid, t); kwSet(sid, t, now, ctx); closeTile();
+      toast(now ? 'Auf deiner Liste „Meine Begriffe“' : 'Von der Liste genommen');
+      if (ctx.done) ctx.done();
+    };
+    $('#kwMiss').onclick = function () {
+      var b = this;
+      fbQueue(fbQueue().concat([{ text: 'Erklärung fehlt · „' + t.slice(0, 80) + '“', ts: Date.now(), seite: ('Begriff ' + sid + ' · ' + (ctx.q || 'Liste')).slice(0, 80) }]));
+      var x = DB.terms[kwKey(sid, t)]; if (x && !x.d) { x.m = 1; save(); }
+      b.textContent = 'Gemeldet ✓'; b.disabled = true;
+      if (navigator.onLine === false) { toast('Gespeichert · wird gesendet, sobald du online bist'); return; }
+      fbFlush(function (ok) { toast(ok ? 'Danke, wir ergänzen die Erklärung' : 'Gerade keine Verbindung · wird später gesendet'); });
+    };
+  }
+  // Wörter einer Frage antippbar machen (Formeln, Eingabefelder und Knöpfe der App bleiben außen vor)
+  var KW_SKIP = 'math, .katex, input, textarea, svg, script, style, .kwbtn, .kwbar, .tchip, .meta, .k, .box';
+  var KW_RE = /[\p{L}\p{N}][\p{L}\p{N}\-]*/gu, kwBlk = 0;
+  function kwWrap(root) {
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), list = [], n;
+    while ((n = w.nextNode())) { var pe = n.parentElement; if (!pe || pe.closest(KW_SKIP) || pe.classList.contains('kw') || !/[\p{L}\p{N}]/u.test(n.nodeValue)) continue; list.push(n); }
+    list.forEach(function (n) {
+      var blk = n.parentElement.closest('p, li, td, th, button, .tip, .face, .qtext, .stmt, div') || root;
+      if (!blk.dataset.kwb) { blk.dataset.kwb = ++kwBlk; blk.dataset.kwn = 0; }
+      var frag = document.createDocumentFragment(), s = n.nodeValue, last = 0, m; KW_RE.lastIndex = 0;
+      while ((m = KW_RE.exec(s))) {
+        if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+        var sp = document.createElement('span'); sp.className = 'kw'; sp.textContent = m[0]; sp.dataset.b = blk.dataset.kwb; sp.dataset.i = blk.dataset.kwn = +blk.dataset.kwn + 1;
+        frag.appendChild(sp); last = m.index + m[0].length;
+      }
+      if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+      n.replaceWith(frag);
+    });
+  }
+  function kwUnwrap(root) {
+    $$('.kw', root).forEach(function (sp) { sp.replaceWith(document.createTextNode(sp.textContent)); });
+    $$('[data-kwb]', root).forEach(function (b) { delete b.dataset.kwb; delete b.dataset.kwn; b.normalize(); });
+    root.normalize();
+  }
+  // Knopf oben rechts in der Fragekarte; an = Wörter antippen, mehrere nebeneinander ergeben einen Begriff
+  function kwAttach(card, it, sid) {
+    if (!card) return;
+    card.classList.add('haskw');
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'kwbtn'; btn.setAttribute('aria-label', 'Begriff nachschlagen'); btn.setAttribute('aria-pressed', 'false'); btn.innerHTML = KW_IC;
+    card.appendChild(btn);
+    var on = false, sel = [], bar = null, mo = null;
+    function phrase() {
+      if (!sel.length) return '';
+      var r = document.createRange(); r.setStartBefore(sel[0]); r.setEndAfter(sel[sel.length - 1]);
+      return r.toString().replace(/\s+/g, ' ').trim().slice(0, 80);
+    }
+    function paint() {
+      $$('.kw.sel', card).forEach(function (x) { x.classList.remove('sel'); });
+      sel.forEach(function (x) { x.classList.add('sel'); });
+      var t = phrase();
+      bar.innerHTML = t ? '<div class="kwt"><b>„' + esc(t) + '“</b><small>' + (kwHas(sid, t) ? 'Auf deiner Liste' : 'Weitere Wörter daneben antippen für längere Begriffe') + '</small></div>' +
+        '<div class="kwacts"><button type="button" class="ghost" id="kwListB">' + (kwHas(sid, t) ? 'Gemerkt ✓' : 'Merken') + '</button><button type="button" class="primary" id="kwExpl">Erklärung</button></div>'
+        : '<div class="kwt"><b>Begriff antippen</b><small>Zum Nachschlagen oder Merken</small></div><div class="kwacts"><button type="button" class="ghost" id="kwOff">Fertig</button></div>';
+      var o = $('#kwOff', bar); if (o) o.onclick = function () { set(false); };
+      var l = $('#kwListB', bar); if (l) l.onclick = function () { var now = !kwHas(sid, t); kwSet(sid, t, now, { q: it.id, src: it.src }); toast(now ? 'Auf deiner Liste „Meine Begriffe“' : 'Von der Liste genommen'); paint(); };
+      var e = $('#kwExpl', bar); if (e) e.onclick = function () { kwShow(t, sid, { q: it.id, src: it.src, done: paint }); };
+    }
+    function onTap(ev) {
+      if (!on) return;
+      var w = ev.target.closest && ev.target.closest('.kw');
+      if (w && card.contains(w)) {
+        ev.preventDefault(); ev.stopPropagation();
+        var i = sel.indexOf(w), b = w.dataset.b, n = +w.dataset.i;
+        if (i === 0 || (i > 0 && i === sel.length - 1)) sel.splice(i, 1);
+        else if (i > 0) sel = [w];
+        else if (sel.length && sel[0].dataset.b === b && n === +sel[0].dataset.i - 1) sel.unshift(w);
+        else if (sel.length && sel[0].dataset.b === b && n === +sel[sel.length - 1].dataset.i + 1) sel.push(w);
+        else sel = [w];
+        paint(); return;
+      }
+      // im Begriffe-Modus nicht versehentlich antworten oder umdrehen
+      if (ev.target.closest('.opt, .rfbtns button, #card, .stmt') && !ev.target.closest('.kwbtn')) { ev.preventDefault(); ev.stopPropagation(); }
+    }
+    function set(v) {
+      on = v; sel = []; btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); card.classList.toggle('kwon', on);
+      if (on) {
+        kwWrap(card);
+        bar = document.createElement('div'); bar.className = 'kwbar'; bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', 'Begriff'); document.body.appendChild(bar); paint();
+        mo = new MutationObserver(function () { mo.disconnect(); kwWrap(card); mo.observe(card, { childList: true, subtree: true }); }); mo.observe(card, { childList: true, subtree: true });
+        document.addEventListener('click', onTap, true);
+      } else {
+        if (mo) mo.disconnect(); mo = null;
+        if (bar) bar.remove(); bar = null;
+        document.removeEventListener('click', onTap, true);
+        kwUnwrap(card);
+      }
+    }
+    btn.onclick = function (e) { e.stopPropagation(); set(!on); };
+    onLeave(function () { if (on) set(false); });
+  }
+  function kwRowHTML(href, n, sub, acc) {
+    return '<a class="kwrow' + (acc ? ' acc' : '') + '" href="' + href + '"><span class="kwi">' + KW_IC + '</span><span class="kwrt"><b>Meine Begriffe</b><small>' + n + (n === 1 ? ' Begriff' : ' Begriffe') + ' zum Nachlernen' + (sub ? ' · ' + esc(sub) : '') + '</small></span>' + CHEV + '</a>';
+  }
+  function kwView(sid) {
+    var s = sid && subj(sid); if (sid && !s) sid = '';
+    var list = kwList(sid);
+    var h = '<div class="nav">' + backLink(sid ? '#/f/' + sid : '#/', sid ? s.name : 'Start') + '</div><h1>Meine Begriffe</h1><p class="sub">' + esc(sid ? s.name : 'Alle Fächer') + '</p>';
+    if (!list.length) h += '<div class="empty kwempty">Noch keine Begriffe. Tippe in einer Frage oben rechts auf <span class="kwi sm">' + KW_IC + '</span> und dann auf ein Wort, das du nicht kennst.</div>';
+    else {
+      h += '<p class="note" style="margin:0 0 12px">Antippen zeigt die Erklärung. Haken setzen, wenn du den Begriff kannst.</p><div class="group kwlist">';
+      list.forEach(function (x, n) {
+        h += '<div class="kwitem"><button type="button" class="kwopen" data-n="' + n + '"><b>' + esc(x.t) + '</b><small>' + esc((sid ? '' : subj(x.s).name + (x.src ? ' · ' : '')) + (x.src || '')) + (x.m ? ' · Erklärung gemeldet' : '') + '</small></button>' +
+          '<button type="button" class="kwdone" data-n="' + n + '" aria-label="Gelernt, von der Liste nehmen">' + ic('check') + '</button></div>';
+      });
+      h += '</div>';
+    }
+    view.innerHTML = h;
+    $$('.kwopen').forEach(function (b) { b.onclick = function () { var x = list[+b.dataset.n]; kwShow(x.t, x.s, { list: 1, q: x.q, src: x.src, done: function () { kwView(sid); } }); }; });
+    $$('.kwdone').forEach(function (b) {
+      b.onclick = function () {
+        var x = list[+b.dataset.n]; kwSet(x.s, x.t, false); kwView(sid);
+        toast('„' + x.t + '“ gelernt', 'Rückgängig', function () { kwSet(x.s, x.t, true, { q: x.q, src: x.src }); kwView(sid); });
+      };
+    });
+  }
   function searchView(q0) {
     var filter = 'all';
     view.innerHTML = '<h1>Suche</h1><div class="searchbox" id="sbox"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>' +
@@ -1652,6 +1843,7 @@
       if (!af) { a.custom.folders.push(bf); return; }
       bf.cards.forEach(function (c) { if (!af.cards.some(function (x) { return x.id === c.id; })) af.cards.push(c); });
     });
+    kwMergeTerms(a, b);
     if (b.settings) a.settings = Object.assign(a.settings, b.settings);
   }
   // Fremde Backups säubern: Namen, IDs, Einstellungen ohne HTML-Zeichen; Kartentexte werden beim Anzeigen ohnehin maskiert (rich).
@@ -1717,6 +1909,7 @@
     Object.keys(b.badges).forEach(function (k) { if (!a.badges[k] || b.badges[k] < a.badges[k]) a.badges[k] = b.badges[k]; });
     if ((b.hiddenTs || 0) > (a.hiddenTs || 0)) { a.hidden = b.hidden.slice(); a.hiddenTs = b.hiddenTs; }
     if (raw.settings && (raw.settings._ts || 0) > (a.settings._ts || 0)) Object.keys(raw.settings).forEach(function (k) { if (!SYNC_LOCAL[k] && DEFAULTS.hasOwnProperty(k) || k === '_ts') a.settings[k] = b.settings[k]; });
+    kwMergeTerms(a, b);
     if (R) a.resetAt = R; if (L) a.logClr = L;
   }
   function syncNow() {
@@ -1783,6 +1976,9 @@
       Q('Wie bekomme ich Updates?',
         '<p>Von selbst: Gibt es eine neue Version, erscheint <b>Update bereit</b>. Tippe auf <b>Jetzt neu laden</b>. Dein Lernstand bleibt erhalten.</p>' +
         '<p>Selbst nachsehen: ' + P + ' → <b>Nach Update suchen</b>.</p>') +
+      Q('Wie merke ich mir Begriffe, die ich nicht kenne?',
+        '<ol><li>Tippe in einer Frage oben rechts auf <span class="kwi sm">' + KW_IC + '</span>.</li><li>Tippe das Wort an. Für längere Begriffe tippst du die Wörter daneben dazu.</li><li><b>Erklärung</b> zeigt die passende Karteikarte. <b>Merken</b> setzt den Begriff auf deine Liste.</li></ol>' +
+        '<p>Die Liste <b>Meine Begriffe</b> findest du auf der Startseite und im jeweiligen Fach. Gibt es keine passende Erklärung, tippe auf <b>Erklärung fehlt melden</b>, dann ergänzen wir sie.</p>') +
       Q('Ich habe einen Fehler in einer Frage gefunden.',
         '<p>Beantworte die Frage und tippe darunter auf <b>Frage melden</b>. Für alles andere gibt es unten das <b>Feedback</b>.</p>') +
       Q('Was zeigt der Balken beim Lernstand?',
