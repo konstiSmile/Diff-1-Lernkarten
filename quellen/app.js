@@ -1599,6 +1599,98 @@
     btn.onclick = function (e) { e.stopPropagation(); set(!on); };
     onLeave(function () { if (on) set(false); });
   }
+  // ====================================================================== Abkürzungen erklären (v63)
+  // Gepunktet unterstrichen; Antippen zeigt oben die Langform. In Antwortknöpfen per langem Drücken.
+  var AB_MATH = { 'DGL': 'Differentialgleichung', 'AWP': 'Anfangswertproblem', 'ZWS': 'Zwischenwertsatz', 'o. E.': 'ohne Einschränkung' };
+  var AB_PSY = {
+    'SV': 'Sprachverständnis', 'VRV': 'Visuell-räumliche Verarbeitung', 'FS': 'Fluides Schlussfolgern', 'AGD': 'Arbeitsgedächtnis', 'VG': 'Verarbeitungsgeschwindigkeit',
+    'BZF': 'Buchstaben-Zahlen-Folgen', 'GF': 'Gemeinsamkeiten finden', 'KTT': 'Klassische Testtheorie', 'KT': 'Konzentrationstest', 'MT': 'Mosaik-Test',
+    'IQ': 'Intelligenzquotient', 'SD': 'Standardabweichung', 'M': 'Mittelwert', 'PR': 'Prozentrang', 'KI': 'Konfidenzintervall', 'WP': 'Wertpunkte',
+    'ADHS': 'Aufmerksamkeitsdefizit-/Hyperaktivitätsstörung', 'WISC': 'Wechsler Intelligence Scale for Children', 'HAWIK': 'Hamburg-Wechsler-Intelligenztest für Kinder',
+    'PISA': 'Programme for International Student Assessment', 'TIMSS': 'Trends in International Mathematics and Science Study', 'IGLU': 'Internationale Grundschul-Lese-Untersuchung', 'VERA': 'Vergleichsarbeiten',
+    'EPQ': 'Eysenck Personality Questionnaire', 'LPA': 'Lehrer-Persönlichkeits-Adjektivskalen', 'CHC': 'Cattell-Horn-Carroll-Modell',
+    'EZ': 'eineiige Zwillinge', 'ZZ': 'zweieiige Zwillinge', 'LG': 'leibliche Geschwister', 'AG': 'Adoptivgeschwister', 'SA': 'starke Ablehnung', 'SZ': 'starke Zustimmung',
+    'UCS': 'unkonditionierter Stimulus', 'UCR': 'unkonditionierte Reaktion', 'NS': 'neutraler Stimulus', 'CS': 'konditionierter Stimulus', 'CR': 'konditionierte Reaktion',
+    'PEN': 'Psychotizismus, Extraversion, Neurotizismus', 'OCEAN': 'Offenheit, Gewissenhaftigkeit, Extraversion, Verträglichkeit, Neurotizismus',
+    'NEO-FFI': 'NEO-Fünf-Faktoren-Inventar', '16PF': '16-Persönlichkeits-Faktoren-Test', 'MMPI': 'Minnesota Multiphasic Personality Inventory', 'TAT': 'Thematischer Apperzeptionstest',
+    'EEG': 'Elektroenzephalografie', 'PET': 'Positronen-Emissions-Tomografie', 'DNA': 'Desoxyribonukleinsäure', 'DRK': 'Deutsches Rotes Kreuz'
+  };
+  var AB_ONLYEQ = { 'M': 1 };   // nur vor „=“ (M = 100), sonst zu mehrdeutig
+  var AB_ALL = Object.assign({}, AB_MATH, AB_PSY); delete AB_ALL.M;
+  var abRes = {};
+  function abDict(sid) {
+    var k = sid === 'psy' ? 'psy' : sid ? 'math' : 'all';
+    if (!abRes[k]) {
+      var d = k === 'psy' ? AB_PSY : k === 'math' ? AB_MATH : AB_ALL;
+      var keys = Object.keys(d).sort(function (a, b) { return b.length - a.length; }).map(function (s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s?'); });
+      abRes[k] = { d: d, re: new RegExp('(^|[^\\p{L}\\p{N}])(' + keys.join('|') + ')(?![\\p{L}\\p{N}])', 'gu') };
+    }
+    return abRes[k];
+  }
+  function abKey(d, s) { if (d[s]) return s; var t = s.replace(/\s+/g, ' '); if (d[t]) return t; t = s.replace(/\s+/g, ''); return Object.keys(d).filter(function (k) { return k.replace(/ /g, '') === t; })[0]; }
+  var AB_SKIP = 'math, .katex, input, textarea, svg, script, style, a, button:not(.opt), .ab, .kwon, .meta, .tchip, .k, .kwbar, .abtip, .srcl';
+  function abWrap(root, R) {
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), list = [], n;
+    while ((n = w.nextNode())) { var pe = n.parentElement; if (!pe || pe.closest(AB_SKIP)) continue; R.re.lastIndex = 0; if (R.re.test(n.nodeValue)) list.push(n); }
+    list.forEach(function (n) {
+      var s = n.nodeValue, last = 0, m, frag = document.createDocumentFragment(), hit = false; R.re.lastIndex = 0;
+      while ((m = R.re.exec(s))) {
+        var st = m.index + m[1].length, k = abKey(R.d, m[2]);
+        if (!k || (AB_ONLYEQ[k] && !/^\s*=/.test(s.slice(st + m[2].length)))) continue;
+        if (st > last) frag.appendChild(document.createTextNode(s.slice(last, st)));
+        var sp = document.createElement('span'); sp.className = 'ab'; sp.textContent = m[2]; sp.dataset.ab = k; sp.title = R.d[k];
+        frag.appendChild(sp); last = st + m[2].length; hit = true;
+      }
+      if (!hit) return;
+      if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+      n.replaceWith(frag);
+    });
+  }
+  var abTip = null, abTm = 0, abCur = null;
+  function abHide() { clearTimeout(abTm); if (abTip) abTip.remove(); abTip = null; if (abCur) abCur.classList.remove('on'); abCur = null; }
+  function abShow(el) {
+    var k = el.dataset.ab, l = el.title || AB_ALL[k] || AB_PSY[k]; if (!l) return;
+    abHide(); abCur = el; el.classList.add('on');
+    abTip = document.createElement('div'); abTip.className = 'abtip'; abTip.setAttribute('role', 'status');
+    abTip.innerHTML = '<b>' + esc(k) + '</b> = ' + esc(l);
+    abTip.onclick = abHide; document.body.appendChild(abTip);
+    abTm = setTimeout(abHide, 5000);
+  }
+  function abScope() {
+    var r = parseHash(), p = r.parts;
+    if (p[0] === 'f' && p[1] && p[2] && p[2] !== 'u') return p[1];
+    if (/^(mix|faellig|suche)$/.test(p[0] || '')) return '';
+    if (p[0] === 'begriffe') return r.q.s || '';
+    return null;
+  }
+  var abQ = 0, abMo = new MutationObserver(function () { if (!abQ) abQ = requestAnimationFrame(abRun); });
+  function abRun() {
+    abQ = 0;
+    var sid = abScope(), roots = $$('.pvcard');
+    if (sid !== null) roots.unshift(view);
+    if (roots.length) { var R = abDict(sid || ''); abMo.disconnect(); roots.forEach(function (r) { abWrap(r, R); }); }
+    abMo.observe(document.body, { childList: true, subtree: true });
+  }
+  abMo.observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('hashchange', abHide);
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.ab');
+    if (abLp) { abLp = false; if (a) { e.preventDefault(); e.stopPropagation(); return; } }
+    if (!a) { if (abTip && !e.target.closest('.abtip')) abHide(); return; }
+    if (a.closest('.kwon') || a.closest('button.opt')) return;   // Begriffe-Modus bzw. Antwortknopf: normal weiter
+    e.preventDefault(); e.stopPropagation(); abShow(a);
+  }, true);
+  // langes Drücken (480 ms) bzw. Rechtsklick auf Abkürzungen in Antwortknöpfen
+  var abLp = false, abLpT = 0, abX = 0, abY = 0;
+  document.addEventListener('touchstart', function (e) {
+    var a = e.target.closest && e.target.closest('button.opt .ab'); clearTimeout(abLpT); if (!a || a.closest('.kwon')) return;
+    var t = e.touches[0]; abX = t.clientX; abY = t.clientY;
+    abLpT = setTimeout(function () { abLp = true; if (navigator.vibrate) try { navigator.vibrate(12); } catch (x) {} abShow(a); }, 480);
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) { var t = e.touches[0]; if (Math.abs(t.clientX - abX) > 10 || Math.abs(t.clientY - abY) > 10) clearTimeout(abLpT); }, { passive: true });
+  document.addEventListener('touchend', function () { clearTimeout(abLpT); }, { passive: true });
+  document.addEventListener('contextmenu', function (e) { var a = e.target.closest && e.target.closest('button.opt .ab'); if (!a || a.closest('.kwon')) return; e.preventDefault(); abShow(a); });
+
   function kwRowHTML(href, n, sub, acc) {
     return '<a class="kwrow' + (acc ? ' acc' : '') + '" href="' + href + '"><span class="kwi">' + KW_IC + '</span><span class="kwrt"><b>Meine Begriffe</b><small>' + n + (n === 1 ? ' Begriff' : ' Begriffe') + ' zum Nachlernen' + (sub ? ' · ' + esc(sub) : '') + '</small></span>' + CHEV + '</a>';
   }
@@ -2120,6 +2212,8 @@
       Q('Wie merke ich mir Begriffe, die ich nicht kenne?',
         '<ol><li>Tippe in einer Frage oben rechts auf <span class="kwi sm">' + KW_IC + '</span>.</li><li>Tippe das Wort an. Für längere Begriffe tippst du die Wörter daneben dazu.</li><li><b>Erklärung</b> zeigt die passende Karteikarte aus diesem Fach. Gibt es noch keine, siehst du eine passende Testfrage mit Lösung. <b>Merken</b> setzt den Begriff auf deine Liste.</li></ol>' +
         '<p>Die Liste <b>Meine Begriffe</b> findest du auf der Startseite und im jeweiligen Fach. Gibt es keine passende Erklärung, tippe auf <b>Erklärung fehlt melden</b>, dann ergänzen wir sie.</p>') +
+      Q('Was bedeuten Abkürzungen wie DGL oder AWP?',
+        '<p>Gepunktet unterstrichene Abkürzungen kannst du antippen. Oben erscheint dann kurz die Langform, z. B. <b>AWP = Anfangswertproblem</b>. In Antwortknöpfen hältst du die Abkürzung gedrückt, damit du nicht aus Versehen antwortest.</p>') +
       Q('Wie lege ich Favoriten an oder ändere Farben?',
         '<p>Halte eine Kachel gedrückt. Bei Unterbereichen und Kapiteln (unter <b>Fächer</b>) kannst du <b>Favorisieren</b>, dann erscheinen sie auf der Startseite als Knopf unter ihrem Fach. Mit <b>Farbe</b> gibst du der Kachel eine eigene Farbe. Die Farbe eines Fachs gilt auch für seine Unterbereiche, außer du stellst sie dort extra ein.</p>' +
         '<p>Eine Klausur auf der Startseite gedrückt halten → <b>Ausblenden</b>: nur auf der Startseite oder auch bei den Fächern. Zurückholen kannst du sie unter der Liste mit <b>nicht auf der Startseite</b>. Favoriten-Knopf gedrückt halten nimmt ihn wieder heraus.</p>') +
