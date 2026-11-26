@@ -31,7 +31,7 @@ with sync_playwright() as p:
     pg.on('pageerror',lambda e:errs.append(str(e)))
     pg.goto(B+'#/f/quer'); pg.reload(); pg.wait_for_selector('.tile')
     hrefs=pg.eval_on_selector_all('.tile','els=>els.map(e=>e.getAttribute("href"))'); print('quer:',hrefs)
-    if hrefs!=['#/f/quer/k10','#/f/quer/k11','#/f/quer/u/allg']: errs.append('quer tiles '+str(hrefs))
+    if hrefs!=['#/f/quer/k10','#/f/quer/k11','#/f/quer/u/allg','#/f/quer/rs-dgl1']: errs.append('quer tiles '+str(hrefs))
     pg.screenshot(path='/tmp/allg_quer.png')
     pg.click('.tile[href="#/f/quer/u/allg"]'); pg.wait_for_selector('.tile')
     uh=pg.eval_on_selector_all('.tile','els=>els.map(e=>e.getAttribute("href"))'); print('quer/allg:',uh)

@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'auto', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1, obDone: 0, favs: null, homeHide: null, tint: null };
+  var DEFAULTS = { theme: 'auto', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1, obDone: 0, favs: null, homeHide: null, tint: null, rsMode: 's' };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -549,18 +549,20 @@
   // Lernstand (v52): Fragen sind der Maßstab (zuletzt ganz richtig). Karten zählen nur, wo es keine Fragen gibt.
   // Ohne Gerüst; mit agg auch ohne „nicht klausurrelevant“. Geteilte IDs zählen einmal.
   function progOf(chs, agg) {
-    var ls = learnState(), seen = {}, r = { n: 0, k: 0, nc: 0, kc: 0, pct: 0 };
+    var ls = learnState(), seen = {}, r = { n: 0, k: 0, nc: 0, kc: 0, na: 0, ka: 0, pct: 0 };
     chs.forEach(function (ch) {
       if (ch.placeholder || (agg && /nicht klausurrelevant/i.test(ch.note || ''))) return;
       (ch.cards || []).forEach(function (c) { if (seen[c.id]) return; seen[c.id] = 1; r.nc++; if (DB.progress[c.id] === 'known') r.kc++; });
       (ch.items || []).forEach(function (it) { if (seen[it.id]) return; seen[it.id] = 1; r.n++; var x = ls[it.id]; if (x && x.s === 1) r.k++; });
+      (ch.tasks || []).forEach(function (t) { if (seen[t.id]) return; seen[t.id] = 1; r.na++; var x = ls[t.id]; if (x && x.s === 1) r.ka++; }); // v64: Aufgaben zählen wie Fragen
     });
-    if (agg && !r.n && !r.nc) return progOf(chs, false);
-    r.pct = r.n ? r.k / r.n * 100 : r.nc ? r.kc / r.nc * 100 : 0;
+    if (agg && !r.n && !r.nc && !r.na) return progOf(chs, false);
+    var nq = r.n + r.na, kq = r.k + r.ka;
+    r.pct = nq ? kq / nq * 100 : r.nc ? r.kc / r.nc * 100 : 0;
     return r;
   }
   function progTxt(r) {
-    return [r.n ? (r.k ? r.k + '/' + r.n + ' Fragen' : r.n + ' Fragen') : '', r.nc ? (r.kc ? r.kc + '/' + r.nc + ' Karten' : r.nc + ' Karten') : ''].filter(Boolean).join(' · ');
+    return [r.n ? (r.k ? r.k + '/' + r.n + ' Fragen' : r.n + ' Fragen') : '', r.na ? (r.ka ? r.ka + '/' + r.na + ' Aufgaben' : r.na + ' Aufgaben') : '', r.nc ? (r.kc ? r.kc + '/' + r.nc + ' Karten' : r.nc + ' Karten') : ''].filter(Boolean).join(' · ');
   }
   function subjPct(s) { return Math.round(progOf(s.chapters, true).pct); }
   // ====================================================================== Favoriten, Farben, Startseite anpassen (v62)
@@ -793,7 +795,8 @@
   }
   function chapTile(s, ch) {
     var r = progOf([ch], false), pct = r.pct, parts = [progTxt(r)], desc;
-    if (ch.cards && ch.items) desc = 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation';
+    if (ch.kind === 'schema') desc = 'Fahrplan mit Mustersätzen, Aufgaben zum Aufdecken';
+    else if (ch.cards && ch.items) desc = 'Karteikarten, Multiple Choice, Richtig/Falsch, Lückentext, Zeit-Simulation';
     else if (ch.cards) desc = 'Karteikarten';
     else { var b2 = tests(s.id, ch.id).best.exam; if (b2 !== undefined) parts.push('Klausur ' + b2 + ' %'); desc = 'Tests: Multiple Choice, Lückentext, Richtig/Falsch, Zeit-Simulation'; }
     var ck = s.id + '/' + ch.id;
@@ -837,10 +840,104 @@
     view.className = 's-' + sid;
     var grp = ch.group && (s.groups || []).filter(function (g) { return g.id === ch.group; })[0];
     if (grp && s.chapters.filter(function (c) { return c.group === grp.id; }).length > 1) s = Object.assign({}, s, { href: '#/f/' + sid + '/u/' + grp.id, name: grp.name });
+    if (ch.kind === 'schema') { schemaView(s, ch, q); return; }
     if (ch.cards && ch.items) {
       if (q.c || q.mode === 'cards' || q.read) cardsView(Object.assign({}, s, { href: '#/f/' + sid + '/' + cid, name: ch.title.split(' · ')[0] }), Object.assign({}, ch, { kind: 'cards' }), q);
       else testsView(s, ch, q);
     } else if (ch.kind === 'cards') cardsView(s, ch, q); else testsView(s, ch, q);
+  }
+
+  // ====================================================================== Rechenschemata (v64): Überblick (aufklappbar) + Aufgaben zum Aufdecken
+  var RS_MARK = [['Nicht gewusst', 0], ['Teilweise', 0.5], ['Gewusst', 1]];
+  function schemaView(s, ch, q) {
+    var T = tests(s.id, ch.id), STEP = {}; ch.steps.forEach(function (x) { STEP[x.n] = x; });
+    var TASK = {}; ch.tasks.forEach(function (t) { TASK[t.id] = t; });
+    var back = backHref('#/f/' + s.id), backName = fromSearch() ? 'Suche' : s.name;
+    function rsData() { return T.rs && typeof T.rs === 'object' ? T.rs : (T.rs = {}); }
+    function stepLabel(n) { return 'Schritt ' + n + ' · ' + STEP[n].t; }
+    // Schwache Schritte: letzte Bewertung je Aufgabe, „nicht gewusst“ zählt 1, „teilweise“ ½
+    function weak() {
+      var w = {}, d = rsData();
+      Object.keys(d).forEach(function (id) { var r = d[id]; if (!TASK[id] || !r || !r.m) return; TASK[id].steps.forEach(function (p, i) { var v = r.m[i]; if (v === 0) w[p.n] = (w[p.n] || 0) + 1; else if (v === 0.5) w[p.n] = (w[p.n] || 0) + 0.5; }); });
+      return Object.keys(w).map(Number).filter(function (n) { return w[n] > 0; }).sort(function (a, b) { return w[b] - w[a] || a - b; }).map(function (n) { return { n: n, v: w[n] }; });
+    }
+    function overview(tab) {
+      setImm(false);
+      var h = '<div class="nav">' + backLink(back, backName) + '</div><h1 style="font-size:1.55rem">' + esc(ch.title) + '</h1><p class="sub">' + esc(ch.sub) + '</p>';
+      h += '<div class="chips rstabs"><button class="chip' + (tab === 'u' ? ' on' : '') + '" data-tab="u">Überblick</button><button class="chip' + (tab === 'a' ? ' on' : '') + '" data-tab="a">Aufgaben (' + ch.tasks.length + ')</button></div>';
+      if (tab === 'u') {
+        var ex = TASK[ch.example];
+        h += '<div class="group rsgroup">' + ch.steps.map(function (x) {
+          var bsp = ex && ex.steps.filter(function (p) { return p.n === x.n; })[0];
+          return '<details class="faq rsstep" data-n="' + x.n + '"' + (String(q.st) === String(x.n) ? ' open' : '') + '><summary><span class="rsn">' + x.n + '</span><span class="rsh"><b>' + esc(x.t) + '</b><small>' + x.goal + '</small></span><svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary><div class="fa">' +
+            '<div class="rs-satz"><div class="rs-lbl">Mustersatz · auswendig</div>' + x.satz + '</div>' +
+            '<div class="tip warn rs-fall"><div class="rs-lbl">Achtung</div>' + x.fall + '</div>' +
+            (bsp ? '<details class="rs-bsp"><summary>Beispiel (' + esc(ex.src.split(' (')[0]) + ')</summary><div class="serif rs-body">' + bsp.h + '</div></details>' : '') + '</div></details>';
+        }).join('') + '</div>';
+        h += '<div class="group rsgroup">' + ch.extra.map(function (x) {
+          return '<details class="faq rsx"><summary><b>' + esc(x.t) + '</b><svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary><div class="fa">' + x.h + '</div></details>';
+        }).join('') + '</div>';
+        h += '<div class="row"><button class="primary" id="rsGo">Aufgaben üben</button></div>';
+      } else {
+        var mode = DB.settings.rsMode === 'k' ? 'k' : 's', ls = learnState(), d = rsData(), wk = weak();
+        h += '<div class="chips"><span class="lbl">Ablauf</span><button class="chip' + (mode === 's' ? ' on' : '') + '" data-rm="s">Mit Schritten</button><button class="chip' + (mode === 'k' ? ' on' : '') + '" data-rm="k">Wie in der Klausur</button></div>';
+        h += '<p class="note" style="margin:0 0 14px">' + (mode === 's' ? 'Du siehst vorher, welcher Schritt dran ist. Rechne auf Papier, dann aufdecken.' : 'Nur die Aufgabe steht da. Rechne auf Papier und decke die Lösung Schritt für Schritt auf.') + '</p>';
+        if (wk.length) h += '<div class="banner"><b>Zuletzt schwach:</b> ' + wk.slice(0, 3).map(function (w) { return 'Schritt ' + w.n + ' (' + esc(STEP[w.n].t) + ')'; }).join(', ') + '</div>';
+        h += '<div class="modes">' + ch.tasks.map(function (t) {
+          var r = d[t.id], x = ls[t.id], st = !x ? 'Noch nicht geübt' : x.s === 1 ? 'Zuletzt alles gewusst' : 'Zuletzt ' + Math.round(x.s * 100) + ' %';
+          var dots = r && r.m ? '<span class="rsdots">' + r.m.map(function (v) { return '<i class="v' + String(v).replace('.', '') + '"></i>'; }).join('') + '</span>' : '';
+          return '<button class="mode rstask" data-t="' + t.id + '"><span><span class="t">' + esc(t.src.split(' (')[0]) + '</span><br><span class="d">' + esc(t.src.indexOf(' (') > 0 ? t.src.slice(t.src.indexOf(' (') + 2, -1) : '') + '</span></span><span class="r">' + esc(st) + dots + '</span></button>';
+        }).join('') + '</div>';
+      }
+      view.innerHTML = h;
+      $$('[data-tab]').forEach(function (b) { b.onclick = function () { overview(b.dataset.tab); }; });
+      $$('[data-rm]').forEach(function (b) { b.onclick = function () { DB.settings.rsMode = b.dataset.rm; save(); overview('a'); }; });
+      $$('.rstask').forEach(function (b) { b.onclick = function () { runTask(TASK[b.dataset.t]); }; });
+      var g = $('#rsGo'); if (g) g.onclick = function () { overview('a'); window.scrollTo(0, 0); };
+      if (q.st) { var o = $('.rsstep[open]'); if (o) setTimeout(function () { o.scrollIntoView({ block: 'start' }); }, 30); q.st = null; }
+    }
+    function runTask(t) {
+      var mode = DB.settings.rsMode === 'k' ? 'k' : 's', marks = [], pos = 0, shown = false, N = t.steps.length;
+      setImm(true); window.scrollTo(0, 0);
+      function draw() {
+        var h = lhead('rsX', null, t.src.split(' (')[0], mode === 'k' ? 'Wie in der Klausur' : 'Mit Schritten', Math.min(pos + 1, N) + '/' + N, pos / N);
+        h += '<div class="card rsq"><div class="meta"><span class="side">Aufgabe</span><span>' + esc(t.src.indexOf(' (') > 0 ? t.src.slice(t.src.indexOf(' (') + 2, -1) : '') + '</span></div><div class="serif rs-body">' + t.q + '</div></div>';
+        t.steps.forEach(function (p, i) {
+          if (i > pos || (i === pos && !shown)) return;
+          var m = marks[i];
+          h += '<div class="rsdone' + (i === pos ? ' cur' : '') + '"><div class="rs-lbl"><span>' + esc(stepLabel(p.n)) + '</span>' + (m !== undefined ? '<span class="rsm v' + String(m).replace('.', '') + '">' + RS_MARK.filter(function (x) { return x[1] === m; })[0][0] + '</span>' : '') + '</div><div class="serif rs-body">' + p.h + '</div></div>';
+        });
+        if (pos < N && !shown) {
+          var p = t.steps[pos];
+          h += '<div class="rsnext">' + (mode === 's' ? '<div class="rs-lbl"><span>' + esc(stepLabel(p.n)) + '</span></div><div class="rsgoal">' + STEP[p.n].goal + '</div><p class="note">Schreib den Schritt auf Papier, mit Satz.</p>' : '<p class="note">Rechne weiter auf Papier und decke dann den nächsten Schritt auf.</p>') +
+            '<div class="row"><button class="primary" id="rsShow">' + (mode === 's' ? 'Aufdecken' : 'Nächsten Schritt aufdecken') + '</button></div></div>';
+        } else if (pos < N) {
+          h += '<div class="rsrate">' + RS_MARK.map(function (x, i) { return '<button class="btn' + (i === 2 ? ' known' : '') + '" data-v="' + x[1] + '">' + x[0] + '</button>'; }).join('') + '</div>';
+        } else {
+          var sc = marks.reduce(function (a, b) { return a + b; }, 0) / N, all = marks.every(function (v) { return v === 1; });
+          var bad = t.steps.map(function (p, i) { return marks[i] < 1 ? 'Schritt ' + p.n : ''; }).filter(Boolean).filter(function (x, i, a) { return a.indexOf(x) === i; });
+          h += '<div class="card rsend"><h2>' + (all ? 'Alles gewusst' : Math.round(sc * 100) + ' % gewusst') + '</h2><p>' + (all ? 'Die Aufgabe zählt für deinen Lernstand als richtig.' : 'Nochmal ansehen: ' + esc(bad.join(', ')) + '. Im Überblick stehen Mustersatz und Fallen dazu.') + '</p></div>' +
+            '<div class="row"><button class="ghost" id="rsAgain">Nochmal</button><button class="primary" id="rsBack">Zur Übersicht</button></div>';
+        }
+        view.innerHTML = h;
+        $('#rsX').onclick = function () { overview('a'); };
+        var b = $('#rsShow'); if (b) b.onclick = function () { shown = true; draw(); var c = $('.rsdone.cur'); if (c) c.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
+        $$('.rsrate button').forEach(function (x) { x.onclick = function () {
+          marks[pos] = parseFloat(x.dataset.v); pos++; shown = false;
+          if (pos === N) finish();
+          draw(); var n = $('.rsnext, .rsend'); if (n) n.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }; });
+        var a = $('#rsAgain'); if (a) a.onclick = function () { runTask(t); };
+        var bk = $('#rsBack'); if (bk) bk.onclick = function () { overview('a'); window.scrollTo(0, 0); };
+      }
+      function finish() {
+        var sc = marks.reduce(function (a, b) { return a + b; }, 0) / N;
+        logAns(s.id, t.id, sc); rsData()[t.id] = { m: marks.slice(), ts: Date.now() }; T.ts = Date.now(); save();
+      }
+      draw();
+    }
+    view.className = 's-' + s.id;
+    if (q.t && TASK[q.t]) runTask(TASK[q.t]); else overview('u');
   }
 
   // ====================================================================== Lernmodus-Kopf (v44): ✕ links, Titel mitte, Zähler rechts, Leiste darunter
@@ -1097,6 +1194,7 @@
         return '<button class="mode" data-m="' + m.id + '"' + (c ? '' : ' disabled') + '><span class="ico">' + ic(m.ico) + '</span><span><span class="t">' + m.name + '</span><br><span class="d">' + (m.id === 'mc' && s.id === 'psy' ? 'Vier Antworten, 1 bis 4 richtig' : m.desc) + '</span></span>' +
           '<span class="r">' + c + ' Fragen' + (b !== undefined ? '<b>Bestwert ' + b + ' %</b>' : '') + '</span></button>';
       }).join('') + '</div>';
+      if (ch.rel) h += '<a class="mode rsrel" href="' + ch.rel.href + '"><span class="ico">' + ic('book') + '</span><span><span class="t">' + esc(ch.rel.t) + '</span><br><span class="d">' + esc(ch.rel.d) + '</span></span>' + CHEV + '</a>';
       h += '<div class="row" style="margin-top:14px">' + (ch.cards ? '<button class="ghost" id="readC">' + ic('book') + 'Karten lesen</button>' : '') + '<button class="ghost" id="readQ">' + ic('book') + 'Fragen lesen</button></div>';
       if (st.mMosaic && !s.mix) h += mosaicHTML(ITEMS);
       var wr = T.wrong.filter(function (id) { return BYID[id]; });
@@ -2045,6 +2143,7 @@
       var x = a.tests[k] = a.tests[k] || { best: {}, wrong: [] }, y = b.tests[k]; x.best = x.best || {}; x.wrong = x.wrong || [];
       Object.keys(y.best || {}).forEach(function (m) { if (x.best[m] === undefined || y.best[m] > x.best[m]) x.best[m] = y.best[m]; });
       (y.wrong || []).forEach(function (id) { if (x.wrong.indexOf(id) < 0) x.wrong.push(id); });
+      if (y.rs && (!x.rs || (y.ts || 0) > (x.ts || 0))) x.rs = y.rs;
     });
     var seen = {}; a.log.forEach(function (e) { seen[e[0] + '|' + e[2]] = 1; });
     (b.log || []).forEach(function (e) { if (!seen[e[0] + '|' + e[2]]) a.log.push(e); });
@@ -2108,7 +2207,7 @@
     var tk = {}; Object.keys(a.tests).concat(Object.keys(b.tests)).forEach(function (k) { tk[k] = 1; });
     Object.keys(tk).forEach(function (k) {
       var x = a.tests[k], y = b.tests[k];
-      if (y && (!x || (y.ts || 0) > (x.ts || 0))) a.tests[k] = x = { best: y.best || {}, wrong: (y.wrong || []).slice(), ts: y.ts || 0, moved: y.moved, saved: y.saved };
+      if (y && (!x || (y.ts || 0) > (x.ts || 0))) a.tests[k] = x = { best: y.best || {}, wrong: (y.wrong || []).slice(), ts: y.ts || 0, moved: y.moved, saved: y.saved, rs: y.rs };
       else if (x && y && !x.ts && !y.ts) {
         x.best = x.best || {}; x.wrong = x.wrong || [];
         Object.keys(y.best || {}).forEach(function (m) { if (x.best[m] === undefined || y.best[m] > x.best[m]) x.best[m] = y.best[m]; });
@@ -2212,6 +2311,8 @@
       Q('Wie merke ich mir Begriffe, die ich nicht kenne?',
         '<ol><li>Tippe in einer Frage oben rechts auf <span class="kwi sm">' + KW_IC + '</span>.</li><li>Tippe das Wort an. Für längere Begriffe tippst du die Wörter daneben dazu.</li><li><b>Erklärung</b> zeigt die passende Karteikarte aus diesem Fach. Gibt es noch keine, siehst du eine passende Testfrage mit Lösung. <b>Merken</b> setzt den Begriff auf deine Liste.</li></ol>' +
         '<p>Die Liste <b>Meine Begriffe</b> findest du auf der Startseite und im jeweiligen Fach. Gibt es keine passende Erklärung, tippe auf <b>Erklärung fehlt melden</b>, dann ergänzen wir sie.</p>') +
+      Q('Was sind Rechenschemata?',
+        '<p>Ein Fahrplan für einen Aufgabentyp, z. B. lineare DGL 1. Ordnung (Querschnitt → Rechenschemata). Unter <b>Überblick</b> stehen die Schritte; antippen zeigt den Mustersatz zum Auswendiglernen, typische Fehler und ein Beispiel.</p><p>Unter <b>Aufgaben</b> rechnest du auf Papier und deckst Schritt für Schritt auf. Nach jedem Schritt bewertest du dich selbst. „Mit Schritten“ zeigt vorher, welcher Schritt dran ist, „Wie in der Klausur“ nicht.</p>') +
       Q('Was bedeuten Abkürzungen wie DGL oder AWP?',
         '<p>Gepunktet unterstrichene Abkürzungen kannst du antippen. Oben erscheint dann kurz die Langform, z. B. <b>AWP = Anfangswertproblem</b>. In Antwortknöpfen hältst du die Abkürzung gedrückt, damit du nicht aus Versehen antwortest.</p>') +
       Q('Wie lege ich Favoriten an oder ändere Farben?',

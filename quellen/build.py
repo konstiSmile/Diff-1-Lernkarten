@@ -136,6 +136,20 @@ for c in data_diff1_k2.CARDS:
 assert len({c['key'] for c in data_diff1_k2.CARDS}) == len(data_diff1_k2.CARDS)
 assert len({i['id'] for i in data_diff1_k2.ITEMS}) == len(data_diff1_k2.ITEMS)
 
+# ---------------------------------------------------------------- Rechenschemata (v64)
+import data_schema
+def schema_chapter(sid, cid):
+    st = [dict(n=x['n'], t=x['t'], goal=tex.convert(x['goal']), satz=tex.convert(x['satz']), fall=tex.convert(x['fall'])) for x in data_schema.STEPS]
+    ex = [dict(t=x['t'], h=tex.convert(x['h'])) for x in data_schema.EXTRA]
+    ts = [dict(id=t['id'], src=t['src'], q=tex.convert(t['q']), steps=[dict(n=p['n'], h=tex.convert(p['h'])) for p in t['steps']]) for t in data_schema.TASKS]
+    for x in data_schema.STEPS:
+        search.append(dict(s=sid, title='Rechenschema · Schritt %d' % x['n'], label='Rechenschema · ' + data_schema.TITLE, route=f"/f/{sid}/{cid}?st={x['n']}", kw=x['t'], text=x['t'] + ' — ' + tex.plain(x['goal'] + ' ' + x['satz'])))
+    for t in data_schema.TASKS:
+        search.append(dict(s=sid, title=t['src'], label='Rechenschema · Aufgabe', route=f"/f/{sid}/{cid}?t={t['id']}", kw=t['kw'], text=tex.plain(t['q'])))
+    return dict(id=cid, group='schema', title=data_schema.TITLE, sub=data_schema.SUB, kind='schema', placeholder=False, steps=st, extra=ex, tasks=ts, example='rs-dgl1-t21')
+quer_schema = schema_chapter('quer', 'rs-dgl1')
+quer11['rel'] = dict(href='#/f/quer/rs-dgl1', t='Rechenschema: ' + data_schema.TITLE, d='Fahrplan mit Mustersätzen und Aufgaben zum Aufdecken')
+
 ALLG_GROUP = dict(id='allg', name='Allgemein', desc='Formeln, Begriffe, Beweistechniken und Rechenwege aus Skripten und Übungen')
 
 CONTENT = dict(name=NAME, version=VERSION, subjects=[
@@ -147,8 +161,9 @@ CONTENT = dict(name=NAME, version=VERSION, subjects=[
     dict(id='quer', name='Querschnitt', desc='Mehrere Veränderliche, Differentialgleichungen', exam='2027-02-05', groups=[
         dict(id='mv', name='Funktionen mehrerer Veränderlicher', desc='Kapitel 10'),
         dict(id='dgl', name='Gewöhnliche Differentialgleichungen', desc='Kapitel 11 · erster Ordnung'),
-        ALLG_GROUP], chapters=[
-        quer10, quer11] + quer_allg),
+        ALLG_GROUP,
+        dict(id='schema', name='Rechenschemata', desc='Fahrpläne mit Mustersätzen, Aufgaben zum Aufdecken')], chapters=[
+        quer10, quer11] + quer_allg + [quer_schema]),
     dict(id='psy', name='Psycho 2', desc='Persönlichkeit, Entwicklung, Diagnostik', exam='2027-01-29', examTime='8–10 Uhr', groups=[
         dict(id='pers', name='Persönlichkeitspsychologie', desc='Eigenschaften, Methoden, Theorien'),
         dict(id='entw', name='Entwicklungspsychologie', desc='Kommt später'),
@@ -251,7 +266,7 @@ FILES = ['./', 'index.html', 'app.css', 'app.js', 'content.js', 'qr.svg', 'font/
          'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']
 open(f'{OUT}/sw.js', 'w', encoding='utf-8').write(f'''// Offline-Speicher für {NAME}.
 // Bei jeder Änderung an Inhalten oder Code die Versionsnummer erhöhen (v8 -> v9 ...).
-const CACHE = 'lernkiste-v63';
+const CACHE = 'lernkiste-v64';
 const FILES = {json.dumps(FILES)};
 
 self.addEventListener('install', e => {{

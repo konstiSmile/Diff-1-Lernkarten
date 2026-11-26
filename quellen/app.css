@@ -690,3 +690,42 @@ button.opt .ab { -webkit-user-select:none; user-select:none; }
 .abtip b { color:var(--ink); font-weight:800; }
 @keyframes abin { from { opacity:0; transform:translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) { .abtip { animation:none; } }
+
+/* ---------------------------------------------------------------- Rechenschemata (v64) */
+.rsgroup { padding:2px 16px; }
+.rsstep summary { align-items:flex-start; }
+.rsn { flex:none; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:var(--paper2); box-shadow:var(--well); font-weight:800; font-size:.9rem; margin-top:1px; }
+.rsh { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.rsh small { font-weight:600; color:var(--muted); font-size:.84rem; line-height:1.4; }
+.rsstep summary .chev { margin-top:6px; }
+.rs-lbl { font-size:.74rem; letter-spacing:.07em; text-transform:uppercase; font-weight:800; color:var(--muted); margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+.rs-satz { background:var(--green-soft); border-left:3px solid var(--s4); border-radius:6px 16px 16px 6px; padding:10px 14px; margin:2px 0 10px; font-family:"New York", Georgia, "Source Serif 4", "FreeSerif", serif; font-weight:400; }
+.rs-satz .rs-lbl { font-family:"Nunito", system-ui, sans-serif; color:var(--s5); }
+[data-theme="dark"] .rs-satz .rs-lbl { color:var(--s4); }
+.rs-satz p, .rs-fall p, .rs-body p { margin:0 0 6px; } .rs-satz p:last-child, .rs-fall p:last-child, .rs-body p:last-child { margin-bottom:0; }
+.ph { color:var(--muted); font-style:italic; font-family:"Nunito", system-ui, sans-serif; font-weight:600; font-size:.92em; }
+.rs-fall { margin:0 0 10px; font-weight:500; }
+.rs-fall .rs-lbl { color:var(--ink); opacity:.75; }
+.rs-bsp { margin:0 0 4px; }
+.rs-bsp > summary { cursor:pointer; font-weight:800; font-size:.9rem; color:var(--accent); padding:4px 0; list-style:none; }
+.rs-bsp > summary::-webkit-details-marker { display:none; }
+.rs-bsp > summary::before { content:"+ "; } .rs-bsp[open] > summary::before { content:"− "; }
+.rs-body { font-size:.98rem; line-height:1.5; }
+.rsx .fa ul { margin:0 0 8px; padding-left:1.2em; } .rsx .fa li { margin-bottom:4px; }
+.rstask .r { white-space:normal; max-width:46%; }
+.rsdots { display:flex; gap:3px; justify-content:flex-end; margin-top:5px; }
+.rsdots i, .rsm { display:inline-block; }
+.rsdots i { width:8px; height:8px; border-radius:50%; background:var(--track); }
+.rsdots i.v1 { background:var(--s4); } .rsdots i.v05 { background:var(--honey); } .rsdots i.v0 { background:var(--peach-d); }
+.rsq { margin-bottom:14px; border-radius:24px; }
+.rsdone { background:var(--paper); border-radius:20px; padding:12px 16px; margin-bottom:10px; box-shadow:var(--shadow-s); }
+.rsm { margin-left:auto; text-transform:none; letter-spacing:0; font-size:.78rem; padding:2px 9px; border-radius:10px; background:var(--paper2); color:var(--ink); }
+.rsm.v1 { background:var(--green-soft); } .rsm.v05 { background:var(--honey); color:#1F261E; } .rsm.v0 { background:var(--red-soft); }
+.rsnext { padding:6px 2px; }
+.rsgoal { font-weight:700; margin-bottom:6px; }
+.rsrate { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:6px; }
+.rsrate button { min-height:56px; border-radius:20px; font-size:.92rem; padding:8px 6px; }
+.rsrate .known { background:var(--sage); color:var(--onaccent); box-shadow:var(--shadow-acc); }
+.rsend h2 { margin:0 0 6px; font-size:1.2rem; } .rsend p { margin:0; color:var(--muted); font-weight:600; }
+.rsrel { margin-top:10px; text-decoration:none; color:var(--ink); }
+.rsrel .chev { width:8px; height:14px; fill:none; stroke:var(--chev); stroke-width:2; margin-left:auto; flex:none; }
