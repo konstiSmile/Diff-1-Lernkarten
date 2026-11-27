@@ -5,7 +5,7 @@
   // Feedback: Google-Apps-Script-Web-App, schreibt in eine private Google-Tabelle
   var FB_URL = 'https://script.google.com/macros/s/AKfycbz4r4-dfoJQUeoy8WQayF3W7S6ddmKt8bujKiew7bUV5JmCUVMop5dhP5pDgDmMZtMm/exec';
   var FB_MAX = 2000, FB_Q = 'lernkiste-fbq', DEV_KEY = 'lernkiste-dev';
-  var DEFAULTS = { theme: 'auto', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 0, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1, obDone: 0, favs: null, homeHide: null, tint: null, rsMode: 's' };
+  var DEFAULTS = { theme: 'auto', font: 1, cardFilter: 'red', name: '', cardOrder: 'script', testN: 10, examMin: 20, examN: 12, mixMode: 'even', mixSubs: null, stats: 1, statsAsked: 0, lastBackup: 0, ownDirty: 0, ownTip: 0, nagDay: '', mDue: 1, mGoal: 30, mChain: 1, mCount: 1, mMosaic: 1, mBadges: 1, obDone: 0, favs: null, homeHide: null, tint: null, rsMode: 's' };
 
   // ====================================================================== Helfer
   function $(s, r) { return (r || document).querySelector(s); }
@@ -84,7 +84,7 @@
       })
       .catch(function () { fbBusy = false; if (done) done(false); });
   }
-  // ---- Anonyme Nutzungsstatistik (nur mit Einwilligung, Standard aus): keine Geräte-ID, nichts auf dem Gerät gespeichert
+  // ---- Anonyme Nutzungsstatistik (v65: Opt-out, Standard an, abschaltbar in den Einstellungen): keine Geräte-ID
   var statSeen = {}, statHiddenAt = 0;
   // Merker nur auf dem Gerät (nicht im Backup): Datum/Woche der letzten Meldung und ob schon einmal gemeldet. Gesendet werden nur Ja/Nein-Werte.
   var STAT_KEY = 'lernkiste-stat';
@@ -140,21 +140,19 @@
     cleanups.push(closeTile);
     $('.pvx', w).focus();
   }
-  // ---- v50: Einführung beim ersten Öffnen (wischbare Seiten) und Pflicht-Antwort zur Nutzungsstatistik.
-  // Neue Nutzer: Willkommen + Name · Home-Bildschirm · So lernst du · Statistik. Wer schon lernt und nie geantwortet hat: nur die Statistik-Seite.
-  // „Überspringen“ führt immer zur Statistik-Seite; schließen lässt sie sich nur mit Ja oder Nein (keine Vorauswahl).
+  // ---- v50: Einführung beim ersten Öffnen (wischbare Seiten). v65: ohne Statistik-Frage (Statistik ist Opt-out).
+  // Nur neue Nutzer: Willkommen + Name · Home-Bildschirm · So lernst du. „Überspringen“ führt zur letzten Seite mit „Los geht’s“.
   var statAskedNow = false, obEl = null;
   function obStandalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
   function obPlatform() { var u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1)) return 'ios'; if (/Android/.test(u)) return 'android'; return 'other'; }
   function statAsk() {
     if (statAskedNow || obEl) return;
     var st = DB.settings;
-    if (st.stats && !st.statsAsked) { st.statsAsked = Date.now(); save(); }
     var fresh = !st.obDone && !st.statsAsked && !DB.log.length && !Object.keys(DB.progress).length && !Object.keys(DB.tests).length;
-    if (!fresh && st.statsAsked) { if (!st.obDone) { st.obDone = Date.now(); save(); } return; }
+    if (!fresh) { if (!st.obDone) { st.obDone = Date.now(); save(); } return; }
     statAskedNow = true;
     var pages = [];
-    if (fresh) {
+    {
       pages.push('<div class="obico">' + ic('cards') + '</div><h2>Willkommen in der Lernkiste</h2>' +
         '<p>Karteikarten und Tests für deine Klausuren, offline auf deinem Handy. Dein Lernstand bleibt auf deinem Gerät.</p>' +
         '<label class="oblab" for="obName">Wie heißt du? <span>(optional)</span></label>' +
@@ -171,19 +169,16 @@
         '<li><b>Fächer</b> → Kapitel wählen, dann Karteikarten oder Tests.</li>' +
         '<li><b>Karten:</b> antippen zum Umdrehen, dann „Gewusst“ oder „Nochmal“.</li>' +
         '<li><b>Tests:</b> Multiple Choice, Richtig/Falsch, Lückentext und Klausur auf Zeit.</li>' +
-        '<li><b>Start</b> zeigt, was heute fällig ist, und deinen Lernstand.</li></ul>');
+        '<li><b>Start</b> zeigt, was heute fällig ist, und deinen Lernstand.</li></ul>' +
+        '<p class="note">Die App zählt anonym App-Starts und geöffnete Fächer. Ausschalten unter Einstellungen → Daten und App. <button type="button" class="oblink" id="obPriv">Datenschutz</button></p>');
     }
-    pages.push('<div class="obico ok">' + ic('check') + '</div><h2>Eine Bitte</h2>' +
-      '<p>Darf die Lernkiste <b>anonym zählen</b>, wie oft sie geöffnet und welches Fach genutzt wird? Das hilft mir zu sehen, ob sich die Arbeit lohnt und welche Fächer ich ausbaue.</p>' +
-      '<ul class="obsteps plain small"><li>Kein Name, keine Geräte-ID, kein Lernstand</li><li>Nur Zahlen, niemandem zuzuordnen</li><li>Jederzeit änderbar unter Einstellungen → App</li></ul>' +
-      '<button type="button" class="oblink" id="obPriv">Alles zum Datenschutz</button>');
     var last = pages.length - 1, cur = 0;
-    var w = obEl = document.createElement('div'); w.className = 'ob'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', fresh ? 'Einführung' : 'Kurze Frage');
+    var w = obEl = document.createElement('div'); w.className = 'ob'; w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'Einführung');
     w.innerHTML = '<div class="obtop"><button type="button" class="oblink" id="obSkip">Überspringen</button></div>' +
       '<div class="obvp"><div class="obtrack">' + pages.map(function (h, k) { return '<section class="obpage" aria-hidden="' + (k ? 'true' : 'false') + '">' + h + '</section>'; }).join('') + '</div></div>' +
       '<div class="obfoot">' + (last ? '<div class="obdots">' + pages.map(function () { return '<i></i>'; }).join('') + '</div>' : '') +
       '<div class="obbtns" id="obNav"><button type="button" class="primary obbig" id="obNext">Weiter</button></div>' +
-      '<div class="obbtns" id="obAsk"><button type="button" class="primary obbig" id="stYes">Ja, gern</button><button type="button" class="ghost obbig" id="stNo">Nein, danke</button></div></div>';
+      '<div class="obbtns" id="obAsk"><button type="button" class="primary obbig" id="obGo">Los geht’s</button></div></div>';
     document.body.appendChild(w); document.body.classList.add('pvopen');
     var track = $('.obtrack', w), secs = $$('.obpage', w), dots = $$('.obdots i', w);
     function go(k) {
@@ -206,29 +201,26 @@
       if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(cur + (dx < 0 ? 1 : -1));
     });
     w.addEventListener('keydown', function (e) { if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') go(cur + 1); return; } if (e.key === 'ArrowRight') go(cur + 1); if (e.key === 'ArrowLeft') go(cur - 1); });
-    function answer(on) {
-      st.stats = on ? 1 : 0; st.statsAsked = Date.now(); st.obDone = Date.now(); save(); if (!on) statForget();
+    function finish() {
+      st.obDone = Date.now(); save();
       w.remove(); obEl = null; document.body.classList.remove('pvopen');
-      if (on) { statPing('start'); var r = parseHash().parts; if (r[0] === 'f' && r[1]) statFach(r[1]); }
-      toast(on ? 'Danke!' : 'Okay, es wird nichts gezählt');
-      if (fresh && st.name) { var y = window.scrollY; route(); window.scrollTo(0, y); }
+      if (st.name) { var y = window.scrollY; route(); window.scrollTo(0, y); }
     }
-    $('#stYes', w).onclick = function () { answer(true); };
-    $('#stNo', w).onclick = function () { answer(false); };
+    $('#obGo', w).onclick = finish;
     go(0);
   }
   function privacyHTML() {
     return '<div class="pvkey"><b>Das Wichtigste zuerst</b><p>Ich erhebe keine personenbezogenen Daten. Ich bekomme weder deinen Namen noch deine E-Mail-Adresse, IP-Adresse, eine Geräte-Kennung oder deinen Lernstand (außer du richtest den Sync ein, siehe unten). Ich sehe nur Zahlen wie „heute 12 App-Starts, 5-mal Psycho 2“. Ich kann nicht erkennen, wer die App nutzt, mit welchem Gerät oder von wo, und bei der Statistik auch nicht, ob zwei Einträge von derselben Person stammen.</p></div>' +
-      '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst, eine Frage oder eine fehlende Erklärung meldest, die Nutzungsstatistik einschaltest oder den Sync einrichtest.</p>' +
+      '<p><b>Kurz gesagt:</b> Dein Lernstand bleibt auf deinem Gerät. Die App sendet nur etwas, wenn du Feedback schickst, eine Frage oder eine fehlende Erklärung meldest, die Nutzungsstatistik an ist (Standard, abschaltbar) oder du den Sync einrichtest.</p>' +
       '<h4>Auf deinem Gerät</h4>' +
       '<p>Lernstand, Verlauf, gemerkte Begriffe, eigene Karten und Einstellungen (auch dein Name) liegen nur im Speicher deines Browsers. Sie verlassen das Gerät nicht, außer du speicherst selbst ein Backup. Damit die App offline läuft, speichert der Browser außerdem die App-Dateien.</p>' +
       '<h4>Beim Laden der App</h4>' +
       '<p>Die App liegt bei GitHub Pages (GitHub, USA). Wie jeder Webserver verarbeitet GitHub dabei technisch deine IP-Adresse. Die App lädt keine Werbung, keine Tracker und nichts von fremden Seiten.</p>' +
       '<h4>Feedback, „Frage melden“ und „Erklärung fehlt“ (nur wenn du sendest)</h4>' +
       '<p>Gesendet werden dein Text (beim Melden: Grund, Kommentar, Fach und Nummer der Frage; bei „Erklärung fehlt“: der Begriff, Fach und Nummer der Frage), die App-Version und eine zufällige Kennung gegen Spam. Diese Kennung wird beim ersten Feedback auf dem Gerät gespeichert und sagt nichts über dich. Kein Name. Ziel ist eine private Google-Tabelle über Google Apps Script (Google, Server auch in den USA). Google verarbeitet dabei technisch deine IP-Adresse, in der Tabelle landet sie nicht. Schreib bitte keine persönlichen Daten in den Text.</p>' +
-      '<h4>Nutzungsstatistik (nur wenn eingeschaltet)</h4>' +
+      '<h4>Nutzungsstatistik (abschaltbar)</h4>' +
       '<p><b>Die Statistik ist vollständig anonym.</b> Sie zählt nur, <i>wie oft</i> die App und die Fächer geöffnet werden, nicht <i>wer</i> sie öffnet. Kein Eintrag enthält etwas, das auf dich oder dein Gerät schließen lässt.</p>' +
-      '<p>Nur mit deiner Zustimmung: Die App fragt einmal, und du kannst es jederzeit ändern. Wenn sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Beim Öffnen kommt dazu nur, ob es der erste Start heute, in dieser Woche oder überhaupt auf diesem Gerät ist (ja/nein). So lässt sich zählen, wie viele Geräte die App nutzen, ohne sie zu unterscheiden. Dafür merkt sich die App auf deinem Gerät das Datum der letzten Meldung; das wird nicht gesendet und beim Ausschalten gelöscht. Den Zeitpunkt notiert die Tabelle. Nicht gesendet werden: Name, E-Mail, IP-Adresse, Geräte-ID, Gerätetyp, Standort, Antworten oder Lernstände. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
+      '<p>Die Statistik ist von Anfang an eingeschaltet. Du kannst sie jederzeit in den Einstellungen unter „Daten und App“ ausschalten. Solange sie an ist, meldet die App beim Öffnen und beim ersten Öffnen eines Fachs: „App-Start“ oder „Fach geöffnet“, welches Fach und die App-Version. Beim Öffnen kommt dazu nur, ob es der erste Start heute, in dieser Woche oder überhaupt auf diesem Gerät ist (ja/nein). So lässt sich zählen, wie viele Geräte die App nutzen, ohne sie zu unterscheiden. Dafür merkt sich die App auf deinem Gerät das Datum der letzten Meldung; das wird nicht gesendet und beim Ausschalten gelöscht. Den Zeitpunkt notiert die Tabelle. Nicht gesendet werden: Name, E-Mail, IP-Adresse, Geräte-ID, Gerätetyp, Standort, Antworten oder Lernstände. Ziel ist dieselbe private Google-Tabelle wie beim Feedback. Ausschalten geht jederzeit hier in den Einstellungen und wirkt sofort.</p>' +
       '<h4>Geräte synchronisieren (nur wenn eingerichtet)</h4>' +
       '<p>Dann wird dein Lernstand an eine Datenbank bei Supabase gesendet: bewertete Karten, Testergebnisse, Verlauf, gemerkte Begriffe und Einstellungen, aber nicht dein Name und keine eigenen Karten. Es gibt kein Konto und keine E-Mail-Adresse. Gespeichert wird der Stand unter einer verschlüsselten Form deines Codes (Hash), der Code selbst bleibt auf deinen Geräten. Supabase verarbeitet dabei technisch deine IP-Adresse. Den Lernstand könnte ich in der Datenbank technisch sehen, aber keiner Person zuordnen. Mit „Online-Kopie löschen“ entfernst du ihn jederzeit.</p>' +
       '<h4>Wie lange</h4>' +
@@ -270,6 +262,8 @@
     d.settings = Object.assign({}, DEFAULTS, d.settings || {});
     // v44: neues Design; der alte Standard „Dunkel“ wird einmalig zu „System“
     if (!d.settings.ui44) { if (d.settings.theme === 'dark') d.settings.theme = 'auto'; d.settings.ui44 = 1; d._mig = 1; }
+    // v65: Nutzungsstatistik ist jetzt Opt-out (Standard an, keine Startfrage); einmalig bei allen eingeschaltet. Ausschalten danach bleibt.
+    if (!d.settings.st65) { d.settings.stats = 1; d.settings.st65 = 1; d._mig = 1; }
     // Psycho: früheres Test-Kapitel „tp“ (Kap. 1 und 2) ist auf k1/k2 verteilt; offene Fehler übernehmen. Alter Schlüssel bleibt.
     var tp = d.tests['psy/tp'];
     if (tp && !tp.moved) {
@@ -2170,7 +2164,7 @@
   // ====================================================================== Sync (v49): Sync-Code ohne Konto, Supabase-Tabelle lernkiste_sync
   var SB_URL = 'https://qbdpzamygonpruaafcrt.supabase.co', SB_KEY = 'sb_publishable_A7zukzk82Suux8jteQvLGA_WmXnZb14', SYNC_KEY = 'lernkiste-sync';
   // bleibt auf dem Gerät: Name (personenbezogen), Statistik-Zustimmung, Backup-Merker
-  var SYNC_LOCAL = { obDone: 1, name: 1, stats: 1, statsAsked: 1, lastBackup: 1, ownDirty: 1, ownTip: 1, nagDay: 1, ui44: 1 };
+  var SYNC_LOCAL = { st65: 1, obDone: 1, name: 1, stats: 1, statsAsked: 1, lastBackup: 1, ownDirty: 1, ownTip: 1, nagDay: 1, ui44: 1 };
   var SYNC_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   var syncApplying = false, syncBusy = false, syncAgain = false, syncTimer = 0, syncErr = false;
   function syncCfg() { var o = rd(SYNC_KEY); return o && typeof o.code === 'string' && o.code.length === 20 ? o : null; }
